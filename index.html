@@ -6,7 +6,7 @@
   <title>AstroBit — Jogo Espacial de Programação para Crianças</title>
   <meta name="description" content="Aprenda lógica de programação, loops, sensores, funções e código real (JavaScript e Python) montando quebra-cabeças para guiar o robô AstroBit pelo espaço!" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🤖</text></svg>" />
-  <link rel="stylesheet" href="src/css/styles.css?v=2.2" />
+  <link rel="stylesheet" href="src/css/styles.css?v=3.0" />
 </head>
 <body>
   <header class="topbar">
@@ -21,7 +21,8 @@
 
       <nav class="topbar-actions" aria-label="Game controls">
         <span id="total-stars-pill" class="stars-pill">⭐ 0 / 90</span>
-        <button id="btn-levels" class="nav-btn" type="button">🗺️ <span data-i18n="navLevels">Fases</span></button>
+        <button id="btn-story" class="nav-btn" type="button">📖 <span data-i18n="navStory">História</span></button>
+        <button id="btn-levels" class="nav-btn" type="button">🗺️ <span data-i18n="navLevels">Mapa</span></button>
         <button id="btn-garage" class="nav-btn" type="button">🎨 <span data-i18n="navGarage">Garagem</span></button>
         <button id="btn-code-toggle" class="nav-btn" type="button">👀 <span data-i18n="navCode">Ver Código</span></button>
         <button id="btn-sound" class="nav-btn nav-icon-btn" type="button" aria-label="Sound">🔊</button>
@@ -52,10 +53,11 @@
           <div class="win-card">
             <div id="win-stars" class="win-stars"></div>
             <h2 id="win-title"></h2>
+            <p id="win-story-note" class="win-story-note"></p>
             <p id="win-sub" class="win-sub"></p>
             <div class="win-actions">
               <button id="win-replay-btn" class="btn btn-secondary" type="button">🔄 Jogar de novo</button>
-              <button id="win-next-btn" class="btn btn-run" type="button">Próxima Fase ➡️</button>
+              <button id="win-next-btn" class="btn btn-run" type="button">🚀 Voar p/ Próxima Base</button>
             </div>
           </div>
         </div>
@@ -106,6 +108,6 @@
 
   <div id="modal-backdrop" class="modal-backdrop hidden" role="dialog" aria-modal="true"></div>
 
-  <script type="module" src="src/app.js?v=2.1"></script>
+  <script type="module" src="src/app.js?v=3.0"></script>
 </body>
 </html>

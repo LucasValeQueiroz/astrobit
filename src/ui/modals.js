@@ -2,9 +2,9 @@
  * AstroBit Modals — Planet Star Map, Robot Garage, and Victory Celebration Overlay.
  */
 
-import { CAMPAIGN_WORLDS } from '../levels/index.js?v=3.0';
-import { ROBOT_SKINS } from '../renderer/robot-skins.js?v=3.0';
-import { getTotalStars } from '../storage/progress.js?v=3.0';
+import { CAMPAIGN_WORLDS } from '../levels/index.js?v=4.0';
+import { ROBOT_SKINS } from '../renderer/robot-skins.js?v=4.0';
+import { getTotalStars } from '../storage/progress.js?v=4.0';
 
 function escapeHtml(text) {
   return String(text ?? '')
@@ -114,6 +114,25 @@ export function renderGarageModal(container, progress, { lang, t, onSelectSkin, 
     `;
   }).join('');
 
+  const nextLocked = ROBOT_SKINS.find((s) => totalStars < s.starsRequired) || null;
+  const progressHtml = nextLocked
+    ? (() => {
+        const pct = Math.min(100, Math.round((totalStars / nextLocked.starsRequired) * 100));
+        const nextName = lang === 'en' ? nextLocked.nameEn : nextLocked.namePt;
+        return `
+          <div class="garage-progress">
+            <div class="garage-progress-top">
+              <span>${escapeHtml(t(lang, 'garageNext', { name: nextName }))}</span>
+              <strong>⭐ ${totalStars} / ${nextLocked.starsRequired}</strong>
+            </div>
+            <div class="garage-bar-track">
+              <div class="garage-bar-fill" style="width:${pct}%"></div>
+            </div>
+          </div>
+        `;
+      })()
+    : `<div class="garage-progress all-unlocked">🏆 ${escapeHtml(t(lang, 'garageAllUnlocked'))}</div>`;
+
   container.innerHTML = `
     <div class="modal-card">
       <div class="modal-head">
@@ -124,6 +143,7 @@ export function renderGarageModal(container, progress, { lang, t, onSelectSkin, 
         <button type="button" class="icon-btn" data-close-modal="true" aria-label="${escapeHtml(t(lang, 'close'))}">✕</button>
       </div>
       <div class="modal-body">
+        ${progressHtml}
         <div class="skin-grid">${cards}</div>
       </div>
     </div>

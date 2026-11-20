@@ -5,15 +5,15 @@
  * smoothly between bases and worlds!
  */
 
-import { CAMPAIGN_WORLDS } from '../levels/index.js?v=4.0';
-import { WORLD_PALETTES } from '../renderer/robot-skins.js?v=4.0';
+import { CAMPAIGN_WORLDS } from '../levels/index.js?v=5.0';
+import { WORLD_PALETTES } from '../renderer/robot-skins.js?v=5.0';
 import {
   INTRO_SCENES,
   ENDING_SCENES,
   getWorldStory,
   getLevelStory,
-} from '../story/campaign-story.js?v=4.0';
-import { getTotalStars } from '../storage/progress.js?v=4.0';
+} from '../story/campaign-story.js?v=5.0';
+import { getTotalStars } from '../storage/progress.js?v=5.0';
 import { FlightCinemaController } from './flight-cinema.js?v=4.2';
 
 function escapeHtml(text) {

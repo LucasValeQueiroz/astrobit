@@ -25,17 +25,25 @@ const PY_SENSORS = {
 };
 
 const JS_SIMPLE = {
+  up: 'robot.moveUp();',
+  down: 'robot.moveDown();',
+  move_left: 'robot.moveLeft();',
+  move_right: 'robot.moveRight();',
   forward: 'robot.moveForward();',
   left: 'robot.turnLeft();',
   right: 'robot.turnRight();',
-  collect: 'robot.collectOrActivate();',
+  collect: 'robot.collect();',
 };
 
 const PY_SIMPLE = {
+  up: 'robot.move_up()',
+  down: 'robot.move_down()',
+  move_left: 'robot.move_left()',
+  move_right: 'robot.move_right()',
   forward: 'robot.move_forward()',
   left: 'robot.turn_left()',
   right: 'robot.turn_right()',
-  collect: 'robot.collect_or_activate()',
+  collect: 'robot.collect()',
 };
 
 /**

@@ -10,6 +10,7 @@ import {
   getLevelStory,
 } from '../src/story/campaign-story.js';
 import { SpaceSoundSynth } from '../src/audio/sound-synth.js';
+import { buildSmoothRoutePath } from '../src/ui/story-map.js';
 
 test('campaign story covers intro, ending, all 5 worlds with 6 base coords, and all 30 levels in PT & EN', () => {
   assert.equal(INTRO_SCENES.length, 3);
@@ -42,4 +43,16 @@ test('SpaceSoundSynth exposes rocket launch and fanfare cues cleanly without Web
   const synth = new SpaceSoundSynth({ storage: null, AudioContextCtor: null });
   assert.equal(synth.playRocketLaunch(), false);
   assert.equal(synth.playFanfare(), false);
+});
+
+test('buildSmoothRoutePath constructs valid quadratic Bezier SVG routes for planet flight maps', () => {
+  const d = buildSmoothRoutePath([
+    { x: 80, y: 180 },
+    { x: 200, y: 120 },
+    { x: 320, y: 190 },
+  ]);
+  assert.ok(d.startsWith('M 80 180'));
+  assert.ok(d.includes(' Q '));
+  assert.ok(d.endsWith('320 190'));
+  assert.equal(buildSmoothRoutePath([]), '');
 });

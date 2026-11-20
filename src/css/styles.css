@@ -999,8 +999,9 @@ button {
 }
 
 .puzzle-clamp-body {
+  position: relative;
   flex: 1;
-  padding: 0 6px 16px 8px;
+  padding: 0 6px 20px 8px;
   background: rgba(7, 13, 32, 0.55);
   border-right: 2px dashed rgba(168, 85, 247, 0.35);
   display: flex;
@@ -1071,11 +1072,14 @@ button {
 }
 
 .focus-tag {
-  align-self: flex-end;
-  font-size: 0.7rem;
+  position: absolute;
+  right: 8px;
+  bottom: 2px;
+  z-index: 65;
+  pointer-events: none;
+  font-size: 0.68rem;
   color: var(--gold);
   font-weight: 700;
-  margin: 4px 2px 2px;
 }
 
 /* =========================================================

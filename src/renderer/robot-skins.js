@@ -1,0 +1,168 @@
+/**
+ * AstroBit Robot Skins & Space Planet Palettes (pure data & helpers).
+ */
+
+export const ROBOT_SKINS = [
+  {
+    id: 'explorer',
+    starsRequired: 0,
+    namePt: 'Explorador Azul',
+    nameEn: 'Blue Explorer',
+    body: '#38bdf8',
+    bodyDark: '#0284c7',
+    visor: '#0f172a',
+    eye: '#7dd3fc',
+    accent: '#fbbf24',
+    accessory: 'antenna',
+  },
+  {
+    id: 'solar',
+    starsRequired: 6,
+    namePt: 'Piloto Solar',
+    nameEn: 'Solar Pilot',
+    body: '#fbbf24',
+    bodyDark: '#d97706',
+    visor: '#1e1b4b',
+    eye: '#fde047',
+    accent: '#f97316',
+    accessory: 'dual-antenna',
+  },
+  {
+    id: 'emerald',
+    starsRequired: 12,
+    namePt: 'Guardião Verde',
+    nameEn: 'Emerald Ranger',
+    body: '#34d399',
+    bodyDark: '#059669',
+    visor: '#064e3b',
+    eye: '#a7f3d0',
+    accent: '#38bdf8',
+    accessory: 'dual-antenna',
+  },
+  {
+    id: 'nova',
+    starsRequired: 20,
+    namePt: 'Capitão Galáxia',
+    nameEn: 'Galaxy Captain',
+    body: '#a78bfa',
+    bodyDark: '#7c3aed',
+    visor: '#1e1b4b',
+    eye: '#f0abfc',
+    accent: '#f43f5e',
+    accessory: 'cape',
+  },
+  {
+    id: 'crimson',
+    starsRequired: 30,
+    namePt: 'Turbo Cometa',
+    nameEn: 'Comet Turbo',
+    body: '#fb7185',
+    bodyDark: '#e11d48',
+    visor: '#1f2937',
+    eye: '#fef08a',
+    accent: '#38bdf8',
+    accessory: 'cape',
+  },
+  {
+    id: 'prisma',
+    starsRequired: 45,
+    namePt: 'Engenheiro Estelar',
+    nameEn: 'Star Engineer',
+    body: '#f8fafc',
+    bodyDark: '#94a3b8',
+    visor: '#0f172a',
+    eye: '#38bdf8',
+    accent: '#facc15',
+    accessory: 'crown',
+  },
+];
+
+export const WORLD_PALETTES = {
+  1: {
+    namePt: 'Lua dos Cristais',
+    nameEn: 'Moon of Crystals',
+    bgTop: '#0b1026',
+    bgBottom: '#1a234e',
+    floor: '#253263',
+    floorBorder: '#3b4e8f',
+    wall: '#475569',
+    wallTop: '#64748b',
+    crystal: '#38bdf8',
+    crystalGlow: '#7dd3fc',
+  },
+  2: {
+    namePt: 'Planeta das Engrenagens',
+    nameEn: 'Gear Planet',
+    bgTop: '#1b1320',
+    bgBottom: '#352236',
+    floor: '#3f2e47',
+    floorBorder: '#644a72',
+    wall: '#785a46',
+    wallTop: '#a17c60',
+    crystal: '#fbbf24',
+    crystalGlow: '#fde68a',
+  },
+  3: {
+    namePt: 'Cinturão de Lasers',
+    nameEn: 'Laser Belt',
+    bgTop: '#0a1924',
+    bgBottom: '#132f42',
+    floor: '#1b3b52',
+    floorBorder: '#2d5c7c',
+    wall: '#334155',
+    wallTop: '#475569',
+    crystal: '#f472b6',
+    crystalGlow: '#fbcfe8',
+  },
+  4: {
+    namePt: 'Estação das Funções',
+    nameEn: 'Function Station',
+    bgTop: '#071b1c',
+    bgBottom: '#0f3638',
+    floor: '#164b4d',
+    floorBorder: '#267375',
+    wall: '#3f5163',
+    wallTop: '#5b728a',
+    crystal: '#34d399',
+    crystalGlow: '#a7f3d0',
+  },
+  5: {
+    namePt: 'Nebulosa do Engenheiro',
+    nameEn: 'Engineer Nebula',
+    bgTop: '#160d2b',
+    bgBottom: '#2d1954',
+    floor: '#32205e',
+    floorBorder: '#573a99',
+    wall: '#4c3e6b',
+    wallTop: '#6d5a96',
+    crystal: '#c084fc',
+    crystalGlow: '#e9d5ff',
+  },
+};
+
+export const CHANNEL_COLORS = {
+  A: '#22d3ee',
+  B: '#fb7185',
+  C: '#a3e635',
+  D: '#fbbf24',
+};
+
+export const PORTAL_COLORS = {
+  1: '#c084fc',
+  2: '#38bdf8',
+  3: '#fb923c',
+  4: '#f472b6',
+};
+
+export function getSkinById(id) {
+  return ROBOT_SKINS.find((s) => s.id === id) || ROBOT_SKINS[0];
+}
+
+export function getUnlockedSkins(totalStars = 0) {
+  const stars = Number.isFinite(totalStars) && totalStars > 0 ? totalStars : 0;
+  return ROBOT_SKINS.filter((s) => stars >= s.starsRequired);
+}
+
+export function getWorldPalette(worldNumber = 1) {
+  return WORLD_PALETTES[worldNumber] || WORLD_PALETTES[1];
+}

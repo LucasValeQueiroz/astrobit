@@ -161,4 +161,27 @@ export class SpaceSoundSynth {
     }
     return !this.muted && Boolean(this.AudioContextCtor);
   }
+
+  playRocketLaunch() {
+    // Playful ascending spaceship whoosh when flying between planet bases
+    this._tone({ freq: 140, endFreq: 520, duration: 0.34, delay: 0, type: 'sawtooth', gain: 0.06 });
+    this._tone({ freq: 260, endFreq: 880, duration: 0.3, delay: 0.06, type: 'sine', gain: 0.1 });
+    return !this.muted && Boolean(this.AudioContextCtor);
+  }
+
+  playFanfare() {
+    // Heroic space-saving celebration chord progression (world completion / ending)
+    const notes = [
+      { freq: 392.0, delay: 0, duration: 0.14 },
+      { freq: 523.25, delay: 0.11, duration: 0.14 },
+      { freq: 659.25, delay: 0.22, duration: 0.14 },
+      { freq: 783.99, delay: 0.33, duration: 0.18 },
+      { freq: 1046.5, delay: 0.48, duration: 0.45 },
+      { freq: 1318.5, delay: 0.56, duration: 0.42 },
+    ];
+    for (const note of notes) {
+      this._tone({ ...note, type: 'triangle', gain: 0.14 });
+    }
+    return !this.muted && Boolean(this.AudioContextCtor);
+  }
 }

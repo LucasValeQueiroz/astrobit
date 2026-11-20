@@ -9,8 +9,8 @@ import { executeProgram, countProgramBlocks, normalizeProgram } from './engine/i
 import { transpileProgram } from './engine/transpiler.js?v=4.0';
 import { decodeCustomLevel } from './engine/custom-level.js?v=4.0';
 import { ALL_LEVELS, CAMPAIGN_WORLDS, getLevelById, getNextLevel } from './levels/index.js?v=4.0';
-import { SpaceCanvasRenderer } from './renderer/canvas-renderer.js?v=4.0';
-import { SpaceSoundSynth } from './audio/sound-synth.js?v=4.0';
+import { SpaceCanvasRenderer } from './renderer/canvas-renderer.js?v=4.2';
+import { SpaceSoundSynth } from './audio/sound-synth.js?v=4.2';
 import {
   loadProgress,
   saveProgress,
@@ -35,8 +35,8 @@ import {
   renderStoryCinematic,
   renderWorldArrivalModal,
   renderGalaxyJourneyMap,
-} from './ui/story-map.js?v=4.0';
-import { renderWorkshopModal } from './ui/workshop.js?v=4.0';
+} from './ui/story-map.js?v=4.2';
+import { renderWorkshopModal } from './ui/workshop.js?v=4.2';
 import { getLevelStory } from './story/campaign-story.js?v=4.0';
 import { t } from './ui/i18n.js?v=4.0';
 
@@ -117,6 +117,7 @@ const state = {
   timerId: null,
   traceRun: null,
   traceIndex: 0,
+  crystalStreak: 0,
   runningBlockId: null,
   failedBlockId: null,
 };
@@ -466,7 +467,12 @@ function openStoryModal(mode = 'intro', { openMapAfter = false } = {}) {
   });
 }
 
-function openJourneyMap({ initialWorld = null, flyFromLevelId = null, flyToLevelId = null } = {}) {
+function openJourneyMap({
+  initialWorld = null,
+  flyFromLevelId = null,
+  flyToLevelId = null,
+  warpToWorld = false,
+} = {}) {
   renderGalaxyJourneyMap(els.modalBackdrop, state.progress, state.level?.id, {
     lang: lang(),
     t,
@@ -474,6 +480,7 @@ function openJourneyMap({ initialWorld = null, flyFromLevelId = null, flyToLevel
     initialWorld,
     flyFromLevelId,
     flyToLevelId,
+    warpToWorld,
     onLaunchLevel: (id) => loadLevel(id, { showArrivalIfNew: true }),
     onReplayStory: (mode) => openStoryModal(mode, { openMapAfter: true }),
   });
@@ -581,7 +588,7 @@ function loadLevel(levelId, { showArrivalIfNew = false } = {}) {
 function playEventSound(ev) {
   if (ev.type === 'move') synth.playStep();
   else if (ev.type === 'turn') synth.playTurn();
-  else if (ev.type === 'collect') synth.playCollect();
+  else if (ev.type === 'collect') synth.playCollect(state.crystalStreak);
   else if (ev.type === 'toggle_channel') synth.playToggle();
   else if (ev.type === 'teleport') synth.playTeleport();
   else if (ev.type === 'bump') synth.playBump();
@@ -677,9 +684,13 @@ function applyNextTraceEvent() {
   state.runningBlockId = ev.blockId;
   state.failedBlockId = ev.type === 'bump' ? ev.blockId : null;
   renderer.applyTraceEvent(ev);
+  if (ev.type === 'collect') {
+    state.crystalStreak += 1;
+  }
   playEventSound(ev);
   if (ev.type === 'collect') {
-    setMascotSay(t(lang(), 'mascot.crystal'), 'good');
+    const comboSuffix = state.crystalStreak >= 2 ? ` 🔥 ×${state.crystalStreak} COMBO!` : '';
+    setMascotSay(`${t(lang(), 'mascot.crystal')}${comboSuffix}`, 'good');
   } else if (ev.type === 'toggle_channel') {
     setMascotSay(t(lang(), 'mascot.toggle', { channel: ev.channel }), 'good');
   } else if (ev.type === 'teleport') {
@@ -709,6 +720,7 @@ function prepareTrace() {
 
   state.traceRun = executeProgram(state.level, state.program);
   state.traceIndex = 0;
+  state.crystalStreak = 0;
   state.runningBlockId = null;
   state.failedBlockId = null;
   return true;
@@ -899,8 +911,8 @@ els.winNextBtn.addEventListener('click', () => {
   if (next) {
     synth.playRocketLaunch();
     if (next.world !== state.level.world) {
-      // Crossed into a brand-new planet! Open Galaxy Map on the new planet ready to land
-      openJourneyMap({ initialWorld: next.world, flyToLevelId: next.id });
+      // Crossed into a brand-new planet! Trigger Hyperspace Warp jump to the new planet!
+      openJourneyMap({ initialWorld: next.world, flyToLevelId: next.id, warpToWorld: true });
     } else {
       // Same planet: watch Starship Estrela-1 fly smoothly from Base N -> Base N+1!
       openJourneyMap({

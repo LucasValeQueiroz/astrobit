@@ -380,9 +380,13 @@ export function renderWorkshopModal(
     }
   };
 
-  container.onpointerover = (event) => {
+  container.onpointermove = (event) => {
     if (!isPainting) return;
-    const cell = event.target.closest('.ws-cell');
+    const hit =
+      typeof document !== 'undefined' && typeof document.elementFromPoint === 'function'
+        ? document.elementFromPoint(event.clientX, event.clientY)
+        : event.target;
+    const cell = hit?.closest?.('.ws-cell');
     if (!cell) return;
     const x = Number(cell.dataset.cx);
     const y = Number(cell.dataset.cy);
@@ -400,7 +404,7 @@ export function renderWorkshopModal(
     if (event.target === container || event.target.closest('[data-close-modal]')) {
       globalThis.removeEventListener('pointerup', stopPaint);
       container.onpointerdown = null;
-      container.onpointerover = null;
+      container.onpointermove = null;
       container.classList.add('hidden');
       onClose?.();
       return;
@@ -535,7 +539,7 @@ export function renderWorkshopModal(
       const customLevel = normalizeCustomLevel(draft);
       globalThis.removeEventListener('pointerup', stopPaint);
       container.onpointerdown = null;
-      container.onpointerover = null;
+      container.onpointermove = null;
       container.classList.add('hidden');
       synth?.playRocketLaunch?.();
       onPlayCustom?.(customLevel);

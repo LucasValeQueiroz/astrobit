@@ -120,10 +120,11 @@ export class SpaceSoundSynth {
     return this._tone({ freq: 380, endFreq: 480, duration: 0.07, type: 'sine', gain: 0.09 });
   }
 
-  playCollect() {
+  playCollect(combo = 1) {
+    const mult = Math.min(1.5, 1 + Math.max(0, Number(combo) - 1) * 0.09);
     const notes = [523.25, 659.25, 783.99, 1046.5];
     notes.forEach((freq, idx) => {
-      this._tone({ freq, duration: 0.13, delay: idx * 0.055, type: 'triangle', gain: 0.14 });
+      this._tone({ freq: freq * mult, duration: 0.13, delay: idx * 0.055, type: 'triangle', gain: 0.14 });
     });
     return !this.muted && Boolean(this.AudioContextCtor);
   }

@@ -45,6 +45,7 @@ export class SpaceCanvasRenderer {
     this.mood = 'happy'; // 'happy' | 'excited' | 'oops' | 'thinking' | 'giggle'
     this.bumpTimer = 0;
     this.hopTimer = 0;
+    this.winDanceTimer = 0;
     this.previewPath = [];
     this.hoveredTile = null;
 
@@ -160,6 +161,7 @@ export class SpaceCanvasRenderer {
       this.mood = 'thinking';
     } else if (event.type === 'win') {
       this.mood = 'excited';
+      this.winDanceTimer = 2.0;
       this.particles.emitConfetti(this.cssWidth, this.cssHeight, 72);
     } else {
       this.mood = 'happy';
@@ -241,6 +243,9 @@ export class SpaceCanvasRenderer {
       if (this.hopTimer === 0 && this.mood === 'giggle') {
         this.mood = 'happy';
       }
+    }
+    if (this.winDanceTimer > 0) {
+      this.winDanceTimer = Math.max(0, this.winDanceTimer - dt);
     }
     this.particles.update(dt);
   }
@@ -517,12 +522,13 @@ export class SpaceCanvasRenderer {
     const cy = this.tileCenterY(this.renderY);
     const bob = Math.sin(this._elapsed * 4) * 2.2;
     const hop = this.hopTimer > 0 ? -Math.sin((this.hopTimer / 0.5) * Math.PI) * 18 : 0;
+    const dance = this.winDanceTimer > 0 ? -Math.abs(Math.sin(this._elapsed * 11)) * 16 : 0;
     const wobble = this.bumpTimer > 0 ? Math.sin(this._elapsed * 50) * 5 : 0;
     const r = ts * 0.34;
     const skin = this.skin;
 
     ctx.save();
-    ctx.translate(cx + wobble, cy + bob + hop);
+    ctx.translate(cx + wobble, cy + bob + hop + dance);
 
     // 1. Directional heading arrow in front of the robot (helps 5yo spatial orientation!)
     const arrowDist = r * 1.32;

@@ -1820,6 +1820,47 @@ button {
   to { transform: rotate(360deg); }
 }
 
+/* 60fps Flight Cinema FX Overlay & Live Flight Status Pill */
+.flight-fx-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 4;
+}
+
+.flight-status-pill {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 5px 14px;
+  border-radius: 999px;
+  background: rgba(11, 17, 38, 0.88);
+  border: 1.5px solid rgba(56, 189, 248, 0.65);
+  color: #e0f2fe;
+  font-size: 0.78rem;
+  font-weight: 800;
+  white-space: nowrap;
+  z-index: 8;
+  pointer-events: none;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+  animation: popIn 0.2s ease-out;
+}
+
+.flight-status-pill.good {
+  border-color: #34d399;
+  color: #bbf7d0;
+}
+
+.flight-status-pill.turbo,
+.flight-status-pill.warp {
+  border-color: var(--gold);
+  background: rgba(250, 204, 21, 0.2);
+  color: #fef08a;
+}
+
 /* Flying Starship Estrela-1 Overlay */
 .flying-starship {
   position: absolute;
@@ -1831,6 +1872,11 @@ button {
   pointer-events: none;
   z-index: 6;
   filter: drop-shadow(0 6px 12px rgba(56, 189, 248, 0.55));
+}
+
+.flying-starship.ship-flying {
+  transition: none;
+  filter: drop-shadow(0 0 18px rgba(250, 204, 21, 0.9));
 }
 
 .flying-starship .starship-svg {

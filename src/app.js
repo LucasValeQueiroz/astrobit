@@ -1,11 +1,11 @@
 /**
  * AstroBit Main Application Controller.
- * Connects the deterministic engine, 60fps Canvas renderer, Web Audio synthesizer,
- * jigsaw puzzle editor, interactive mascot, live path preview, and progress store.
+ * Supports 4-direction jigsaw puzzle pieces, C-shaped Repeat & If-Sensor clamps,
+ * F1/F2 reusable Function stacks, Bug Hunt pre-filled levels, living mascot, and live path preview.
  */
 
 import { createWorldState } from './engine/grid.js';
-import { executeProgram, countBlockList } from './engine/interpreter.js';
+import { executeProgram, countProgramBlocks, normalizeProgram } from './engine/interpreter.js';
 import { transpileProgram } from './engine/transpiler.js';
 import { ALL_LEVELS, getLevelById, getNextLevel } from './levels/index.js';
 import { SpaceCanvasRenderer } from './renderer/canvas-renderer.js';
@@ -23,6 +23,7 @@ import {
   insertBlockRelative,
   removeBlockById,
   updateRepeatTimes,
+  updateIfSensor,
   findBlockById,
   findContainerExists,
   renderPalette,
@@ -74,18 +75,32 @@ const els = {
 const synth = new SpaceSoundSynth();
 const renderer = new SpaceCanvasRenderer(els.canvas);
 
+function createEmptyProgram() {
+  return { main: [], functions: { F1: [], F2: [] } };
+}
+
+function cloneProgram(prog) {
+  return {
+    main: cloneBlocks(prog?.main || []),
+    functions: {
+      F1: cloneBlocks(prog?.functions?.F1 || []),
+      F2: cloneBlocks(prog?.functions?.F2 || []),
+    },
+  };
+}
+
 const state = {
   progress: loadProgress(),
   level: null,
-  blocks: [],
+  program: createEmptyProgram(),
   undoStack: [],
+  activeScope: 'main',
   activeContainerId: null,
   codePeekOpen: false,
   hintBlockType: null,
   newlyAddedId: null,
   hoveredBlockId: null,
   pokeCount: 0,
-  // Playback / Stepper state
   isRunning: false,
   timerId: null,
   traceRun: null,
@@ -103,6 +118,26 @@ function escapeHtml(text) {
     .replaceAll('&', '&amp;')
     .replaceAll('<', '&lt;')
     .replaceAll('>', '&gt;');
+}
+
+function getScopeList(prog, scope) {
+  if (scope === 'F1') return prog.functions.F1;
+  if (scope === 'F2') return prog.functions.F2;
+  return prog.main;
+}
+
+function setScopeList(prog, scope, newList) {
+  if (scope === 'F1') prog.functions.F1 = newList;
+  else if (scope === 'F2') prog.functions.F2 = newList;
+  else prog.main = newList;
+}
+
+function getVisibleFunctions(level) {
+  const allowed = level?.allowedBlocks || [];
+  const fns = [];
+  if (allowed.includes('call_f1')) fns.push('F1');
+  if (allowed.includes('call_f2')) fns.push('F2');
+  return fns;
 }
 
 function setMascotSay(message, tone = '') {
@@ -137,26 +172,25 @@ function updateTopbar() {
       world: state.level.world,
       index: state.level.index,
     });
-    els.missionTitle.textContent = lang() === 'en' ? state.level.titleEn : state.level.titlePt;
+    const title = lang() === 'en' ? state.level.titleEn : state.level.titlePt;
+    els.missionTitle.textContent = state.level.isBugHunt
+      ? `${t(lang(), 'bugHuntBadge')} ${title}`
+      : title;
   }
 }
 
-/**
- * Quietly simulates the player's current puzzle blocks to draw a helpful dotted path preview
- * on the Canvas (and highlight the exact tile reached by whichever piece is hovered).
- */
 function refreshPreviewPath() {
   if (!state.level || state.isRunning || state.traceRun) {
     renderer.setPreviewPath([], null);
     return;
   }
-  if (state.blocks.length === 0) {
+  if (state.program.main.length === 0) {
     renderer.setPreviewPath([], null);
     return;
   }
 
   const fresh = createWorldState(state.level);
-  const sim = executeProgram(state.level, { main: state.blocks });
+  const sim = executeProgram(state.level, state.program);
   const points = [{ x: fresh.robot.x, y: fresh.robot.y, blockId: null }];
   let hoveredTile = null;
 
@@ -183,7 +217,7 @@ function renderCodePeek() {
     btn.classList.toggle('active', btn.dataset.codeLang === codeLang);
   });
 
-  const transpiled = transpileProgram({ main: state.blocks }, { lang: codeLang });
+  const transpiled = transpileProgram(state.program, { lang: codeLang });
   const highlightId = state.failedBlockId || state.runningBlockId || state.hoveredBlockId;
   const activeLine = highlightId ? transpiled.blockToLine[highlightId] : null;
 
@@ -203,7 +237,7 @@ function updateRunButton() {
     : `▶️ <span>${escapeHtml(t(lang(), 'btnRun'))}</span>`;
 }
 
-function afterBlocksMutated(newBlockId = null, sayMsg = null) {
+function afterProgramMutated(newBlockId = null, sayMsg = null) {
   state.newlyAddedId = newBlockId;
   state.hintBlockType = null;
   resetBoardOnly(false);
@@ -214,11 +248,17 @@ function afterBlocksMutated(newBlockId = null, sayMsg = null) {
 
 function renderEditor() {
   if (!state.level) return;
-  if (!findContainerExists(state.blocks, state.activeContainerId)) {
+  const visibleFns = getVisibleFunctions(state.level);
+  if (state.activeScope !== 'main' && !visibleFns.includes(state.activeScope)) {
+    state.activeScope = 'main';
+    state.activeContainerId = null;
+  }
+  const activeList = getScopeList(state.program, state.activeScope);
+  if (!findContainerExists(activeList, state.activeContainerId)) {
     state.activeContainerId = null;
   }
 
-  const used = countBlockList(state.blocks);
+  const used = countProgramBlocks(state.program);
   els.blocksCounter.textContent = t(lang(), 'blocksCounter', {
     used,
     par: state.level.starThresholds.parBlocks,
@@ -232,82 +272,102 @@ function renderEditor() {
     onAddBlock: (type) => {
       if (state.isRunning) stopExecution(true);
       pushUndo();
-      const wasEmpty = state.blocks.length === 0;
+      const wasEmpty = used === 0;
       const block = createBlock(type);
-      state.blocks = appendBlockToTarget(state.blocks, state.activeContainerId, block);
-      if (type === 'repeat') {
+      const curList = getScopeList(state.program, state.activeScope);
+      setScopeList(state.program, state.activeScope, appendBlockToTarget(curList, state.activeContainerId, block));
+      if (type === 'repeat' || type === 'if') {
         state.activeContainerId = block.id;
       }
       synth.playSnap();
       const msg =
         type === 'repeat'
           ? t(lang(), 'mascot.snapRepeat')
+          : type === 'if'
+          ? t(lang(), 'mascot.snapIf')
+          : type === 'call_f1' || type === 'call_f2'
+          ? t(lang(), 'mascot.snapCall')
           : wasEmpty
           ? t(lang(), 'mascot.snapFirst')
           : null;
-      afterBlocksMutated(block.id, msg);
+      afterProgramMutated(block.id, msg);
     },
   });
 
-  renderWorkspace(els.workspace, state.blocks, {
+  renderWorkspace(els.workspace, state.program, {
     lang: lang(),
     t,
+    showFunctions: visibleFns,
+    activeScope: state.activeScope,
     activeContainerId: state.activeContainerId,
     runningBlockId: state.runningBlockId,
     failedBlockId: state.failedBlockId,
     newlyAddedId: state.newlyAddedId,
-    onSelectContainer: (cid) => {
+    onSelectTarget: (scope, cid) => {
+      state.activeScope = scope || 'main';
       state.activeContainerId = cid;
       state.newlyAddedId = null;
       synth.playClick();
       renderEditor();
     },
-    onRemoveBlock: (id) => {
+    onRemoveBlock: (scope, id) => {
       if (state.isRunning) stopExecution(true);
       pushUndo();
-      state.blocks = removeBlockById(state.blocks, id);
+      setScopeList(state.program, scope, removeBlockById(getScopeList(state.program, scope), id));
       synth.playRemove();
-      afterBlocksMutated(null, null);
+      afterProgramMutated(null, null);
     },
-    onChangeRepeat: (id, delta) => {
+    onChangeRepeat: (scope, id, delta) => {
       if (state.isRunning) stopExecution(true);
       pushUndo();
-      state.blocks = updateRepeatTimes(state.blocks, id, delta);
+      setScopeList(state.program, scope, updateRepeatTimes(getScopeList(state.program, scope), id, delta));
       synth.playClick();
-      afterBlocksMutated(null, null);
+      afterProgramMutated(null, null);
+    },
+    onChangeSensor: (scope, id, sensor) => {
+      if (state.isRunning) stopExecution(true);
+      pushUndo();
+      setScopeList(state.program, scope, updateIfSensor(getScopeList(state.program, scope), id, sensor));
+      synth.playClick();
+      afterProgramMutated(null, null);
     },
     onDropNewFromPalette: (type, dropMeta) => {
       if (state.isRunning) stopExecution(true);
       pushUndo();
       const block = createBlock(type);
-      if (dropMeta.mode === 'relative' && dropMeta.anchorId) {
-        state.blocks = insertBlockRelative(state.blocks, dropMeta.anchorId, block, dropMeta.position);
-      } else {
-        state.blocks = appendBlockToTarget(state.blocks, dropMeta.containerId, block);
-      }
-      if (type === 'repeat') state.activeContainerId = block.id;
+      const targetList = getScopeList(state.program, dropMeta.scope);
+      const updated =
+        dropMeta.mode === 'relative' && dropMeta.anchorId
+          ? insertBlockRelative(targetList, dropMeta.anchorId, block, dropMeta.position)
+          : appendBlockToTarget(targetList, dropMeta.containerId, block);
+      setScopeList(state.program, dropMeta.scope, updated);
+      state.activeScope = dropMeta.scope;
+      if (type === 'repeat' || type === 'if') state.activeContainerId = block.id;
       synth.playSnap();
-      afterBlocksMutated(block.id, t(lang(), 'mascot.snapFirst'));
+      afterProgramMutated(block.id, t(lang(), 'mascot.snapFirst'));
     },
-    onDropExisting: (blockId, dropMeta) => {
+    onDropExisting: (existing, dropMeta) => {
       if (state.isRunning) stopExecution(true);
-      const dragged = findBlockById(state.blocks, blockId);
+      const srcList = getScopeList(state.program, existing.scope);
+      const dragged = findBlockById(srcList, existing.id);
       if (!dragged) return;
-      if (dropMeta.containerId && dragged.type === 'repeat' && findContainerExists([dragged], dropMeta.containerId)) {
-        return;
-      }
-      if (dropMeta.anchorId && dragged.type === 'repeat' && findBlockById([dragged], dropMeta.anchorId)) {
-        return;
+      if (
+        existing.scope === dropMeta.scope &&
+        (dragged.type === 'repeat' || dragged.type === 'if')
+      ) {
+        if (dropMeta.containerId && findContainerExists([dragged], dropMeta.containerId)) return;
+        if (dropMeta.anchorId && findBlockById([dragged], dropMeta.anchorId)) return;
       }
       pushUndo();
-      const without = removeBlockById(state.blocks, blockId);
-      if (dropMeta.mode === 'relative' && dropMeta.anchorId) {
-        state.blocks = insertBlockRelative(without, dropMeta.anchorId, dragged, dropMeta.position);
-      } else {
-        state.blocks = appendBlockToTarget(without, dropMeta.containerId, dragged);
-      }
+      setScopeList(state.program, existing.scope, removeBlockById(srcList, existing.id));
+      const destList = getScopeList(state.program, dropMeta.scope);
+      const updated =
+        dropMeta.mode === 'relative' && dropMeta.anchorId
+          ? insertBlockRelative(destList, dropMeta.anchorId, dragged, dropMeta.position)
+          : appendBlockToTarget(destList, dropMeta.containerId, dragged);
+      setScopeList(state.program, dropMeta.scope, updated);
       synth.playSnap();
-      afterBlocksMutated(dragged.id, null);
+      afterProgramMutated(dragged.id, null);
     },
     onHoverBlock: (blockId) => {
       if (state.hoveredBlockId === blockId) return;
@@ -322,7 +382,7 @@ function renderEditor() {
 }
 
 function pushUndo() {
-  state.undoStack.push(cloneBlocks(state.blocks));
+  state.undoStack.push(cloneProgram(state.program));
   if (state.undoStack.length > 30) state.undoStack.shift();
 }
 
@@ -349,7 +409,13 @@ function resetBoardOnly(resetMessage = true) {
     renderer.setWorld(fresh, state.level.world);
     updateCrystalsHud(fresh.crystals.size, fresh.totalCrystals);
     if (resetMessage) {
-      setMascotSay(lang() === 'en' ? state.level.hintEn : state.level.hintPt);
+      setMascotSay(
+        state.level.isBugHunt
+          ? t(lang(), 'mascot.bugHuntIntro')
+          : lang() === 'en'
+          ? state.level.hintEn
+          : state.level.hintPt
+      );
     }
     refreshPreviewPath();
   }
@@ -361,8 +427,11 @@ function loadLevel(levelId) {
   state.progress.currentLevelId = state.level.id;
   saveProgress(state.progress);
 
-  state.blocks = state.level.starterProgram ? cloneBlocks(state.level.starterProgram) : [];
+  state.program = state.level.starterProgram
+    ? cloneProgram(normalizeProgram(state.level.starterProgram))
+    : createEmptyProgram();
   state.undoStack = [];
+  state.activeScope = 'main';
   state.activeContainerId = null;
   state.hintBlockType = null;
   state.hoveredBlockId = null;
@@ -375,7 +444,13 @@ function loadLevel(levelId) {
   renderer.setWorld(fresh, state.level.world);
   updateCrystalsHud(fresh.crystals.size, fresh.totalCrystals);
   updateTopbar();
-  setMascotSay(lang() === 'en' ? state.level.hintEn : state.level.hintPt);
+  setMascotSay(
+    state.level.isBugHunt
+      ? t(lang(), 'mascot.bugHuntIntro')
+      : lang() === 'en'
+      ? state.level.hintEn
+      : state.level.hintPt
+  );
   renderEditor();
   refreshPreviewPath();
 }
@@ -456,6 +531,10 @@ function applyNextTraceEvent() {
   playEventSound(ev);
   if (ev.type === 'collect') {
     setMascotSay(t(lang(), 'mascot.crystal'), 'good');
+  } else if (ev.type === 'toggle_channel') {
+    setMascotSay(t(lang(), 'mascot.toggle', { channel: ev.channel }), 'good');
+  } else if (ev.type === 'teleport') {
+    setMascotSay(t(lang(), 'mascot.teleport'), 'good');
   }
   updateCrystalsHud(ev.crystalsRemaining, renderer.worldState.totalCrystals);
   renderEditor();
@@ -468,7 +547,7 @@ function applyNextTraceEvent() {
 }
 
 function prepareTrace() {
-  if (state.blocks.length === 0) {
+  if (state.program.main.length === 0) {
     setMascotSay(t(lang(), 'feedback.empty_program'), 'warn');
     synth.playBump();
     return false;
@@ -479,7 +558,7 @@ function prepareTrace() {
   updateCrystalsHud(fresh.crystals.size, fresh.totalCrystals);
   els.winOverlay.classList.add('hidden');
 
-  state.traceRun = executeProgram(state.level, { main: state.blocks });
+  state.traceRun = executeProgram(state.level, state.program);
   state.traceIndex = 0;
   state.runningBlockId = null;
   state.failedBlockId = null;
@@ -544,12 +623,18 @@ els.mascotAvatarBtn.addEventListener('click', () => {
 
 els.btnHint.addEventListener('click', () => {
   if (!state.level) return;
-  // Smartly suggest the next block type from referenceSolution based on how many blocks the player placed
-  const ref = state.level.referenceSolution || [];
-  const nextRef = ref[Math.min(state.blocks.length, ref.length - 1)];
-  state.hintBlockType = nextRef?.type || state.level.firstBlockHint || 'move_right';
+  const normRef = normalizeProgram(state.level.referenceSolution);
+  const nextRef = normRef.main[Math.min(state.program.main.length, Math.max(0, normRef.main.length - 1))];
+  let hintType = state.level.firstBlockHint || 'move_right';
+  if (nextRef) {
+    hintType = nextRef.type === 'call' ? (nextRef.fn === 'F2' ? 'call_f2' : 'call_f1') : nextRef.type;
+  }
+  state.hintBlockType = hintType;
   synth.playClick();
-  setMascotSay(t(lang(), 'mascot.hintBlock'), 'good');
+  setMascotSay(
+    lang() === 'en' ? state.level.hintEn : state.level.hintPt,
+    'good'
+  );
   renderEditor();
 });
 
@@ -572,19 +657,20 @@ els.btnSpeed.addEventListener('click', () => {
 els.btnUndo.addEventListener('click', () => {
   if (state.undoStack.length === 0) return;
   if (state.isRunning) stopExecution(true);
-  state.blocks = state.undoStack.pop();
+  state.program = state.undoStack.pop();
   synth.playRemove();
-  afterBlocksMutated(null, null);
+  afterProgramMutated(null, null);
 });
 
 els.btnClear.addEventListener('click', () => {
-  if (state.blocks.length === 0) return;
+  if (countProgramBlocks(state.program) === 0) return;
   if (state.isRunning) stopExecution(true);
   pushUndo();
-  state.blocks = [];
+  state.program = createEmptyProgram();
+  state.activeScope = 'main';
   state.activeContainerId = null;
   synth.playRemove();
-  afterBlocksMutated(null, lang() === 'en' ? state.level.hintEn : state.level.hintPt);
+  afterProgramMutated(null, lang() === 'en' ? state.level.hintEn : state.level.hintPt);
 });
 
 els.btnSound.addEventListener('click', () => {
@@ -661,6 +747,5 @@ window.addEventListener('keydown', (event) => {
   }
 });
 
-// Boot AstroBit!
 renderer.start();
 loadLevel(state.progress.currentLevelId || 'w1-1');

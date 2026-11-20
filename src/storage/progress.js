@@ -15,6 +15,7 @@ export function createDefaultProgress() {
     seenIntro: false,
     seenWorlds: {},
     seenEnding: false,
+    customLevels: [],
   };
 }
 
@@ -36,6 +37,7 @@ export function loadProgress(storage = globalThis.localStorage) {
         parsed?.seenWorlds && typeof parsed.seenWorlds === 'object'
           ? { ...parsed.seenWorlds }
           : {},
+      customLevels: Array.isArray(parsed?.customLevels) ? [...parsed.customLevels] : [],
     };
   } catch {
     return fallback;

@@ -5,8 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AstroBit — Jogo Espacial de Programação para Crianças</title>
   <meta name="description" content="Aprenda lógica de programação, loops, sensores, funções e código real (JavaScript e Python) montando quebra-cabeças para guiar o robô AstroBit pelo espaço!" />
+  <meta property="og:title" content="AstroBit — Jogo Espacial de Programação para Crianças" />
+  <meta property="og:description" content="5 mundos, 30 fases, mapa galáctico com nave animada, peças de quebra-cabeça, oficina criadora de fases e código real JS/Python ao vivo!" />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://lucasvalequeiroz.github.io/astrobit/" />
+  <meta property="og:image" content="https://lucasvalequeiroz.github.io/astrobit/assets/og-preview.svg" />
+  <meta name="twitter:card" content="summary_large_image" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🤖</text></svg>" />
-  <link rel="stylesheet" href="src/css/styles.css?v=3.0" />
+  <link rel="stylesheet" href="src/css/styles.css?v=4.0" />
 </head>
 <body>
   <header class="topbar">
@@ -23,6 +29,7 @@
         <span id="total-stars-pill" class="stars-pill">⭐ 0 / 90</span>
         <button id="btn-story" class="nav-btn" type="button">📖 <span data-i18n="navStory">História</span></button>
         <button id="btn-levels" class="nav-btn" type="button">🗺️ <span data-i18n="navLevels">Mapa</span></button>
+        <button id="btn-workshop" class="nav-btn" type="button">🛠️ <span data-i18n="navWorkshop">Oficina</span></button>
         <button id="btn-garage" class="nav-btn" type="button">🎨 <span data-i18n="navGarage">Garagem</span></button>
         <button id="btn-code-toggle" class="nav-btn" type="button">👀 <span data-i18n="navCode">Ver Código</span></button>
         <button id="btn-sound" class="nav-btn nav-icon-btn" type="button" aria-label="Sound">🔊</button>
@@ -108,6 +115,6 @@
 
   <div id="modal-backdrop" class="modal-backdrop hidden" role="dialog" aria-modal="true"></div>
 
-  <script type="module" src="src/app.js?v=3.0"></script>
+  <script type="module" src="src/app.js?v=4.0"></script>
 </body>
 </html>

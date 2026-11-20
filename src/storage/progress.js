@@ -1,0 +1,63 @@
+/**
+ * AstroBit Local Progress Store (localStorage-backed, injectable for unit tests).
+ */
+
+export const PROGRESS_STORAGE_KEY = 'astrobit-progress-v1';
+
+export function createDefaultProgress() {
+  return {
+    starsByLevel: {},
+    currentLevelId: 'w1-1',
+    skinId: 'explorer',
+    lang: 'pt',
+    speed: 'normal', // 'slow' | 'normal' | 'fast'
+    codeLang: 'js',  // 'js' | 'python'
+  };
+}
+
+export function loadProgress(storage = globalThis.localStorage) {
+  const fallback = createDefaultProgress();
+  if (!storage) return fallback;
+  try {
+    const raw = storage.getItem(PROGRESS_STORAGE_KEY);
+    if (!raw) return fallback;
+    const parsed = JSON.parse(raw);
+    return {
+      ...fallback,
+      ...parsed,
+      starsByLevel:
+        parsed?.starsByLevel && typeof parsed.starsByLevel === 'object'
+          ? { ...parsed.starsByLevel }
+          : {},
+    };
+  } catch {
+    return fallback;
+  }
+}
+
+export function saveProgress(progress, storage = globalThis.localStorage) {
+  if (!storage) return;
+  try {
+    storage.setItem(PROGRESS_STORAGE_KEY, JSON.stringify(progress));
+  } catch {
+    // Ignore private browsing quota errors
+  }
+}
+
+export function recordLevelCompletion(progress, levelId, stars) {
+  const safeStars = Math.max(0, Math.min(3, Math.floor(Number(stars) || 0)));
+  const prev = Number(progress?.starsByLevel?.[levelId] || 0);
+  const best = Math.max(prev, safeStars);
+  return {
+    ...progress,
+    starsByLevel: {
+      ...(progress?.starsByLevel || {}),
+      [levelId]: best,
+    },
+  };
+}
+
+export function getTotalStars(progress) {
+  const map = progress?.starsByLevel || {};
+  return Object.values(map).reduce((sum, val) => sum + (Number(val) || 0), 0);
+}

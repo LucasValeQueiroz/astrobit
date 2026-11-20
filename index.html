@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AstroBit — Jogo Espacial de Programação para Crianças</title>
-  <meta name="description" content="Aprenda lógica de programação, loops e código real (JavaScript e Python) guiando o robô AstroBit pelo espaço!" />
+  <meta name="description" content="Aprenda lógica de programação, loops e código real (JavaScript e Python) montando quebra-cabeças para guiar o robô AstroBit pelo espaço!" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🤖</text></svg>" />
   <link rel="stylesheet" href="src/css/styles.css" />
 </head>
@@ -31,14 +31,17 @@
   </header>
 
   <main class="game-layout">
-    <!-- LEFT: Interactive Space Stage -->
+    <!-- LEFT: Interactive Space Stage & Living Mascot -->
     <section class="stage-column">
       <div class="mission-banner">
         <div class="mission-title-row">
           <h1 id="mission-title">Primeiros Passos</h1>
           <span id="crystals-pill" class="mission-stat">💎 0/1</span>
         </div>
-        <p id="mission-hint" class="mission-hint"></p>
+        <div class="mascot-row">
+          <button id="mascot-avatar-btn" class="mascot-avatar-btn" type="button" title="AstroBit!">🤖</button>
+          <div id="mascot-bubble" class="mascot-bubble" role="status" aria-live="polite"></div>
+        </div>
       </div>
 
       <div class="canvas-frame">
@@ -61,32 +64,31 @@
       <div class="controls-bar">
         <button id="btn-run" class="btn btn-run" type="button">▶️ <span data-i18n="btnRun">Rodar</span></button>
         <button id="btn-step" class="btn btn-step" type="button">⏭️ <span data-i18n="btnStep">1 Passo</span></button>
+        <button id="btn-hint" class="btn btn-hint" type="button">💡 <span data-i18n="btnHint">Dica</span></button>
         <button id="btn-reset" class="btn btn-secondary" type="button">🔄 <span data-i18n="btnReset">Reiniciar</span></button>
         <button id="btn-speed" class="btn btn-secondary" type="button">🚀 Normal</button>
       </div>
-
-      <div id="feedback-banner" class="feedback-banner" role="status" aria-live="polite"></div>
     </section>
 
-    <!-- RIGHT: Block Palette, Program Workspace & Live Code Peek -->
+    <!-- RIGHT: 4-Direction Compass Palette, Interlocking Jigsaw Puzzle & Live Code Peek -->
     <section class="editor-column">
       <div class="panel">
         <div class="panel-head">
-          <h2 data-i18n="paletteTitle">Blocos de Comando</h2>
-          <span id="blocks-counter" class="counter-pill">0 blocos</span>
+          <h2 data-i18n="paletteTitle">Peças do Quebra-Cabeça</h2>
+          <span id="blocks-counter" class="counter-pill">0 peças</span>
         </div>
+        <p class="small muted" data-i18n="paletteHint"></p>
         <div id="block-palette" class="block-palette"></div>
       </div>
 
       <div class="panel workspace-panel">
         <div class="panel-head">
-          <h2 data-i18n="workspaceTitle">Programa do Robô</h2>
+          <h2 data-i18n="workspaceTitle">Montagem do Programa</h2>
           <div class="head-actions">
             <button id="btn-undo" class="mini-text-btn" type="button">↩️ <span data-i18n="btnUndo">Desfazer</span></button>
             <button id="btn-clear" class="mini-text-btn danger" type="button">🗑️ <span data-i18n="btnClear">Limpar</span></button>
           </div>
         </div>
-        <p class="small muted" data-i18n="workspaceHint"></p>
         <div id="block-workspace" class="block-workspace"></div>
       </div>
 

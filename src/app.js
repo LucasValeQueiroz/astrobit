@@ -1,7 +1,7 @@
 /**
  * AstroBit Main Application Controller.
  * Connects the deterministic engine, 60fps Canvas renderer, Web Audio synthesizer,
- * touch/mouse block editor, step-by-step debugger, live JS/Python code peek, and progress store.
+ * jigsaw puzzle editor, interactive mascot, live path preview, and progress store.
  */
 
 import { createWorldState } from './engine/grid.js';
@@ -20,9 +20,10 @@ import {
   createBlock,
   cloneBlocks,
   appendBlockToTarget,
+  insertBlockRelative,
   removeBlockById,
-  moveBlockInList,
   updateRepeatTimes,
+  findBlockById,
   findContainerExists,
   renderPalette,
   renderWorkspace,
@@ -41,10 +42,10 @@ const els = {
   levelBadge: document.getElementById('level-badge'),
   totalStarsPill: document.getElementById('total-stars-pill'),
   missionTitle: document.getElementById('mission-title'),
-  missionHint: document.getElementById('mission-hint'),
+  mascotAvatarBtn: document.getElementById('mascot-avatar-btn'),
+  mascotBubble: document.getElementById('mascot-bubble'),
   crystalsPill: document.getElementById('crystals-pill'),
   blocksCounter: document.getElementById('blocks-counter'),
-  feedbackBanner: document.getElementById('feedback-banner'),
   palette: document.getElementById('block-palette'),
   workspace: document.getElementById('block-workspace'),
   codePeekPanel: document.getElementById('code-peek-panel'),
@@ -57,6 +58,7 @@ const els = {
   winNextBtn: document.getElementById('win-next-btn'),
   btnRun: document.getElementById('btn-run'),
   btnStep: document.getElementById('btn-step'),
+  btnHint: document.getElementById('btn-hint'),
   btnReset: document.getElementById('btn-reset'),
   btnSpeed: document.getElementById('btn-speed'),
   btnUndo: document.getElementById('btn-undo'),
@@ -79,6 +81,10 @@ const state = {
   undoStack: [],
   activeContainerId: null,
   codePeekOpen: false,
+  hintBlockType: null,
+  newlyAddedId: null,
+  hoveredBlockId: null,
+  pokeCount: 0,
   // Playback / Stepper state
   isRunning: false,
   timerId: null,
@@ -99,9 +105,9 @@ function escapeHtml(text) {
     .replaceAll('>', '&gt;');
 }
 
-function setFeedback(message, tone = '') {
-  els.feedbackBanner.textContent = message;
-  els.feedbackBanner.className = `feedback-banner ${tone}`.trim();
+function setMascotSay(message, tone = '') {
+  els.mascotBubble.textContent = message;
+  els.mascotBubble.className = `mascot-bubble ${tone}`.trim();
 }
 
 function updateCrystalsHud(remaining, total) {
@@ -132,8 +138,40 @@ function updateTopbar() {
       index: state.level.index,
     });
     els.missionTitle.textContent = lang() === 'en' ? state.level.titleEn : state.level.titlePt;
-    els.missionHint.textContent = lang() === 'en' ? state.level.hintEn : state.level.hintPt;
   }
+}
+
+/**
+ * Quietly simulates the player's current puzzle blocks to draw a helpful dotted path preview
+ * on the Canvas (and highlight the exact tile reached by whichever piece is hovered).
+ */
+function refreshPreviewPath() {
+  if (!state.level || state.isRunning || state.traceRun) {
+    renderer.setPreviewPath([], null);
+    return;
+  }
+  if (state.blocks.length === 0) {
+    renderer.setPreviewPath([], null);
+    return;
+  }
+
+  const fresh = createWorldState(state.level);
+  const sim = executeProgram(state.level, { main: state.blocks });
+  const points = [{ x: fresh.robot.x, y: fresh.robot.y, blockId: null }];
+  let hoveredTile = null;
+
+  for (const ev of sim.events) {
+    if (ev.type === 'move' || ev.type === 'teleport') {
+      points.push({ x: ev.x, y: ev.y, blockId: ev.blockId, teleported: ev.type === 'teleport' });
+    } else if (ev.type === 'bump') {
+      points.push({ x: ev.x, y: ev.y, blockId: ev.blockId, bumped: true });
+    }
+    if (state.hoveredBlockId && ev.blockId === state.hoveredBlockId) {
+      hoveredTile = { x: ev.x, y: ev.y };
+    }
+  }
+
+  renderer.setPreviewPath(points, hoveredTile);
 }
 
 function renderCodePeek() {
@@ -146,7 +184,7 @@ function renderCodePeek() {
   });
 
   const transpiled = transpileProgram({ main: state.blocks }, { lang: codeLang });
-  const highlightId = state.failedBlockId || state.runningBlockId;
+  const highlightId = state.failedBlockId || state.runningBlockId || state.hoveredBlockId;
   const activeLine = highlightId ? transpiled.blockToLine[highlightId] : null;
 
   els.codePeekLines.innerHTML = transpiled.lines
@@ -165,6 +203,15 @@ function updateRunButton() {
     : `▶️ <span>${escapeHtml(t(lang(), 'btnRun'))}</span>`;
 }
 
+function afterBlocksMutated(newBlockId = null, sayMsg = null) {
+  state.newlyAddedId = newBlockId;
+  state.hintBlockType = null;
+  resetBoardOnly(false);
+  if (sayMsg) setMascotSay(sayMsg);
+  renderEditor();
+  refreshPreviewPath();
+}
+
 function renderEditor() {
   if (!state.level) return;
   if (!findContainerExists(state.blocks, state.activeContainerId)) {
@@ -181,18 +228,24 @@ function renderEditor() {
   renderPalette(els.palette, state.level.allowedBlocks, {
     lang: lang(),
     t,
+    hintBlockType: state.hintBlockType,
     onAddBlock: (type) => {
       if (state.isRunning) stopExecution(true);
       pushUndo();
+      const wasEmpty = state.blocks.length === 0;
       const block = createBlock(type);
       state.blocks = appendBlockToTarget(state.blocks, state.activeContainerId, block);
-      // Auto-focus newly created Repeat block so a child can immediately tap blocks inside it!
       if (type === 'repeat') {
         state.activeContainerId = block.id;
       }
-      synth.playClick();
-      resetBoardOnly();
-      renderEditor();
+      synth.playSnap();
+      const msg =
+        type === 'repeat'
+          ? t(lang(), 'mascot.snapRepeat')
+          : wasEmpty
+          ? t(lang(), 'mascot.snapFirst')
+          : null;
+      afterBlocksMutated(block.id, msg);
     },
   });
 
@@ -202,62 +255,69 @@ function renderEditor() {
     activeContainerId: state.activeContainerId,
     runningBlockId: state.runningBlockId,
     failedBlockId: state.failedBlockId,
+    newlyAddedId: state.newlyAddedId,
     onSelectContainer: (cid) => {
       state.activeContainerId = cid;
+      state.newlyAddedId = null;
       synth.playClick();
-      renderEditor();
-    },
-    onMoveBlock: (id, delta) => {
-      if (state.isRunning) stopExecution(true);
-      pushUndo();
-      state.blocks = moveBlockInList(state.blocks, id, delta);
-      synth.playClick();
-      resetBoardOnly();
       renderEditor();
     },
     onRemoveBlock: (id) => {
       if (state.isRunning) stopExecution(true);
       pushUndo();
       state.blocks = removeBlockById(state.blocks, id);
-      synth.playClick();
-      resetBoardOnly();
-      renderEditor();
+      synth.playRemove();
+      afterBlocksMutated(null, null);
     },
     onChangeRepeat: (id, delta) => {
       if (state.isRunning) stopExecution(true);
       pushUndo();
       state.blocks = updateRepeatTimes(state.blocks, id, delta);
       synth.playClick();
-      resetBoardOnly();
-      renderEditor();
+      afterBlocksMutated(null, null);
     },
-    onDropIntoContainer: (blockId, targetId) => {
+    onDropNewFromPalette: (type, dropMeta) => {
       if (state.isRunning) stopExecution(true);
-      const findBlock = (list) => {
-        for (const b of list) {
-          if (b.id === blockId) return b;
-          if (b.type === 'repeat' && b.body) {
-            const found = findBlock(b.body);
-            if (found) return found;
-          }
-        }
-        return null;
-      };
-      const dragged = findBlock(state.blocks);
+      pushUndo();
+      const block = createBlock(type);
+      if (dropMeta.mode === 'relative' && dropMeta.anchorId) {
+        state.blocks = insertBlockRelative(state.blocks, dropMeta.anchorId, block, dropMeta.position);
+      } else {
+        state.blocks = appendBlockToTarget(state.blocks, dropMeta.containerId, block);
+      }
+      if (type === 'repeat') state.activeContainerId = block.id;
+      synth.playSnap();
+      afterBlocksMutated(block.id, t(lang(), 'mascot.snapFirst'));
+    },
+    onDropExisting: (blockId, dropMeta) => {
+      if (state.isRunning) stopExecution(true);
+      const dragged = findBlockById(state.blocks, blockId);
       if (!dragged) return;
-      // Avoid dropping a repeat container inside itself
-      if (dragged.type === 'repeat' && targetId && findContainerExists([dragged], targetId)) {
+      if (dropMeta.containerId && dragged.type === 'repeat' && findContainerExists([dragged], dropMeta.containerId)) {
+        return;
+      }
+      if (dropMeta.anchorId && dragged.type === 'repeat' && findBlockById([dragged], dropMeta.anchorId)) {
         return;
       }
       pushUndo();
       const without = removeBlockById(state.blocks, blockId);
-      state.blocks = appendBlockToTarget(without, targetId, dragged);
-      synth.playClick();
-      resetBoardOnly();
-      renderEditor();
+      if (dropMeta.mode === 'relative' && dropMeta.anchorId) {
+        state.blocks = insertBlockRelative(without, dropMeta.anchorId, dragged, dropMeta.position);
+      } else {
+        state.blocks = appendBlockToTarget(without, dropMeta.containerId, dragged);
+      }
+      synth.playSnap();
+      afterBlocksMutated(dragged.id, null);
+    },
+    onHoverBlock: (blockId) => {
+      if (state.hoveredBlockId === blockId) return;
+      state.hoveredBlockId = blockId;
+      refreshPreviewPath();
+      renderCodePeek();
     },
   });
 
+  state.newlyAddedId = null;
   renderCodePeek();
 }
 
@@ -279,7 +339,7 @@ function stopExecution(clearHighlight = false) {
   updateRunButton();
 }
 
-function resetBoardOnly() {
+function resetBoardOnly(resetMessage = true) {
   stopExecution(true);
   state.traceRun = null;
   state.traceIndex = 0;
@@ -288,7 +348,10 @@ function resetBoardOnly() {
     const fresh = createWorldState(state.level);
     renderer.setWorld(fresh, state.level.world);
     updateCrystalsHud(fresh.crystals.size, fresh.totalCrystals);
-    setFeedback(t(lang(), 'feedback.ready'));
+    if (resetMessage) {
+      setMascotSay(lang() === 'en' ? state.level.hintEn : state.level.hintPt);
+    }
+    refreshPreviewPath();
   }
 }
 
@@ -301,6 +364,8 @@ function loadLevel(levelId) {
   state.blocks = state.level.starterProgram ? cloneBlocks(state.level.starterProgram) : [];
   state.undoStack = [];
   state.activeContainerId = null;
+  state.hintBlockType = null;
+  state.hoveredBlockId = null;
   state.traceRun = null;
   state.traceIndex = 0;
   els.winOverlay.classList.add('hidden');
@@ -310,8 +375,9 @@ function loadLevel(levelId) {
   renderer.setWorld(fresh, state.level.world);
   updateCrystalsHud(fresh.crystals.size, fresh.totalCrystals);
   updateTopbar();
-  setFeedback(t(lang(), 'feedback.ready'));
+  setMascotSay(lang() === 'en' ? state.level.hintEn : state.level.hintPt);
   renderEditor();
+  refreshPreviewPath();
 }
 
 function playEventSound(ev) {
@@ -349,7 +415,7 @@ function showWinOverlay(run) {
     els.winSub.textContent = t(lang(), 'win.allDone');
   }
 
-  setFeedback(t(lang(), `win.title${run.stars}`), 'good');
+  setMascotSay(t(lang(), `win.title${run.stars}`), 'good');
   els.winOverlay.classList.remove('hidden');
 }
 
@@ -360,16 +426,16 @@ function finishTrace(run) {
   } else if (run.status === 'failed') {
     state.failedBlockId = run.failedBlockId;
     const key = `feedback.${run.failureReason || 'hit_wall'}`;
-    setFeedback(t(lang(), key), 'warn');
+    setMascotSay(t(lang(), key), 'warn');
   } else if (run.status === 'infinite_loop') {
     state.failedBlockId = run.failedBlockId;
-    setFeedback(t(lang(), 'feedback.infinite_loop'), 'warn');
+    setMascotSay(t(lang(), 'feedback.infinite_loop'), 'warn');
   } else {
     const remaining = run.finalState.crystalsRemaining;
     if (remaining > 0) {
-      setFeedback(t(lang(), 'feedback.incomplete_crystals', { remaining }), 'warn');
+      setMascotSay(t(lang(), 'feedback.incomplete_crystals', { remaining }), 'warn');
     } else {
-      setFeedback(t(lang(), 'feedback.incomplete_goal'), 'warn');
+      setMascotSay(t(lang(), 'feedback.incomplete_goal'), 'warn');
     }
   }
   renderEditor();
@@ -388,6 +454,9 @@ function applyNextTraceEvent() {
   state.failedBlockId = ev.type === 'bump' ? ev.blockId : null;
   renderer.applyTraceEvent(ev);
   playEventSound(ev);
+  if (ev.type === 'collect') {
+    setMascotSay(t(lang(), 'mascot.crystal'), 'good');
+  }
   updateCrystalsHud(ev.crystalsRemaining, renderer.worldState.totalCrystals);
   renderEditor();
 
@@ -400,12 +469,13 @@ function applyNextTraceEvent() {
 
 function prepareTrace() {
   if (state.blocks.length === 0) {
-    setFeedback(t(lang(), 'feedback.empty_program'), 'warn');
+    setMascotSay(t(lang(), 'feedback.empty_program'), 'warn');
     synth.playBump();
     return false;
   }
   const fresh = createWorldState(state.level);
   renderer.setWorld(fresh, state.level.world);
+  renderer.setPreviewPath([], null);
   updateCrystalsHud(fresh.crystals.size, fresh.totalCrystals);
   els.winOverlay.classList.add('hidden');
 
@@ -425,7 +495,7 @@ function startRun() {
 
   state.isRunning = true;
   updateRunButton();
-  setFeedback(t(lang(), 'feedback.running'));
+  setMascotSay(t(lang(), 'feedback.running'));
 
   const tick = () => {
     if (!state.isRunning) return;
@@ -443,16 +513,51 @@ function stepOnce() {
   if (!state.traceRun || state.traceIndex >= state.traceRun.events.length) {
     if (!prepareTrace()) return;
   }
-  setFeedback(t(lang(), 'feedback.stepping'));
+  setMascotSay(t(lang(), 'feedback.stepping'));
   applyNextTraceEvent();
 }
 
+function triggerMascotGiggle() {
+  state.pokeCount += 1;
+  const idx = ((state.pokeCount - 1) % 4) + 1;
+  synth.playGiggle();
+  setMascotSay(t(lang(), `mascot.poke${idx}`), 'good');
+}
+
 // Event Listeners
+els.canvas.addEventListener('click', (event) => {
+  const rect = els.canvas.getBoundingClientRect();
+  const x = event.clientX - rect.left;
+  const y = event.clientY - rect.top;
+  if (renderer.tryPokeRobot(x, y)) {
+    triggerMascotGiggle();
+  }
+});
+
+els.mascotAvatarBtn.addEventListener('click', () => {
+  renderer.tryPokeRobot(
+    renderer.tileCenterX(renderer.renderX),
+    renderer.tileCenterY(renderer.renderY)
+  );
+  triggerMascotGiggle();
+});
+
+els.btnHint.addEventListener('click', () => {
+  if (!state.level) return;
+  // Smartly suggest the next block type from referenceSolution based on how many blocks the player placed
+  const ref = state.level.referenceSolution || [];
+  const nextRef = ref[Math.min(state.blocks.length, ref.length - 1)];
+  state.hintBlockType = nextRef?.type || state.level.firstBlockHint || 'move_right';
+  synth.playClick();
+  setMascotSay(t(lang(), 'mascot.hintBlock'), 'good');
+  renderEditor();
+});
+
 els.btnRun.addEventListener('click', startRun);
 els.btnStep.addEventListener('click', stepOnce);
 els.btnReset.addEventListener('click', () => {
   synth.playClick();
-  resetBoardOnly();
+  resetBoardOnly(true);
   renderEditor();
 });
 
@@ -468,9 +573,8 @@ els.btnUndo.addEventListener('click', () => {
   if (state.undoStack.length === 0) return;
   if (state.isRunning) stopExecution(true);
   state.blocks = state.undoStack.pop();
-  synth.playClick();
-  resetBoardOnly();
-  renderEditor();
+  synth.playRemove();
+  afterBlocksMutated(null, null);
 });
 
 els.btnClear.addEventListener('click', () => {
@@ -479,9 +583,8 @@ els.btnClear.addEventListener('click', () => {
   pushUndo();
   state.blocks = [];
   state.activeContainerId = null;
-  synth.playClick();
-  resetBoardOnly();
-  renderEditor();
+  synth.playRemove();
+  afterBlocksMutated(null, lang() === 'en' ? state.level.hintEn : state.level.hintPt);
 });
 
 els.btnSound.addEventListener('click', () => {
@@ -495,7 +598,7 @@ els.btnLang.addEventListener('click', () => {
   saveProgress(state.progress);
   synth.playClick();
   updateTopbar();
-  setFeedback(t(lang(), 'feedback.ready'));
+  setMascotSay(lang() === 'en' ? state.level.hintEn : state.level.hintPt);
   renderEditor();
 });
 
@@ -540,7 +643,7 @@ els.btnGarage.addEventListener('click', () => {
 
 els.winReplayBtn.addEventListener('click', () => {
   synth.playClick();
-  resetBoardOnly();
+  resetBoardOnly(true);
   renderEditor();
 });
 

@@ -42,8 +42,11 @@ export class SpaceCanvasRenderer {
     this.worldState = null;
     this.worldNumber = 1;
     this.skin = getSkinById('explorer');
-    this.mood = 'happy'; // 'happy' | 'excited' | 'oops' | 'thinking'
+    this.mood = 'happy'; // 'happy' | 'excited' | 'oops' | 'thinking' | 'giggle'
     this.bumpTimer = 0;
+    this.hopTimer = 0;
+    this.previewPath = [];
+    this.hoveredTile = null;
 
     // Interpolated robot visual state
     this.renderX = 0;
@@ -71,6 +74,30 @@ export class SpaceCanvasRenderer {
 
   setMood(mood) {
     this.mood = mood || 'happy';
+  }
+
+  setPreviewPath(points = [], hoveredTile = null) {
+    this.previewPath = Array.isArray(points) ? points : [];
+    this.hoveredTile = hoveredTile;
+  }
+
+  /**
+   * Returns true if a canvas-relative CSS coordinate hits the robot sprite,
+   * and triggers a playful hop + sparkle burst!
+   */
+  tryPokeRobot(cssX, cssY) {
+    if (!this.worldState) return false;
+    const rx = this.tileCenterX(this.renderX);
+    const ry = this.tileCenterY(this.renderY);
+    const dist = Math.hypot(cssX - rx, cssY - ry);
+    if (dist <= this.tileSize * 0.65) {
+      this.hopTimer = 0.5;
+      this.mood = 'giggle';
+      this.particles.emitSparkles(rx, ry - this.tileSize * 0.25, '#f472b6', 14);
+      this.particles.emitSparkles(rx, ry - this.tileSize * 0.25, '#facc15', 10);
+      return true;
+    }
+    return false;
   }
 
   /**
@@ -209,6 +236,12 @@ export class SpaceCanvasRenderer {
     if (this.bumpTimer > 0) {
       this.bumpTimer = Math.max(0, this.bumpTimer - dt);
     }
+    if (this.hopTimer > 0) {
+      this.hopTimer = Math.max(0, this.hopTimer - dt);
+      if (this.hopTimer === 0 && this.mood === 'giggle') {
+        this.mood = 'happy';
+      }
+    }
     this.particles.update(dt);
   }
 
@@ -237,11 +270,72 @@ export class SpaceCanvasRenderer {
       }
     }
 
+    // 2.5 Interactive dashed path preview (while building puzzle)
+    this._drawPreviewPath(ctx, ts);
+
     // 3. Expressive AstroBit Robot
     this._drawRobot(ctx, ts);
 
     // 4. Foreground particles & victory confetti
     this.particles.drawParticles(ctx);
+  }
+
+  _drawPreviewPath(ctx, ts) {
+    if (!this.previewPath || this.previewPath.length < 2) {
+      if (this.hoveredTile) {
+        this._drawHoveredHighlight(ctx, this.hoveredTile.x, this.hoveredTile.y, ts);
+      }
+      return;
+    }
+
+    ctx.save();
+    ctx.strokeStyle = 'rgba(250, 204, 21, 0.55)';
+    ctx.lineWidth = Math.max(3, ts * 0.06);
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.setLineDash([7, 7]);
+    ctx.lineDashOffset = -this._elapsed * 18;
+    ctx.beginPath();
+    this.previewPath.forEach((pt, idx) => {
+      const px = this.tileCenterX(pt.x);
+      const py = this.tileCenterY(pt.y);
+      if (idx === 0 || pt.teleported) {
+        ctx.moveTo(px, py);
+      } else {
+        ctx.lineTo(px, py);
+      }
+    });
+    ctx.stroke();
+
+    // Small numbered waypoint dots
+    ctx.setLineDash([]);
+    for (let i = 1; i < this.previewPath.length; i++) {
+      const pt = this.previewPath[i];
+      const px = this.tileCenterX(pt.x);
+      const py = this.tileCenterY(pt.y);
+      ctx.fillStyle = pt.bumped ? 'rgba(249, 115, 22, 0.9)' : 'rgba(250, 204, 21, 0.85)';
+      ctx.beginPath();
+      ctx.arc(px, py, pt.bumped ? 7 : 4.2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+
+    if (this.hoveredTile) {
+      this._drawHoveredHighlight(ctx, this.hoveredTile.x, this.hoveredTile.y, ts);
+    }
+  }
+
+  _drawHoveredHighlight(ctx, gx, gy, ts) {
+    const cx = this.tileCenterX(gx);
+    const cy = this.tileCenterY(gy);
+    const pulse = 0.92 + 0.08 * Math.sin(this._elapsed * 8);
+    ctx.save();
+    ctx.strokeStyle = '#facc15';
+    ctx.lineWidth = 3.5;
+    ctx.beginPath();
+    ctx.arc(cx, cy, ts * 0.42 * pulse, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
   }
 
   _drawTile(ctx, tile, gx, gy, ts, pal) {
@@ -422,12 +516,13 @@ export class SpaceCanvasRenderer {
     const cx = this.tileCenterX(this.renderX);
     const cy = this.tileCenterY(this.renderY);
     const bob = Math.sin(this._elapsed * 4) * 2.2;
+    const hop = this.hopTimer > 0 ? -Math.sin((this.hopTimer / 0.5) * Math.PI) * 18 : 0;
     const wobble = this.bumpTimer > 0 ? Math.sin(this._elapsed * 50) * 5 : 0;
     const r = ts * 0.34;
     const skin = this.skin;
 
     ctx.save();
-    ctx.translate(cx + wobble, cy + bob);
+    ctx.translate(cx + wobble, cy + bob + hop);
 
     // 1. Directional heading arrow in front of the robot (helps 5yo spatial orientation!)
     const arrowDist = r * 1.32;
@@ -527,7 +622,7 @@ export class SpaceCanvasRenderer {
         ctx.lineTo(ex - 4, eyeY + 4);
         ctx.stroke();
       }
-    } else if (this.mood === 'excited') {
+    } else if (this.mood === 'excited' || this.mood === 'giggle') {
       // Happy arc eyes ^ ^
       for (const ex of [leftEyeX, rightEyeX]) {
         ctx.beginPath();

@@ -92,6 +92,26 @@ export class SpaceSoundSynth {
     return this._tone({ freq: 520, endFreq: 680, duration: 0.05, type: 'triangle', gain: 0.09 });
   }
 
+  playSnap() {
+    // Crisp tactile jigsaw/LEGO click-clack snap
+    this._tone({ freq: 420, endFreq: 760, duration: 0.055, type: 'triangle', gain: 0.13 });
+    this._tone({ freq: 880, endFreq: 1120, duration: 0.045, delay: 0.035, type: 'sine', gain: 0.09 });
+    return !this.muted && Boolean(this.AudioContextCtor);
+  }
+
+  playRemove() {
+    return this._tone({ freq: 420, endFreq: 220, duration: 0.075, type: 'sine', gain: 0.09 });
+  }
+
+  playGiggle() {
+    // Playful R2-D2 style happy robot chirp when poked
+    const notes = [620, 840, 720, 1020];
+    notes.forEach((freq, idx) => {
+      this._tone({ freq, endFreq: freq * 1.12, duration: 0.065, delay: idx * 0.055, type: 'sine', gain: 0.11 });
+    });
+    return !this.muted && Boolean(this.AudioContextCtor);
+  }
+
   playStep() {
     return this._tone({ freq: 280, endFreq: 340, duration: 0.08, type: 'triangle', gain: 0.11 });
   }

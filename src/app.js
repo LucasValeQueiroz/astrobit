@@ -4,18 +4,19 @@
  * F1/F2 reusable Function stacks, Bug Hunt pre-filled levels, living mascot, and live path preview.
  */
 
-import { createWorldState } from './engine/grid.js?v=3.0';
-import { executeProgram, countProgramBlocks, normalizeProgram } from './engine/interpreter.js?v=3.0';
-import { transpileProgram } from './engine/transpiler.js?v=3.0';
-import { ALL_LEVELS, CAMPAIGN_WORLDS, getLevelById, getNextLevel } from './levels/index.js?v=3.0';
-import { SpaceCanvasRenderer } from './renderer/canvas-renderer.js?v=3.0';
-import { SpaceSoundSynth } from './audio/sound-synth.js?v=3.0';
+import { createWorldState } from './engine/grid.js?v=4.0';
+import { executeProgram, countProgramBlocks, normalizeProgram } from './engine/interpreter.js?v=4.0';
+import { transpileProgram } from './engine/transpiler.js?v=4.0';
+import { decodeCustomLevel } from './engine/custom-level.js?v=4.0';
+import { ALL_LEVELS, CAMPAIGN_WORLDS, getLevelById, getNextLevel } from './levels/index.js?v=4.0';
+import { SpaceCanvasRenderer } from './renderer/canvas-renderer.js?v=4.0';
+import { SpaceSoundSynth } from './audio/sound-synth.js?v=4.0';
 import {
   loadProgress,
   saveProgress,
   recordLevelCompletion,
   getTotalStars,
-} from './storage/progress.js?v=3.0';
+} from './storage/progress.js?v=4.0';
 import {
   createBlock,
   cloneBlocks,
@@ -28,15 +29,16 @@ import {
   findContainerExists,
   renderPalette,
   renderWorkspace,
-} from './ui/workspace.js?v=3.0';
-import { renderGarageModal } from './ui/modals.js?v=3.0';
+} from './ui/workspace.js?v=4.0';
+import { renderGarageModal } from './ui/modals.js?v=4.0';
 import {
   renderStoryCinematic,
   renderWorldArrivalModal,
   renderGalaxyJourneyMap,
-} from './ui/story-map.js?v=3.0';
-import { getLevelStory } from './story/campaign-story.js?v=3.0';
-import { t } from './ui/i18n.js?v=3.0';
+} from './ui/story-map.js?v=4.0';
+import { renderWorkshopModal } from './ui/workshop.js?v=4.0';
+import { getLevelStory } from './story/campaign-story.js?v=4.0';
+import { t } from './ui/i18n.js?v=4.0';
 
 const SPEED_CONFIG = {
   slow: { ms: 540, next: 'normal', labelKey: 'speedSlow' },
@@ -74,6 +76,7 @@ const els = {
   btnClear: document.getElementById('btn-clear'),
   btnStory: document.getElementById('btn-story'),
   btnLevels: document.getElementById('btn-levels'),
+  btnWorkshop: document.getElementById('btn-workshop'),
   btnGarage: document.getElementById('btn-garage'),
   btnCodeToggle: document.getElementById('btn-code-toggle'),
   btnSound: document.getElementById('btn-sound'),
@@ -177,10 +180,12 @@ function updateTopbar() {
   });
 
   if (state.level) {
-    els.levelBadge.textContent = t(lang(), 'levelLabel', {
-      world: state.level.world,
-      index: state.level.index,
-    });
+    els.levelBadge.textContent = state.level.isCustom
+      ? t(lang(), 'customBadge')
+      : t(lang(), 'levelLabel', {
+          world: state.level.world,
+          index: state.level.index,
+        });
     const title = lang() === 'en' ? state.level.titleEn : state.level.titlePt;
     els.missionTitle.textContent = state.level.isBugHunt
       ? `${t(lang(), 'bugHuntBadge')} ${title}`
@@ -474,6 +479,53 @@ function openJourneyMap({ initialWorld = null, flyFromLevelId = null, flyToLevel
   });
 }
 
+function openWorkshop(initialDraft = null) {
+  renderWorkshopModal(els.modalBackdrop, {
+    initialDraft: initialDraft || state.level?.workshopDraft || null,
+    savedLevels: state.progress.customLevels || [],
+    lang: lang(),
+    t,
+    synth,
+    onPlayCustom: (customLevel) => loadCustomLevel(customLevel),
+    onSaveCustom: (draftCopy) => {
+      const list = Array.isArray(state.progress.customLevels) ? [...state.progress.customLevels] : [];
+      const idx = list.findIndex((item) => item.title === draftCopy.title);
+      if (idx >= 0) list[idx] = draftCopy;
+      else list.unshift(draftCopy);
+      state.progress.customLevels = list.slice(0, 10);
+      saveProgress(state.progress);
+    },
+    onDeleteSaved: (idx) => {
+      if (!Array.isArray(state.progress.customLevels)) return;
+      state.progress.customLevels.splice(idx, 1);
+      saveProgress(state.progress);
+    },
+  });
+}
+
+function loadCustomLevel(customLevel) {
+  stopExecution(true);
+  state.level = customLevel;
+  state.program = createEmptyProgram();
+  state.undoStack = [];
+  state.activeScope = 'main';
+  state.activeContainerId = null;
+  state.hintBlockType = null;
+  state.hoveredBlockId = null;
+  state.traceRun = null;
+  state.traceIndex = 0;
+  els.winOverlay.classList.add('hidden');
+
+  const fresh = createWorldState(state.level);
+  renderer.setSkin(state.progress.skinId);
+  renderer.setWorld(fresh, state.level.world);
+  updateCrystalsHud(fresh.crystals.size, fresh.totalCrystals);
+  updateTopbar();
+  setMascotSay(lang() === 'en' ? state.level.hintEn : state.level.hintPt, 'good');
+  renderEditor();
+  refreshPreviewPath();
+}
+
 function loadLevel(levelId, { showArrivalIfNew = false } = {}) {
   stopExecution(true);
   state.level = getLevelById(levelId);
@@ -537,8 +589,10 @@ function playEventSound(ev) {
 }
 
 function showWinOverlay(run) {
-  state.progress = recordLevelCompletion(state.progress, state.level.id, run.stars);
-  saveProgress(state.progress);
+  if (!state.level.isCustom) {
+    state.progress = recordLevelCompletion(state.progress, state.level.id, run.stars);
+    saveProgress(state.progress);
+  }
   updateTopbar();
 
   const starsHtml = [1, 2, 3]
@@ -546,6 +600,22 @@ function showWinOverlay(run) {
     .join('');
   els.winStars.innerHTML = starsHtml;
   els.winTitle.textContent = t(lang(), `win.title${run.stars}`);
+
+  if (state.level.isCustom) {
+    const customNote = t(lang(), 'workshop.winCustomNote');
+    if (els.winStoryNote) els.winStoryNote.textContent = customNote;
+    els.winSub.textContent = t(lang(), `win.sub${run.stars}`, {
+      blocks: run.blockCount,
+      par: state.level.starThresholds.parBlocks,
+    });
+    els.winReplayBtn.textContent = `🔄 ${t(lang(), 'win.btnReplay')}`;
+    els.winNextBtn.classList.remove('hidden');
+    els.winNextBtn.textContent = t(lang(), 'workshop.btnBackWorkshop');
+    setMascotSay(customNote, 'good');
+    els.winOverlay.classList.remove('hidden');
+    return;
+  }
+
   const lvlStory = getLevelStory(state.level.id);
   if (els.winStoryNote) {
     els.winStoryNote.textContent = lang() === 'en' ? lvlStory.winEn : lvlStory.winPt;
@@ -793,6 +863,11 @@ els.btnLevels.addEventListener('click', () => {
   openJourneyMap({ initialWorld: state.level?.world || 1 });
 });
 
+els.btnWorkshop?.addEventListener('click', () => {
+  synth.playClick();
+  openWorkshop();
+});
+
 els.btnGarage.addEventListener('click', () => {
   synth.playClick();
   renderGarageModal(els.modalBackdrop, state.progress, {
@@ -814,8 +889,13 @@ els.winReplayBtn.addEventListener('click', () => {
 });
 
 els.winNextBtn.addEventListener('click', () => {
-  const next = getNextLevel(state.level.id);
   els.winOverlay.classList.add('hidden');
+  if (state.level.isCustom) {
+    synth.playClick();
+    openWorkshop(state.level.workshopDraft);
+    return;
+  }
+  const next = getNextLevel(state.level.id);
   if (next) {
     synth.playRocketLaunch();
     if (next.world !== state.level.world) {
@@ -871,9 +951,18 @@ window.addEventListener('keydown', (event) => {
 });
 
 renderer.start();
-loadLevel(state.progress.currentLevelId || 'w1-1', { showArrivalIfNew: false });
 
-// First-time players start with the "Operação: Luz da Terra!" intro cinematic -> Animated Galaxy Map!
-if (!state.progress.seenIntro) {
-  openStoryModal('intro', { openMapAfter: true });
+// Support instant shared Creative Workshop links (`?custom=...`)!
+const sharedCustomParam = new URLSearchParams(globalThis.location?.search || '').get('custom');
+const sharedCustomLevel = sharedCustomParam ? decodeCustomLevel(sharedCustomParam) : null;
+
+if (sharedCustomLevel) {
+  loadCustomLevel(sharedCustomLevel);
+} else {
+  loadLevel(state.progress.currentLevelId || 'w1-1', { showArrivalIfNew: false });
+
+  // First-time players start with the "Operação: Luz da Terra!" intro cinematic -> Animated Galaxy Map!
+  if (!state.progress.seenIntro) {
+    openStoryModal('intro', { openMapAfter: true });
+  }
 }

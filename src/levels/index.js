@@ -2,11 +2,11 @@
  * AstroBit Campaign Levels Index.
  */
 
-import { WORLD_1_LEVELS } from './world1-sequencia.js?v=3.0';
-import { WORLD_2_LEVELS } from './world2-loops.js?v=3.0';
-import { WORLD_3_LEVELS } from './world3-sensores.js?v=3.0';
-import { WORLD_4_LEVELS } from './world4-funcoes.js?v=3.0';
-import { WORLD_5_LEVELS } from './world5-desafios.js?v=3.0';
+import { WORLD_1_LEVELS } from './world1-sequencia.js?v=4.0';
+import { WORLD_2_LEVELS } from './world2-loops.js?v=4.0';
+import { WORLD_3_LEVELS } from './world3-sensores.js?v=4.0';
+import { WORLD_4_LEVELS } from './world4-funcoes.js?v=4.0';
+import { WORLD_5_LEVELS } from './world5-desafios.js?v=4.0';
 
 export const CAMPAIGN_WORLDS = [
   {

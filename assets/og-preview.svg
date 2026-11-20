@@ -1,0 +1,108 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <radialGradient id="bgGrad" cx="35%" cy="25%" r="80%">
+      <stop offset="0%" stop-color="#1b2a5e"/>
+      <stop offset="55%" stop-color="#0d1533"/>
+      <stop offset="100%" stop-color="#070b1a"/>
+    </radialGradient>
+    <linearGradient id="titleGrad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#38bdf8"/>
+      <stop offset="50%" stop-color="#a855f7"/>
+      <stop offset="100%" stop-color="#facc15"/>
+    </linearGradient>
+    <linearGradient id="greenGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#34d399"/>
+      <stop offset="100%" stop-color="#047857"/>
+    </linearGradient>
+    <linearGradient id="purpleGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#c084fc"/>
+      <stop offset="100%" stop-color="#7e22ce"/>
+    </linearGradient>
+    <linearGradient id="cyanGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#22d3ee"/>
+      <stop offset="100%" stop-color="#0e7490"/>
+    </linearGradient>
+    <linearGradient id="goldGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fbbf24"/>
+      <stop offset="100%" stop-color="#b45309"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="630" fill="url(#bgGrad)"/>
+
+  <!-- Stars -->
+  <g fill="#ffffff" opacity="0.75">
+    <circle cx="90" cy="70" r="2.5"/>
+    <circle cx="240" cy="110" r="2"/>
+    <circle cx="480" cy="60" r="2.8"/>
+    <circle cx="670" cy="95" r="2"/>
+    <circle cx="880" cy="58" r="2.6"/>
+    <circle cx="1110" cy="120" r="3"/>
+    <circle cx="1050" cy="540" r="2.2"/>
+    <circle cx="150" cy="550" r="2.5"/>
+    <circle cx="610" cy="575" r="2"/>
+  </g>
+
+  <!-- Curved Galaxy Constellation Arc -->
+  <path d="M 80 515 Q 340 420 620 495 T 1120 460" fill="none" stroke="#facc15" stroke-width="3.5" stroke-dasharray="10 8" opacity="0.4"/>
+
+  <!-- Left Column: Brand & Highlights -->
+  <g transform="translate(86, 115)">
+    <!-- Cute AstroBit Icon -->
+    <rect x="0" y="0" width="84" height="80" rx="22" fill="#38bdf8" stroke="#0284c7" stroke-width="4"/>
+    <line x1="42" y1="0" x2="42" y2="-22" stroke="#cbd5e1" stroke-width="5"/>
+    <circle cx="42" cy="-24" r="8" fill="#facc15"/>
+    <rect x="14" y="20" width="56" height="34" rx="12" fill="#0f172a"/>
+    <circle cx="31" cy="37" r="6" fill="#7dd3fc"/>
+    <circle cx="53" cy="37" r="6" fill="#7dd3fc"/>
+
+    <text x="108" y="58" fill="url(#titleGrad)" font-family="Segoe UI, system-ui, sans-serif" font-size="70" font-weight="900">AstroBit</text>
+    <text x="0" y="132" fill="#f8fafc" font-family="Segoe UI, system-ui, sans-serif" font-size="34" font-weight="800">Jogo Espacial de Programação</text>
+    <text x="0" y="176" fill="#94a3b8" font-family="Segoe UI, system-ui, sans-serif" font-size="24" font-weight="600">Operação: Luz da Terra! · PT-BR &amp; EN · Zero Dependências</text>
+
+    <!-- Feature Pills -->
+    <g transform="translate(0, 218)" font-family="Segoe UI, system-ui, sans-serif" font-size="20" font-weight="700">
+      <rect x="0" y="0" width="235" height="46" rx="23" fill="#18234a" stroke="#38bdf8" stroke-width="2"/>
+      <text x="118" y="30" text-anchor="middle" fill="#e0f2fe">🌌 5 Mundos · 30 Fases</text>
+
+      <rect x="252" y="0" width="245" height="46" rx="23" fill="#18234a" stroke="#a855f7" stroke-width="2"/>
+      <text x="375" y="30" text-anchor="middle" fill="#f3e8ff">🧩 Quebra-Cabeça SVG</text>
+
+      <rect x="0" y="64" width="265" height="46" rx="23" fill="#18234a" stroke="#facc15" stroke-width="2"/>
+      <text x="132" y="94" text-anchor="middle" fill="#fef08a">👀 Código JS &amp; Python</text>
+
+      <rect x="282" y="64" width="255" height="46" rx="23" fill="#18234a" stroke="#34d399" stroke-width="2"/>
+      <text x="410" y="94" text-anchor="middle" fill="#d1fae5">🛠️ Oficina Criadora</text>
+    </g>
+  </g>
+
+  <!-- Right Column: Interlocking Jigsaw Preview -->
+  <g transform="translate(740, 128)" font-family="Segoe UI, system-ui, sans-serif" font-weight="800" fill="#ffffff">
+    <!-- Board Backdrop -->
+    <rect x="-26" y="-26" width="404" height="394" rx="24" fill="#070d20" stroke="#2a3b75" stroke-width="3" stroke-dasharray="10 8"/>
+
+    <!-- Hat -->
+    <rect x="0" y="0" width="320" height="58" rx="24" fill="url(#greenGrad)" stroke="rgba(255,255,255,0.35)" stroke-width="2.5"/>
+    <text x="26" y="37" font-size="24">🚩 Quando ▶️ Rodar</text>
+
+    <!-- Repeat Clamp -->
+    <rect x="0" y="62" width="352" height="56" rx="14" fill="url(#purpleGrad)" stroke="rgba(255,255,255,0.35)" stroke-width="2.5"/>
+    <text x="26" y="98" font-size="23">🔁 Repetir  3×</text>
+    <rect x="0" y="116" width="24" height="148" fill="#7e22ce"/>
+
+    <!-- Child 1: Right -->
+    <rect x="34" y="124" width="290" height="56" rx="12" fill="url(#cyanGrad)" stroke="rgba(255,255,255,0.35)" stroke-width="2.5"/>
+    <text x="60" y="160" font-size="23">➡️ Direita</text>
+
+    <!-- Child 2: Collect -->
+    <rect x="34" y="186" width="290" height="56" rx="12" fill="url(#goldGrad)" stroke="rgba(255,255,255,0.35)" stroke-width="2.5"/>
+    <text x="60" y="222" font-size="23">💎 Coletar</text>
+
+    <!-- Repeat Bottom -->
+    <rect x="0" y="254" width="352" height="24" rx="10" fill="#7e22ce" stroke="rgba(255,255,255,0.3)" stroke-width="2"/>
+
+    <!-- Live JS preview footer -->
+    <rect x="0" y="294" width="352" height="52" rx="12" fill="#0d1533" stroke="#38bdf8" stroke-width="1.8"/>
+    <text x="18" y="327" fill="#7dd3fc" font-family="Consolas, monospace" font-size="18">for (let i=0; i&lt;3; i++) robot.moveRight();</text>
+  </g>
+</svg>

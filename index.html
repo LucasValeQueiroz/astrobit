@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AstroBit — Jogo Espacial de Programação para Crianças</title>
+  <meta name="description" content="Aprenda lógica de programação, loops e código real (JavaScript e Python) guiando o robô AstroBit pelo espaço!" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🤖</text></svg>" />
+  <link rel="stylesheet" href="src/css/styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <span class="brand-logo" aria-hidden="true">🤖</span>
+        <div>
+          <strong class="brand-name">AstroBit</strong>
+          <span id="level-badge" class="level-pill">Fase 1-1</span>
+        </div>
+      </div>
+
+      <nav class="topbar-actions" aria-label="Game controls">
+        <span id="total-stars-pill" class="stars-pill">⭐ 0 / 36</span>
+        <button id="btn-levels" class="nav-btn" type="button">🗺️ <span data-i18n="navLevels">Fases</span></button>
+        <button id="btn-garage" class="nav-btn" type="button">🎨 <span data-i18n="navGarage">Garagem</span></button>
+        <button id="btn-code-toggle" class="nav-btn" type="button">👀 <span data-i18n="navCode">Ver Código</span></button>
+        <button id="btn-sound" class="nav-btn" type="button" aria-label="Sound">🔊</button>
+        <button id="btn-lang" class="nav-btn" type="button">PT</button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="game-layout">
+    <!-- LEFT: Interactive Space Stage -->
+    <section class="stage-column">
+      <div class="mission-banner">
+        <div class="mission-title-row">
+          <h1 id="mission-title">Primeiros Passos</h1>
+          <span id="crystals-pill" class="mission-stat">💎 0/1</span>
+        </div>
+        <p id="mission-hint" class="mission-hint"></p>
+      </div>
+
+      <div class="canvas-frame">
+        <canvas id="game-canvas" aria-label="AstroBit game board"></canvas>
+
+        <!-- Victory celebration overlay -->
+        <div id="win-overlay" class="win-overlay hidden" role="dialog" aria-live="polite">
+          <div class="win-card">
+            <div id="win-stars" class="win-stars"></div>
+            <h2 id="win-title"></h2>
+            <p id="win-sub" class="win-sub"></p>
+            <div class="win-actions">
+              <button id="win-replay-btn" class="btn btn-secondary" type="button">🔄 Jogar de novo</button>
+              <button id="win-next-btn" class="btn btn-run" type="button">Próxima Fase ➡️</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="controls-bar">
+        <button id="btn-run" class="btn btn-run" type="button">▶️ <span data-i18n="btnRun">Rodar</span></button>
+        <button id="btn-step" class="btn btn-step" type="button">⏭️ <span data-i18n="btnStep">1 Passo</span></button>
+        <button id="btn-reset" class="btn btn-secondary" type="button">🔄 <span data-i18n="btnReset">Reiniciar</span></button>
+        <button id="btn-speed" class="btn btn-secondary" type="button">🚀 Normal</button>
+      </div>
+
+      <div id="feedback-banner" class="feedback-banner" role="status" aria-live="polite"></div>
+    </section>
+
+    <!-- RIGHT: Block Palette, Program Workspace & Live Code Peek -->
+    <section class="editor-column">
+      <div class="panel">
+        <div class="panel-head">
+          <h2 data-i18n="paletteTitle">Blocos de Comando</h2>
+          <span id="blocks-counter" class="counter-pill">0 blocos</span>
+        </div>
+        <div id="block-palette" class="block-palette"></div>
+      </div>
+
+      <div class="panel workspace-panel">
+        <div class="panel-head">
+          <h2 data-i18n="workspaceTitle">Programa do Robô</h2>
+          <div class="head-actions">
+            <button id="btn-undo" class="mini-text-btn" type="button">↩️ <span data-i18n="btnUndo">Desfazer</span></button>
+            <button id="btn-clear" class="mini-text-btn danger" type="button">🗑️ <span data-i18n="btnClear">Limpar</span></button>
+          </div>
+        </div>
+        <p class="small muted" data-i18n="workspaceHint"></p>
+        <div id="block-workspace" class="block-workspace"></div>
+      </div>
+
+      <div id="code-peek-panel" class="panel code-peek-panel hidden">
+        <div class="panel-head">
+          <div>
+            <h2>👀 <span data-i18n="codePeekTitle">Código Real ao Vivo</span></h2>
+            <p class="small muted" data-i18n="codePeekSub"></p>
+          </div>
+          <div class="code-lang-tabs">
+            <button type="button" class="tab-btn active" data-code-lang="js">JavaScript</button>
+            <button type="button" class="tab-btn" data-code-lang="python">Python</button>
+          </div>
+        </div>
+        <div id="code-peek-lines" class="code-peek-lines"></div>
+      </div>
+    </section>
+  </main>
+
+  <div id="modal-backdrop" class="modal-backdrop hidden" role="dialog" aria-modal="true"></div>
+
+  <script type="module" src="src/app.js"></script>
+</body>
+</html>

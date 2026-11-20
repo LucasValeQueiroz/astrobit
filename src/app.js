@@ -17,6 +17,7 @@ import {
 import { ALL_LEVELS, CAMPAIGN_WORLDS, getLevelById, getNextLevel } from './levels/index.js?v=5.0';
 import { SpaceCanvasRenderer } from './renderer/canvas-renderer.js?v=5.0';
 import { SpaceSoundSynth } from './audio/sound-synth.js?v=4.2';
+import { SpaceMusicEngine } from './audio/music-engine.js?v=5.0';
 import {
   loadProgress,
   saveProgress,
@@ -39,13 +40,9 @@ import {
 } from './ui/workspace.js?v=4.0';
 import { renderGarageModal, renderBadgesModal } from './ui/modals.js?v=5.0';
 import { installTactilePointerDnD } from './ui/touch-dnd.js?v=5.0';
-import {
-  renderStoryCinematic,
-  renderWorldArrivalModal,
-  renderGalaxyJourneyMap,
-} from './ui/story-map.js?v=4.2';
-import { renderWorkshopModal } from './ui/workshop.js?v=4.2';
-import { getLevelStory } from './story/campaign-story.js?v=4.0';
+import { renderStoryCinematic, renderWorldArrivalModal, renderGalaxyJourneyMap } from './ui/story-map.js?v=5.0';
+import { renderWorkshopModal } from './ui/workshop.js?v=5.0';
+import { getLevelStory } from './story/campaign-story.js?v=5.0';
 import { t } from './ui/i18n.js?v=4.0';
 
 const SPEED_CONFIG = {
@@ -100,6 +97,7 @@ const els = {
 
 const synth = new SpaceSoundSynth();
 const renderer = new SpaceCanvasRenderer(els.canvas);
+let music = null;
 
 function createEmptyProgram() {
   return { main: [], functions: { F1: [], F2: [] } };
@@ -194,6 +192,10 @@ function updateTopbar() {
   }
   els.btnSound.textContent = synth.isMuted() ? '🔇' : '🔊';
   els.btnSound.title = t(lang(), synth.isMuted() ? 'navSoundOff' : 'navSoundOn');
+  if (els.btnMusic && music) {
+    els.btnMusic.textContent = music.isMuted() ? '🔕' : '🎵';
+    els.btnMusic.classList.toggle('active', !music.isMuted());
+  }
   els.btnLang.textContent = lang().toUpperCase();
   els.btnCodeToggle.classList.toggle('active', state.codePeekOpen);
 
@@ -206,6 +208,11 @@ function updateTopbar() {
   });
 
   if (state.level) {
+    music?.setWorld(state.level.world || 1);
+    music?.setTempoState({
+      turbo: state.progress.speed === 'fast',
+      running: state.isRunning,
+    });
     els.levelBadge.textContent = state.level.isDaily
       ? lang() === 'en'
         ? '🔥 Daily'
@@ -826,6 +833,7 @@ function startRun() {
   if (!prepareTrace()) return;
 
   state.isRunning = true;
+  music?.setTempoState({ turbo: state.progress.speed === 'fast', running: true });
   updateRunButton();
   setMascotSay(t(lang(), 'feedback.running'));
 
@@ -902,6 +910,16 @@ els.btnReset.addEventListener('click', () => {
 els.btnSpeed.addEventListener('click', () => {
   const cur = SPEED_CONFIG[state.progress.speed] || SPEED_CONFIG.normal;
   state.progress.speed = cur.next;
+  saveProgress(state.progress);
+  music?.setTempoState({ turbo: state.progress.speed === 'fast', running: state.isRunning });
+  synth.playClick();
+  updateTopbar();
+});
+
+els.btnMusic?.addEventListener('click', () => {
+  if (!music) return;
+  const muted = music.toggleMute();
+  state.progress.musicMuted = muted;
   saveProgress(state.progress);
   synth.playClick();
   updateTopbar();
@@ -1072,6 +1090,16 @@ window.addEventListener('keydown', (event) => {
     els.btnReset.click();
   }
 });
+
+music = new SpaceMusicEngine(state.progress.musicMuted);
+// Start procedural space soundtrack gently on first user click/tap when unmuted
+window.addEventListener(
+  'pointerdown',
+  () => {
+    if (music && !music.isMuted()) music.unlockAndStart();
+  },
+  { once: true }
+);
 
 renderer.start();
 installTactilePointerDnD({

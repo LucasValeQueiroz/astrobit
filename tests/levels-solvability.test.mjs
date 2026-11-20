@@ -3,9 +3,9 @@ import assert from 'node:assert/strict';
 import { ALL_LEVELS, CAMPAIGN_WORLDS } from '../src/levels/index.js';
 import { validateLevel } from '../src/engine/validator.js';
 
-test('every campaign level across all 5 worlds (30 levels) is valid and mathematically proven to win with 3 stars', () => {
-  assert.equal(CAMPAIGN_WORLDS.length, 5);
-  assert.equal(ALL_LEVELS.length, 30);
+test('every campaign level across all 6 worlds (36 levels) is valid and mathematically proven to win with 3 stars', () => {
+  assert.equal(CAMPAIGN_WORLDS.length, 6);
+  assert.equal(ALL_LEVELS.length, 36);
 
   const seenIds = new Set();
   let bugHuntCount = 0;

@@ -64,6 +64,19 @@ export const WORKSHOP_TEMPLATES = [
       '#######',
     ],
   },
+  {
+    id: 'wormhole',
+    namePt: 'Buraco de Minhoca',
+    nameEn: 'Wormhole',
+    world: 6,
+    parBlocks: 6,
+    extras: ['repeat', 'call_f1'],
+    rows: [
+      '         ',
+      '>*1  1*2 ',
+      '     2*G ',
+    ],
+  },
 ];
 
 /**
@@ -191,7 +204,7 @@ export function validateWorkshopDraft(draft) {
  */
 export function normalizeCustomLevel(draft, idOverride = null) {
   const title = String(draft?.title || 'Missão da Oficina').trim().slice(0, 48) || 'Missão da Oficina';
-  const world = Math.max(1, Math.min(5, Math.floor(Number(draft?.world) || 1)));
+  const world = Math.max(1, Math.min(6, Math.floor(Number(draft?.world) || 1)));
   const parBlocks = Math.max(1, Math.min(40, Math.floor(Number(draft?.parBlocks) || 8)));
   const goodBlocks = Math.max(parBlocks + 2, Math.floor(Number(draft?.goodBlocks) || parBlocks + 4));
 

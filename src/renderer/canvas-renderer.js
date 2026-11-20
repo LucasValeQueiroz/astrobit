@@ -148,11 +148,15 @@ export class SpaceCanvasRenderer {
       this.particles.emitSparkles(px, py, col, 18);
     } else if (event.type === 'teleport') {
       const col = PORTAL_COLORS[event.portalId] || '#c084fc';
-      this.particles.emitTeleport(this.tileCenterX(event.fromX), this.tileCenterY(event.fromY), col);
+      const fx = this.tileCenterX(event.fromX);
+      const fy = this.tileCenterY(event.fromY);
+      this.particles.emitTeleport(fx, fy, col);
       // Snap visual coordinates straight to exit portal so robot doesn't fly across the board
       this.renderX = event.x;
       this.renderY = event.y;
       this.particles.emitTeleport(px, py, col);
+      this._warpBeam = { x1: fx, y1: fy, x2: px, y2: py, color: col, ttl: 0.42, maxTtl: 0.42 };
+      this.mood = 'excited';
     } else if (event.type === 'bump') {
       this.mood = 'oops';
       this.bumpTimer = 0.45;
@@ -280,6 +284,28 @@ export class SpaceCanvasRenderer {
 
     // 3. Expressive AstroBit Robot
     this._drawRobot(ctx, ts);
+
+    // 3.5 Quantum warp beam flash when teleporting through portals
+    if (this._warpBeam && this._warpBeam.ttl > 0) {
+      const b = this._warpBeam;
+      const alpha = Math.max(0, b.ttl / b.maxTtl);
+      ctx.save();
+      ctx.globalAlpha = alpha * 0.85;
+      ctx.strokeStyle = b.color;
+      ctx.shadowColor = b.color;
+      ctx.shadowBlur = 16;
+      ctx.lineWidth = Math.max(3, ts * 0.1 * alpha);
+      ctx.beginPath();
+      ctx.moveTo(b.x1, b.y1);
+      ctx.lineTo(b.x2, b.y2);
+      ctx.stroke();
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = Math.max(1.5, ts * 0.04 * alpha);
+      ctx.stroke();
+      ctx.restore();
+      b.ttl -= 1 / 60;
+      if (b.ttl <= 0) this._warpBeam = null;
+    }
 
     // 4. Foreground particles & victory confetti
     this.particles.drawParticles(ctx);
@@ -471,23 +497,51 @@ export class SpaceCanvasRenderer {
       ctx.restore();
     }
 
-    // Paired space portal
+    // Paired space portal (hypnotic multi-ring wormhole vortex)
     if (tile.type === 'portal') {
       const col = PORTAL_COLORS[tile.portalId] || '#c084fc';
+      const pulse = 0.88 + Math.sin(this._elapsed * 4.5 + gx + gy) * 0.12;
       ctx.save();
       ctx.translate(cx, cy);
-      ctx.rotate(this._elapsed * 2.2);
+      // Soft glowing wormhole aura
+      const aura = ctx.createRadialGradient(0, 0, size * 0.04, 0, 0, size * 0.42 * pulse);
+      aura.addColorStop(0, `${col}cc`);
+      aura.addColorStop(0.55, `${col}44`);
+      aura.addColorStop(1, `${col}00`);
+      ctx.fillStyle = aura;
+      ctx.beginPath();
+      ctx.arc(0, 0, size * 0.42 * pulse, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Outer swirling vortex ring
+      ctx.save();
+      ctx.rotate(this._elapsed * 2.4);
       ctx.strokeStyle = col;
       ctx.lineWidth = 3;
       ctx.beginPath();
-      ctx.arc(0, 0, size * 0.32, 0, Math.PI * 1.5);
+      ctx.arc(0, 0, size * 0.34, 0, Math.PI * 1.45);
       ctx.stroke();
-      ctx.rotate(-this._elapsed * 4.4);
+      ctx.beginPath();
+      ctx.arc(0, 0, size * 0.34, Math.PI * 1.65, Math.PI * 1.9);
+      ctx.stroke();
+      ctx.restore();
+
+      // Inner counter-rotating ring
+      ctx.save();
+      ctx.rotate(-this._elapsed * 3.8);
       ctx.strokeStyle = '#ffffff';
       ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.arc(0, 0, size * 0.18, 0, Math.PI * 1.3);
+      ctx.arc(0, 0, size * 0.21, 0, Math.PI * 1.35);
       ctx.stroke();
+      ctx.restore();
+
+      // Portal pair number badge so kids immediately spot matching pairs
+      ctx.fillStyle = '#ffffff';
+      ctx.font = `800 ${Math.max(10, Math.round(size * 0.21))}px system-ui, sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(String(tile.portalId), 0, 1);
       ctx.restore();
     }
 

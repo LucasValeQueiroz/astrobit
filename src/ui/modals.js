@@ -33,7 +33,7 @@ export function renderLevelsModal(container, progress, currentLevelId, { lang, t
         return `
           <button type="button" class="level-tile ${isCurrent ? 'current' : ''} ${earned > 0 ? 'completed' : ''}" data-level-id="${lvl.id}">
             <span class="level-num">${lvl.world}-${lvl.index}</span>
-            <span class="level-title">${escapeHtml(title)}</span>
+            <span class="level-title">${lvl.isBugHunt ? '🐛 ' : ''}${escapeHtml(title)}</span>
             <span class="level-stars">${renderStarsBadge(earned)}</span>
           </button>
         `;

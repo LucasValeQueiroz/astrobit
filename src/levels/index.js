@@ -5,6 +5,8 @@
 import { WORLD_1_LEVELS } from './world1-sequencia.js';
 import { WORLD_2_LEVELS } from './world2-loops.js';
 import { WORLD_3_LEVELS } from './world3-sensores.js';
+import { WORLD_4_LEVELS } from './world4-funcoes.js';
+import { WORLD_5_LEVELS } from './world5-desafios.js';
 
 export const CAMPAIGN_WORLDS = [
   {
@@ -33,6 +35,24 @@ export const CAMPAIGN_WORLDS = [
     conceptPt: 'Sensores, Portais & Lasers',
     conceptEn: 'Sensors, Portals & Lasers',
     levels: WORLD_3_LEVELS,
+  },
+  {
+    world: 4,
+    icon: '🛰️',
+    namePt: 'Estação das Funções',
+    nameEn: 'Function Station',
+    conceptPt: 'Funções Reutilizáveis (F1/F2)',
+    conceptEn: 'Reusable Functions (F1/F2)',
+    levels: WORLD_4_LEVELS,
+  },
+  {
+    world: 5,
+    icon: '🌌',
+    namePt: 'Nebulosa do Engenheiro',
+    nameEn: 'Engineer Nebula',
+    conceptPt: 'Caça ao Bug & Desafio Final',
+    conceptEn: 'Bug Hunt & Grand Finale',
+    levels: WORLD_5_LEVELS,
   },
 ];
 

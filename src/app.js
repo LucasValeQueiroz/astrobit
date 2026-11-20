@@ -8,15 +8,22 @@ import { createWorldState } from './engine/grid.js?v=4.0';
 import { executeProgram, countProgramBlocks, normalizeProgram } from './engine/interpreter.js?v=4.0';
 import { transpileProgram } from './engine/transpiler.js?v=4.0';
 import { decodeCustomLevel } from './engine/custom-level.js?v=4.0';
-import { ALL_LEVELS, CAMPAIGN_WORLDS, getLevelById, getNextLevel } from './levels/index.js?v=4.0';
-import { SpaceCanvasRenderer } from './renderer/canvas-renderer.js?v=4.2';
+import {
+  generateDailyLevel,
+  getTodayDateKey,
+  computeDailyStreak,
+  recordDailyCompletion,
+} from './engine/daily-challenge.js?v=5.0';
+import { ALL_LEVELS, CAMPAIGN_WORLDS, getLevelById, getNextLevel } from './levels/index.js?v=5.0';
+import { SpaceCanvasRenderer } from './renderer/canvas-renderer.js?v=5.0';
 import { SpaceSoundSynth } from './audio/sound-synth.js?v=4.2';
 import {
   loadProgress,
   saveProgress,
   recordLevelCompletion,
   getTotalStars,
-} from './storage/progress.js?v=4.0';
+} from './storage/progress.js?v=5.0';
+import { SPACE_BADGES, evaluateBadges } from './storage/achievements.js?v=5.0';
 import {
   createBlock,
   cloneBlocks,
@@ -30,7 +37,7 @@ import {
   renderPalette,
   renderWorkspace,
 } from './ui/workspace.js?v=4.0';
-import { renderGarageModal } from './ui/modals.js?v=4.0';
+import { renderGarageModal, renderBadgesModal } from './ui/modals.js?v=5.0';
 import {
   renderStoryCinematic,
   renderWorldArrivalModal,
@@ -75,13 +82,19 @@ const els = {
   btnUndo: document.getElementById('btn-undo'),
   btnClear: document.getElementById('btn-clear'),
   btnStory: document.getElementById('btn-story'),
+  btnDaily: document.getElementById('btn-daily'),
+  dailyBtnLabel: document.getElementById('daily-btn-label'),
+  btnBadges: document.getElementById('btn-badges'),
+  badgesCount: document.getElementById('badges-count'),
   btnLevels: document.getElementById('btn-levels'),
   btnWorkshop: document.getElementById('btn-workshop'),
   btnGarage: document.getElementById('btn-garage'),
   btnCodeToggle: document.getElementById('btn-code-toggle'),
+  btnMusic: document.getElementById('btn-music'),
   btnSound: document.getElementById('btn-sound'),
   btnLang: document.getElementById('btn-lang'),
   modalBackdrop: document.getElementById('modal-backdrop'),
+  toastStack: document.getElementById('achievement-toast-stack'),
 };
 
 const synth = new SpaceSoundSynth();
@@ -167,6 +180,17 @@ function updateTopbar() {
   const maxStars = ALL_LEVELS.length * 3;
   const totalStars = getTotalStars(state.progress);
   els.totalStarsPill.textContent = `⭐ ${totalStars} / ${maxStars}`;
+  if (els.badgesCount) {
+    const unlockedCount = Array.isArray(state.progress.unlockedBadges)
+      ? state.progress.unlockedBadges.length
+      : 0;
+    els.badgesCount.textContent = `${unlockedCount}/${SPACE_BADGES.length}`;
+  }
+  if (els.dailyBtnLabel) {
+    const streak = computeDailyStreak(state.progress.dailyCompletedDates);
+    const baseLabel = lang() === 'en' ? 'Daily' : 'Diária';
+    els.dailyBtnLabel.textContent = streak > 0 ? `${baseLabel} ×${streak}` : baseLabel;
+  }
   els.btnSound.textContent = synth.isMuted() ? '🔇' : '🔊';
   els.btnSound.title = t(lang(), synth.isMuted() ? 'navSoundOff' : 'navSoundOn');
   els.btnLang.textContent = lang().toUpperCase();
@@ -181,7 +205,11 @@ function updateTopbar() {
   });
 
   if (state.level) {
-    els.levelBadge.textContent = state.level.isCustom
+    els.levelBadge.textContent = state.level.isDaily
+      ? lang() === 'en'
+        ? '🔥 Daily'
+        : '🔥 Diária'
+      : state.level.isCustom
       ? t(lang(), 'customBadge')
       : t(lang(), 'levelLabel', {
           world: state.level.world,
@@ -595,11 +623,51 @@ function playEventSound(ev) {
   else if (ev.type === 'win') synth.playWin();
 }
 
+function showBadgeToast(badge) {
+  if (!els.toastStack || !badge) return;
+  const isEn = lang() === 'en';
+  const toast = document.createElement('div');
+  toast.className = 'achievement-toast';
+  toast.innerHTML = `
+    <span class="toast-icon" aria-hidden="true">${badge.icon}</span>
+    <div class="toast-body">
+      <span class="toast-kicker">${isEn ? '🏆 Medal Unlocked!' : '🏆 Medalha Desbloqueada!'}</span>
+      <strong>${escapeHtml(isEn ? badge.nameEn : badge.namePt)}</strong>
+    </div>
+  `;
+  els.toastStack.appendChild(toast);
+  setTimeout(() => {
+    toast.classList.add('toast-out');
+    setTimeout(() => toast.remove(), 350);
+  }, 4200);
+}
+
+function checkAndAwardBadges(context = {}) {
+  const { unlockedBadges, newlyUnlocked } = evaluateBadges(state.progress, context);
+  if (newlyUnlocked.length > 0) {
+    state.progress = { ...state.progress, unlockedBadges };
+    saveProgress(state.progress);
+    synth.playFanfare();
+    newlyUnlocked.forEach((badge, idx) => {
+      setTimeout(() => showBadgeToast(badge), idx * 450);
+    });
+  }
+}
+
 function showWinOverlay(run) {
-  if (!state.level.isCustom) {
+  if (state.level.isDaily) {
+    state.progress = recordDailyCompletion(state.progress, state.level.dailyDateKey || getTodayDateKey());
+    saveProgress(state.progress);
+  } else if (!state.level.isCustom) {
     state.progress = recordLevelCompletion(state.progress, state.level.id, run.stars);
     saveProgress(state.progress);
   }
+  checkAndAwardBadges({
+    won: true,
+    level: state.level,
+    program: state.program,
+    events: run.events,
+  });
   updateTopbar();
 
   const starsHtml = [1, 2, 3]
@@ -607,6 +675,25 @@ function showWinOverlay(run) {
     .join('');
   els.winStars.innerHTML = starsHtml;
   els.winTitle.textContent = t(lang(), `win.title${run.stars}`);
+
+  if (state.level.isDaily) {
+    const streak = computeDailyStreak(state.progress.dailyCompletedDates);
+    const dailyNote =
+      lang() === 'en'
+        ? `🔥 Daily Mission complete! Your Streak is now ${streak} day(s)! Come back tomorrow for a brand-new space puzzle!`
+        : `🔥 Missão Diária concluída! Sua sequência está em ${streak} dia(s)! Volte amanhã para um novo desafio espacial!`;
+    if (els.winStoryNote) els.winStoryNote.textContent = dailyNote;
+    els.winSub.textContent = t(lang(), `win.sub${run.stars}`, {
+      blocks: run.blockCount,
+      par: state.level.starThresholds.parBlocks,
+    });
+    els.winReplayBtn.textContent = `🔄 ${t(lang(), 'win.btnReplay')}`;
+    els.winNextBtn.classList.remove('hidden');
+    els.winNextBtn.textContent = lang() === 'en' ? '🗺️ Back to Galaxy Map' : '🗺️ Voltar ao Mapa';
+    setMascotSay(dailyNote, 'good');
+    els.winOverlay.classList.remove('hidden');
+    return;
+  }
 
   if (state.level.isCustom) {
     const customNote = t(lang(), 'workshop.winCustomNote');
@@ -894,6 +981,20 @@ els.btnGarage.addEventListener('click', () => {
   });
 });
 
+els.btnDaily?.addEventListener('click', () => {
+  synth.playRocketLaunch();
+  const dailyLvl = generateDailyLevel(getTodayDateKey());
+  loadCustomLevel(dailyLvl);
+});
+
+els.btnBadges?.addEventListener('click', () => {
+  synth.playClick();
+  const streak = computeDailyStreak(state.progress.dailyCompletedDates);
+  renderBadgesModal(els.modalBackdrop, state.progress, SPACE_BADGES, streak, {
+    lang: lang(),
+  });
+});
+
 els.winReplayBtn.addEventListener('click', () => {
   synth.playClick();
   resetBoardOnly(true);
@@ -902,6 +1003,11 @@ els.winReplayBtn.addEventListener('click', () => {
 
 els.winNextBtn.addEventListener('click', () => {
   els.winOverlay.classList.add('hidden');
+  if (state.level.isDaily) {
+    synth.playClick();
+    openJourneyMap();
+    return;
+  }
   if (state.level.isCustom) {
     synth.playClick();
     openWorkshop(state.level.workshopDraft);

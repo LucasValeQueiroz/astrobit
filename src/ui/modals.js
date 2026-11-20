@@ -163,3 +163,70 @@ export function renderGarageModal(container, progress, { lang, t, onSelectSkin, 
     }
   };
 }
+
+/**
+ * Renders the Space Medals / Achievements modal (12 unlockable badges + Daily Streak banner).
+ */
+export function renderBadgesModal(
+  container,
+  progress,
+  badges,
+  dailyStreak,
+  { lang = 'pt', onClose }
+) {
+  const unlockedSet = new Set(Array.isArray(progress?.unlockedBadges) ? progress.unlockedBadges : []);
+  const count = unlockedSet.size;
+  const total = badges.length;
+  const isEn = lang === 'en';
+  const pct = total > 0 ? Math.round((count / total) * 100) : 0;
+
+  const cardsHtml = badges
+    .map((b) => {
+      const unlocked = unlockedSet.has(b.id);
+      const name = isEn ? b.nameEn : b.namePt;
+      const desc = isEn ? b.descEn : b.descPt;
+      return `
+        <div class="badge-card ${unlocked ? 'unlocked' : 'locked'}">
+          <div class="badge-icon" aria-hidden="true">${unlocked ? b.icon : '🔒'}</div>
+          <div class="badge-info">
+            <strong>${name}</strong>
+            <span>${desc}</span>
+          </div>
+          ${unlocked ? '<span class="badge-check">✓</span>' : ''}
+        </div>
+      `;
+    })
+    .join('');
+
+  container.innerHTML = `
+    <div class="modal-card modal-wide badges-modal">
+      <div class="modal-head">
+        <div>
+          <h2>🏆 ${isEn ? 'Space Medals & Logbook' : 'Medalhas Espaciais'}</h2>
+          <p class="modal-sub">
+            ${
+              isEn
+                ? `${count} of ${total} medals unlocked · 🔥 Daily Streak: ${dailyStreak} day(s)`
+                : `${count} de ${total} medalhas desbloqueadas · 🔥 Sequência Diária: ${dailyStreak} dia(s)`
+            }
+          </p>
+        </div>
+        <button type="button" class="icon-btn" data-close="true" aria-label="Close">✕</button>
+      </div>
+      <div class="garage-progress">
+        <div class="garage-progress-bar">
+          <span class="garage-progress-fill" style="width:${pct}%"></span>
+        </div>
+      </div>
+      <div class="badges-grid">${cardsHtml}</div>
+    </div>
+  `;
+
+  container.classList.remove('hidden');
+  container.onclick = (event) => {
+    if (event.target === container || event.target.closest('[data-close]')) {
+      container.classList.add('hidden');
+      onClose?.();
+    }
+  };
+}

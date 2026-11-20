@@ -16,6 +16,9 @@ export function createDefaultProgress() {
     seenWorlds: {},
     seenEnding: false,
     customLevels: [],
+    unlockedBadges: [],
+    dailyCompletedDates: [],
+    musicMuted: false,
   };
 }
 
@@ -38,6 +41,11 @@ export function loadProgress(storage = globalThis.localStorage) {
           ? { ...parsed.seenWorlds }
           : {},
       customLevels: Array.isArray(parsed?.customLevels) ? [...parsed.customLevels] : [],
+      unlockedBadges: Array.isArray(parsed?.unlockedBadges) ? [...parsed.unlockedBadges] : [],
+      dailyCompletedDates: Array.isArray(parsed?.dailyCompletedDates)
+        ? [...parsed.dailyCompletedDates]
+        : [],
+      musicMuted: Boolean(parsed?.musicMuted),
     };
   } catch {
     return fallback;

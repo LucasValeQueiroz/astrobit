@@ -26,12 +26,15 @@
       </div>
 
       <nav class="topbar-actions" aria-label="Game controls">
-        <span id="total-stars-pill" class="stars-pill">⭐ 0 / 90</span>
+        <span id="total-stars-pill" class="stars-pill">⭐ 0 / 108</span>
+        <button id="btn-daily" class="nav-btn nav-btn-daily" type="button" title="Missão Diária">🔥 <span id="daily-btn-label">Diária</span></button>
+        <button id="btn-badges" class="nav-btn" type="button" title="Medalhas Espaciais">🏆 <span id="badges-count">0/12</span></button>
         <button id="btn-story" class="nav-btn" type="button">📖 <span data-i18n="navStory">História</span></button>
         <button id="btn-levels" class="nav-btn" type="button">🗺️ <span data-i18n="navLevels">Mapa</span></button>
         <button id="btn-workshop" class="nav-btn" type="button">🛠️ <span data-i18n="navWorkshop">Oficina</span></button>
         <button id="btn-garage" class="nav-btn" type="button">🎨 <span data-i18n="navGarage">Garagem</span></button>
         <button id="btn-code-toggle" class="nav-btn" type="button">👀 <span data-i18n="navCode">Ver Código</span></button>
+        <button id="btn-music" class="nav-btn nav-icon-btn" type="button" aria-label="Music" title="Música Espacial">🎵</button>
         <button id="btn-sound" class="nav-btn nav-icon-btn" type="button" aria-label="Sound">🔊</button>
         <button id="btn-lang" class="nav-btn nav-icon-btn" type="button">PT</button>
       </nav>
@@ -113,6 +116,7 @@
     </section>
   </main>
 
+  <div id="achievement-toast-stack" class="achievement-toast-stack" aria-live="polite"></div>
   <div id="modal-backdrop" class="modal-backdrop hidden" role="dialog" aria-modal="true"></div>
 
   <script type="module" src="src/app.js?v=4.2"></script>

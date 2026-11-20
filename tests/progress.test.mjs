@@ -24,11 +24,15 @@ test('progress store preserves highest star score per level and computes total s
   prog = recordLevelCompletion(prog, 'w1-1', 3);
   prog = recordLevelCompletion(prog, 'w1-1', 1); // Should never downgrade 3 -> 1!
   prog = recordLevelCompletion(prog, 'w1-2', 2);
+  prog.seenIntro = true;
+  prog.seenWorlds[1] = true;
   saveProgress(prog, storage);
 
   const loaded = loadProgress(storage);
   assert.equal(loaded.starsByLevel['w1-1'], 3);
   assert.equal(loaded.starsByLevel['w1-2'], 2);
+  assert.equal(loaded.seenIntro, true);
+  assert.equal(loaded.seenWorlds[1], true);
   assert.equal(getTotalStars(loaded), 5);
 });
 

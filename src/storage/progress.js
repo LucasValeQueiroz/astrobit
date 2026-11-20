@@ -12,6 +12,9 @@ export function createDefaultProgress() {
     lang: 'pt',
     speed: 'normal', // 'slow' | 'normal' | 'fast'
     codeLang: 'js',  // 'js' | 'python'
+    seenIntro: false,
+    seenWorlds: {},
+    seenEnding: false,
   };
 }
 
@@ -28,6 +31,10 @@ export function loadProgress(storage = globalThis.localStorage) {
       starsByLevel:
         parsed?.starsByLevel && typeof parsed.starsByLevel === 'object'
           ? { ...parsed.starsByLevel }
+          : {},
+      seenWorlds:
+        parsed?.seenWorlds && typeof parsed.seenWorlds === 'object'
+          ? { ...parsed.seenWorlds }
           : {},
     };
   } catch {

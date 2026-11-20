@@ -4,18 +4,18 @@
  * F1/F2 reusable Function stacks, Bug Hunt pre-filled levels, living mascot, and live path preview.
  */
 
-import { createWorldState } from './engine/grid.js?v=2.1';
-import { executeProgram, countProgramBlocks, normalizeProgram } from './engine/interpreter.js?v=2.1';
-import { transpileProgram } from './engine/transpiler.js?v=2.1';
-import { ALL_LEVELS, getLevelById, getNextLevel } from './levels/index.js?v=2.1';
-import { SpaceCanvasRenderer } from './renderer/canvas-renderer.js?v=2.1';
-import { SpaceSoundSynth } from './audio/sound-synth.js?v=2.1';
+import { createWorldState } from './engine/grid.js?v=3.0';
+import { executeProgram, countProgramBlocks, normalizeProgram } from './engine/interpreter.js?v=3.0';
+import { transpileProgram } from './engine/transpiler.js?v=3.0';
+import { ALL_LEVELS, CAMPAIGN_WORLDS, getLevelById, getNextLevel } from './levels/index.js?v=3.0';
+import { SpaceCanvasRenderer } from './renderer/canvas-renderer.js?v=3.0';
+import { SpaceSoundSynth } from './audio/sound-synth.js?v=3.0';
 import {
   loadProgress,
   saveProgress,
   recordLevelCompletion,
   getTotalStars,
-} from './storage/progress.js?v=2.1';
+} from './storage/progress.js?v=3.0';
 import {
   createBlock,
   cloneBlocks,
@@ -28,9 +28,15 @@ import {
   findContainerExists,
   renderPalette,
   renderWorkspace,
-} from './ui/workspace.js?v=2.1';
-import { renderLevelsModal, renderGarageModal } from './ui/modals.js?v=2.1';
-import { t } from './ui/i18n.js?v=2.1';
+} from './ui/workspace.js?v=3.0';
+import { renderGarageModal } from './ui/modals.js?v=3.0';
+import {
+  renderStoryCinematic,
+  renderWorldArrivalModal,
+  renderGalaxyJourneyMap,
+} from './ui/story-map.js?v=3.0';
+import { getLevelStory } from './story/campaign-story.js?v=3.0';
+import { t } from './ui/i18n.js?v=3.0';
 
 const SPEED_CONFIG = {
   slow: { ms: 540, next: 'normal', labelKey: 'speedSlow' },
@@ -55,6 +61,7 @@ const els = {
   winOverlay: document.getElementById('win-overlay'),
   winStars: document.getElementById('win-stars'),
   winTitle: document.getElementById('win-title'),
+  winStoryNote: document.getElementById('win-story-note'),
   winSub: document.getElementById('win-sub'),
   winReplayBtn: document.getElementById('win-replay-btn'),
   winNextBtn: document.getElementById('win-next-btn'),
@@ -65,6 +72,7 @@ const els = {
   btnSpeed: document.getElementById('btn-speed'),
   btnUndo: document.getElementById('btn-undo'),
   btnClear: document.getElementById('btn-clear'),
+  btnStory: document.getElementById('btn-story'),
   btnLevels: document.getElementById('btn-levels'),
   btnGarage: document.getElementById('btn-garage'),
   btnCodeToggle: document.getElementById('btn-code-toggle'),
@@ -430,7 +438,43 @@ function resetBoardOnly(resetMessage = true) {
   }
 }
 
-function loadLevel(levelId) {
+function openStoryModal(mode = 'intro', { openMapAfter = false } = {}) {
+  renderStoryCinematic(els.modalBackdrop, {
+    mode,
+    lang: lang(),
+    t,
+    totalStars: getTotalStars(state.progress),
+    synth,
+    onComplete: () => {
+      if (mode === 'intro' && !state.progress.seenIntro) {
+        state.progress.seenIntro = true;
+        saveProgress(state.progress);
+      }
+      if (mode === 'ending') {
+        state.progress.seenEnding = true;
+        saveProgress(state.progress);
+      }
+      if (openMapAfter) {
+        openJourneyMap({ initialWorld: state.level?.world || 1 });
+      }
+    },
+  });
+}
+
+function openJourneyMap({ initialWorld = null, flyFromLevelId = null, flyToLevelId = null } = {}) {
+  renderGalaxyJourneyMap(els.modalBackdrop, state.progress, state.level?.id, {
+    lang: lang(),
+    t,
+    synth,
+    initialWorld,
+    flyFromLevelId,
+    flyToLevelId,
+    onLaunchLevel: (id) => loadLevel(id, { showArrivalIfNew: true }),
+    onReplayStory: (mode) => openStoryModal(mode, { openMapAfter: true }),
+  });
+}
+
+function loadLevel(levelId, { showArrivalIfNew = false } = {}) {
   stopExecution(true);
   state.level = getLevelById(levelId);
   state.progress.currentLevelId = state.level.id;
@@ -462,6 +506,24 @@ function loadLevel(levelId) {
   );
   renderEditor();
   refreshPreviewPath();
+
+  if (showArrivalIfNew && state.progress.seenIntro && !state.progress.seenWorlds?.[state.level.world]) {
+    state.progress.seenWorlds = {
+      ...(state.progress.seenWorlds || {}),
+      [state.level.world]: true,
+    };
+    saveProgress(state.progress);
+    const worldObj = CAMPAIGN_WORLDS.find((w) => w.world === state.level.world);
+    if (worldObj) {
+      renderWorldArrivalModal(els.modalBackdrop, worldObj, {
+        lang: lang(),
+        t,
+        synth,
+        onBegin: () => {},
+        onOpenMap: (wNum) => openJourneyMap({ initialWorld: wNum }),
+      });
+    }
+  }
 }
 
 function playEventSound(ev) {
@@ -484,6 +546,10 @@ function showWinOverlay(run) {
     .join('');
   els.winStars.innerHTML = starsHtml;
   els.winTitle.textContent = t(lang(), `win.title${run.stars}`);
+  const lvlStory = getLevelStory(state.level.id);
+  if (els.winStoryNote) {
+    els.winStoryNote.textContent = lang() === 'en' ? lvlStory.winEn : lvlStory.winPt;
+  }
   els.winSub.textContent = t(lang(), `win.sub${run.stars}`, {
     blocks: run.blockCount,
     par: state.level.starThresholds.parBlocks,
@@ -491,15 +557,19 @@ function showWinOverlay(run) {
 
   const nextLevel = getNextLevel(state.level.id);
   els.winReplayBtn.textContent = `🔄 ${t(lang(), 'win.btnReplay')}`;
+  els.winNextBtn.classList.remove('hidden');
   if (nextLevel) {
-    els.winNextBtn.classList.remove('hidden');
-    els.winNextBtn.textContent = t(lang(), 'win.btnNext');
+    els.winNextBtn.textContent = t(lang(), 'story.btnFlyNext', {
+      world: nextLevel.world,
+      index: nextLevel.index,
+    });
   } else {
-    els.winNextBtn.classList.add('hidden');
+    els.winNextBtn.textContent = t(lang(), 'story.btnViewEnding');
     els.winSub.textContent = t(lang(), 'win.allDone');
+    synth.playFanfare();
   }
 
-  setMascotSay(t(lang(), `win.title${run.stars}`), 'good');
+  setMascotSay(lang() === 'en' ? lvlStory.winEn : lvlStory.winPt, 'good');
   els.winOverlay.classList.remove('hidden');
 }
 
@@ -713,13 +783,14 @@ document.querySelectorAll('[data-code-lang]').forEach((btn) => {
   });
 });
 
+els.btnStory?.addEventListener('click', () => {
+  synth.playClick();
+  openStoryModal('intro', { openMapAfter: false });
+});
+
 els.btnLevels.addEventListener('click', () => {
   synth.playClick();
-  renderLevelsModal(els.modalBackdrop, state.progress, state.level?.id, {
-    lang: lang(),
-    t,
-    onSelectLevel: (id) => loadLevel(id),
-  });
+  openJourneyMap({ initialWorld: state.level?.world || 1 });
 });
 
 els.btnGarage.addEventListener('click', () => {
@@ -743,9 +814,25 @@ els.winReplayBtn.addEventListener('click', () => {
 });
 
 els.winNextBtn.addEventListener('click', () => {
-  synth.playClick();
   const next = getNextLevel(state.level.id);
-  if (next) loadLevel(next.id);
+  els.winOverlay.classList.add('hidden');
+  if (next) {
+    synth.playRocketLaunch();
+    if (next.world !== state.level.world) {
+      // Crossed into a brand-new planet! Open Galaxy Map on the new planet ready to land
+      openJourneyMap({ initialWorld: next.world, flyToLevelId: next.id });
+    } else {
+      // Same planet: watch Starship Estrela-1 fly smoothly from Base N -> Base N+1!
+      openJourneyMap({
+        initialWorld: next.world,
+        flyFromLevelId: state.level.id,
+        flyToLevelId: next.id,
+      });
+    }
+  } else {
+    // Beat Level 5-6 — Grand Finale! Humanity is Saved!
+    openStoryModal('ending', { openMapAfter: true });
+  }
 });
 
 window.addEventListener('resize', () => renderer.resize());
@@ -784,4 +871,9 @@ window.addEventListener('keydown', (event) => {
 });
 
 renderer.start();
-loadLevel(state.progress.currentLevelId || 'w1-1');
+loadLevel(state.progress.currentLevelId || 'w1-1', { showArrivalIfNew: false });
+
+// First-time players start with the "Operação: Luz da Terra!" intro cinematic -> Animated Galaxy Map!
+if (!state.progress.seenIntro) {
+  openStoryModal('intro', { openMapAfter: true });
+}

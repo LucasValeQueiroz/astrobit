@@ -38,6 +38,7 @@ import {
   renderWorkspace,
 } from './ui/workspace.js?v=4.0';
 import { renderGarageModal, renderBadgesModal } from './ui/modals.js?v=5.0';
+import { installTactilePointerDnD } from './ui/touch-dnd.js?v=5.0';
 import {
   renderStoryCinematic,
   renderWorldArrivalModal,
@@ -289,6 +290,46 @@ function afterProgramMutated(newBlockId = null, sayMsg = null) {
   refreshPreviewPath();
 }
 
+function handleDropNewFromPalette(type, dropMeta) {
+  if (state.isRunning) stopExecution(true);
+  pushUndo();
+  const block = createBlock(type);
+  const targetList = getScopeList(state.program, dropMeta.scope);
+  const updated =
+    dropMeta.mode === 'relative' && dropMeta.anchorId
+      ? insertBlockRelative(targetList, dropMeta.anchorId, block, dropMeta.position)
+      : appendBlockToTarget(targetList, dropMeta.containerId, block);
+  setScopeList(state.program, dropMeta.scope, updated);
+  state.activeScope = dropMeta.scope;
+  if (type === 'repeat' || type === 'if') state.activeContainerId = block.id;
+  synth.playSnap();
+  afterProgramMutated(block.id, t(lang(), 'mascot.snapFirst'));
+}
+
+function handleDropExisting(existing, dropMeta) {
+  if (state.isRunning) stopExecution(true);
+  const srcList = getScopeList(state.program, existing.scope);
+  const dragged = findBlockById(srcList, existing.id);
+  if (!dragged) return;
+  if (
+    existing.scope === dropMeta.scope &&
+    (dragged.type === 'repeat' || dragged.type === 'if')
+  ) {
+    if (dropMeta.containerId && findContainerExists([dragged], dropMeta.containerId)) return;
+    if (dropMeta.anchorId && findBlockById([dragged], dropMeta.anchorId)) return;
+  }
+  pushUndo();
+  setScopeList(state.program, existing.scope, removeBlockById(srcList, existing.id));
+  const destList = getScopeList(state.program, dropMeta.scope);
+  const updated =
+    dropMeta.mode === 'relative' && dropMeta.anchorId
+      ? insertBlockRelative(destList, dropMeta.anchorId, dragged, dropMeta.position)
+      : appendBlockToTarget(destList, dropMeta.containerId, dragged);
+  setScopeList(state.program, dropMeta.scope, updated);
+  synth.playSnap();
+  afterProgramMutated(dragged.id, null);
+}
+
 function renderEditor() {
   if (!state.level) return;
   const visibleFns = getVisibleFunctions(state.level);
@@ -377,44 +418,8 @@ function renderEditor() {
       synth.playClick();
       afterProgramMutated(null, null);
     },
-    onDropNewFromPalette: (type, dropMeta) => {
-      if (state.isRunning) stopExecution(true);
-      pushUndo();
-      const block = createBlock(type);
-      const targetList = getScopeList(state.program, dropMeta.scope);
-      const updated =
-        dropMeta.mode === 'relative' && dropMeta.anchorId
-          ? insertBlockRelative(targetList, dropMeta.anchorId, block, dropMeta.position)
-          : appendBlockToTarget(targetList, dropMeta.containerId, block);
-      setScopeList(state.program, dropMeta.scope, updated);
-      state.activeScope = dropMeta.scope;
-      if (type === 'repeat' || type === 'if') state.activeContainerId = block.id;
-      synth.playSnap();
-      afterProgramMutated(block.id, t(lang(), 'mascot.snapFirst'));
-    },
-    onDropExisting: (existing, dropMeta) => {
-      if (state.isRunning) stopExecution(true);
-      const srcList = getScopeList(state.program, existing.scope);
-      const dragged = findBlockById(srcList, existing.id);
-      if (!dragged) return;
-      if (
-        existing.scope === dropMeta.scope &&
-        (dragged.type === 'repeat' || dragged.type === 'if')
-      ) {
-        if (dropMeta.containerId && findContainerExists([dragged], dropMeta.containerId)) return;
-        if (dropMeta.anchorId && findBlockById([dragged], dropMeta.anchorId)) return;
-      }
-      pushUndo();
-      setScopeList(state.program, existing.scope, removeBlockById(srcList, existing.id));
-      const destList = getScopeList(state.program, dropMeta.scope);
-      const updated =
-        dropMeta.mode === 'relative' && dropMeta.anchorId
-          ? insertBlockRelative(destList, dropMeta.anchorId, dragged, dropMeta.position)
-          : appendBlockToTarget(destList, dropMeta.containerId, dragged);
-      setScopeList(state.program, dropMeta.scope, updated);
-      synth.playSnap();
-      afterProgramMutated(dragged.id, null);
-    },
+    onDropNewFromPalette: handleDropNewFromPalette,
+    onDropExisting: handleDropExisting,
     onHoverBlock: (blockId) => {
       if (state.hoveredBlockId === blockId) return;
       state.hoveredBlockId = blockId;
@@ -1069,6 +1074,12 @@ window.addEventListener('keydown', (event) => {
 });
 
 renderer.start();
+installTactilePointerDnD({
+  paletteEl: els.palette,
+  workspaceEl: els.workspace,
+  onDropNewFromPalette: handleDropNewFromPalette,
+  onDropExisting: handleDropExisting,
+});
 
 // Support instant shared Creative Workshop links (`?custom=...`)!
 const sharedCustomParam = new URLSearchParams(globalThis.location?.search || '').get('custom');

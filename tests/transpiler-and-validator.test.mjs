@@ -37,7 +37,15 @@ test('transpileProgram generates clean JS and Python with accurate blockToLine m
   assert.match(py.code, /def f1\(\):/);
   assert.match(py.code, /for _ in range\(3\):/);
   assert.match(py.code, /if robot\.has_crystal_here\(\):/);
-  assert.equal(py.lines[py.blockToLine.f3 - 1].trim(), 'robot.collect_or_activate()');
+  assert.equal(py.lines[py.blockToLine.f3 - 1].trim(), 'robot.collect()');
+
+  const dirs = transpileProgram([
+    { id: 'd1', type: 'up' },
+    { id: 'd2', type: 'move_right' },
+    { id: 'd3', type: 'down' },
+    { id: 'd4', type: 'move_left' },
+  ], { lang: 'js' });
+  assert.equal(dirs.code, 'robot.moveUp();\nrobot.moveRight();\nrobot.moveDown();\nrobot.moveLeft();');
 });
 
 test('validateLevel proves valid 3-star levels and catches broken levels or unpaired portals', () => {

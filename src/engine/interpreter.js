@@ -20,6 +20,13 @@ import {
 export const DEFAULT_MAX_STEPS = 200;
 export const DEFAULT_MAX_CALL_DEPTH = 16;
 
+const ABSOLUTE_MOVE_DIRS = {
+  up: 'N',
+  down: 'S',
+  move_left: 'W',
+  move_right: 'E',
+};
+
 export function countBlockList(blocks = []) {
   if (!Array.isArray(blocks)) return 0;
   let total = 0;
@@ -140,8 +147,11 @@ export function executeProgram(level, program, options = {}) {
       if (!block || typeof block !== 'object') continue;
       const blockId = block.id ?? null;
 
-      if (block.type === 'forward') {
+      if (block.type === 'forward' || ABSOLUTE_MOVE_DIRS[block.type]) {
         if (!consumeStep(blockId)) return;
+        if (ABSOLUTE_MOVE_DIRS[block.type]) {
+          state.robot.dir = ABSOLUTE_MOVE_DIRS[block.type];
+        }
         const fromX = state.robot.x;
         const fromY = state.robot.y;
         const next = stepCoords(fromX, fromY, state.robot.dir);

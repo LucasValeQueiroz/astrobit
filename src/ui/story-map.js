@@ -14,6 +14,7 @@ import {
   getLevelStory,
 } from '../story/campaign-story.js?v=4.0';
 import { getTotalStars } from '../storage/progress.js?v=4.0';
+import { FlightCinemaController } from './flight-cinema.js?v=4.2';
 
 function escapeHtml(text) {
   return String(text ?? '')
@@ -404,6 +405,7 @@ export function renderGalaxyJourneyMap(
     initialWorld = null,
     flyFromLevelId = null,
     flyToLevelId = null,
+    warpToWorld = false,
     onLaunchLevel,
     onReplayStory,
     onClose,
@@ -424,6 +426,19 @@ export function renderGalaxyJourneyMap(
   let selectedLevelId = flyToLevelId || currentLevelId || 'w1-1';
   let shipLevelId = flyFromLevelId || selectedLevelId;
   let shipAngle = 0;
+  let cinema = null;
+  let statusTimer = null;
+
+  const showFlightPill = (text, tone = '') => {
+    const pill = container.querySelector('#flight-status-pill');
+    if (!pill) return;
+    if (statusTimer) clearTimeout(statusTimer);
+    pill.textContent = text;
+    pill.className = `flight-status-pill ${tone}`.trim();
+    statusTimer = setTimeout(() => {
+      pill.classList.add('hidden');
+    }, 1500);
+  };
 
   const earthSaved = Number(progress?.starsByLevel?.['w5-6'] || 0) > 0;
   const totalStars = getTotalStars(progress);
@@ -598,7 +613,13 @@ export function renderGalaxyJourneyMap(
               ${baseNodesHtml}
             </svg>
 
-            <!-- FLYING STARSHIP ESTRELA-1 OVERLAY (SMOOTHLY ANIMATED IN % COORDS!) -->
+            <!-- 60fps PLASMA EXHAUST, SHOCKWAVE & HYPERSPACE FX CANVAS -->
+            <canvas id="flight-fx-canvas" class="flight-fx-canvas" aria-hidden="true"></canvas>
+
+            <!-- LIVE FLIGHT STATUS / TURBO BOOST BANNER -->
+            <div id="flight-status-pill" class="flight-status-pill hidden" aria-live="polite"></div>
+
+            <!-- FLYING STARSHIP ESTRELA-1 OVERLAY (CURVED 60FPS BEZIER FLIGHT!) -->
             <div
               id="flying-starship"
               class="flying-starship"
@@ -625,41 +646,103 @@ export function renderGalaxyJourneyMap(
       </div>
     `;
     container.classList.remove('hidden');
+
+    cinema?.destroy();
+    const fxCanvas = container.querySelector('#flight-fx-canvas');
+    const shipEl = container.querySelector('#flying-starship');
+    cinema = new FlightCinemaController(fxCanvas, shipEl);
+    cinema.resize();
   };
 
   const flyShipTo = (targetLevelId) => {
     const worldObj = CAMPAIGN_WORLDS.find((w) => w.world === activeWorldNum) || CAMPAIGN_WORLDS[0];
+    const wStory = getWorldStory(worldObj.world);
     const fromCoord = getCoordForLevel(worldObj, shipLevelId);
     const toCoord = getCoordForLevel(worldObj, targetLevelId);
-    const dx = toCoord.x - fromCoord.x;
-    const dy = toCoord.y - fromCoord.y;
-    if (Math.hypot(dx, dy) > 4) {
-      shipAngle = Math.round((Math.atan2(dy, dx) * 180) / Math.PI);
-    }
+    const toIdx = Math.max(1, worldObj.levels.findIndex((l) => l.id === targetLevelId));
     shipLevelId = targetLevelId;
-    const shipEl = container.querySelector('#flying-starship');
-    if (shipEl) {
-      shipEl.style.left = `${(toCoord.x / 760) * 100}%`;
-      shipEl.style.top = `${((toCoord.y - 30) / 270) * 100}%`;
-      shipEl.style.setProperty('--ship-rot', `${shipAngle}deg`);
-      shipEl.classList.remove('ship-zooming');
-      void shipEl.offsetWidth;
-      shipEl.classList.add('ship-zooming');
+
+    if (cinema && Math.hypot(toCoord.x - fromCoord.x, toCoord.y - fromCoord.y) > 4) {
+      showFlightPill(
+        lang === 'en' ? '🚀 Flying! Tap sky for ⚡ Turbo!' : '🚀 Voando! Toque no céu para ⚡ Turbo!'
+      );
+      cinema.flyBetweenBases({
+        from: fromCoord,
+        to: toCoord,
+        segmentIndex: toIdx,
+        accentColor: wStory.planetColor,
+        onArrive: () => {
+          synth?.playSnap?.();
+          showFlightPill(
+            lang === 'en' ? '✨ Arrived! Ready to land!' : '✨ Chegamos! Pronto para pousar!',
+            'good'
+          );
+        },
+      });
+    }
+  };
+
+  const triggerWorldWarp = (nextWorldNum) => {
+    const targetWorldObj = CAMPAIGN_WORLDS.find((w) => w.world === nextWorldNum) || CAMPAIGN_WORLDS[0];
+    const wStory = getWorldStory(targetWorldObj.world);
+    const wName = lang === 'en' ? targetWorldObj.nameEn : targetWorldObj.namePt;
+    synth?.playRocketLaunch?.();
+    showFlightPill(
+      `${targetWorldObj.icon} ${lang === 'en' ? 'HYPERSPACE JUMP' : 'SALTO NO HIPERESPAÇO'} → ${wName}!`,
+      'warp'
+    );
+    if (cinema) {
+      cinema.playHyperspaceWarp({
+        accentColor: wStory.planetColor,
+        onDone: () => {
+          activeWorldNum = nextWorldNum;
+          shipAngle = 0;
+          renderFullMap();
+          const newWorld = CAMPAIGN_WORLDS.find((w) => w.world === activeWorldNum) || CAMPAIGN_WORLDS[0];
+          const destCoord = getCoordForLevel(newWorld, selectedLevelId);
+          cinema?.emitRing(destCoord, wStory.planetColor);
+          cinema?.emitBurst(destCoord, ['#facc15', wStory.planetColor, '#ffffff'], 20);
+        },
+      });
+    } else {
+      activeWorldNum = nextWorldNum;
+      shipAngle = 0;
+      renderFullMap();
     }
   };
 
   renderFullMap();
 
-  // If opened with an automatic flight transition (e.g. just beat Level N -> fly to N+1!)
-  if (flyFromLevelId && flyToLevelId && flyFromLevelId !== flyToLevelId) {
+  // If opened with an interplanetary warp or automatic base-to-base flight!
+  if (warpToWorld) {
+    const worldObj = CAMPAIGN_WORLDS.find((w) => w.world === activeWorldNum) || CAMPAIGN_WORLDS[0];
+    const wStory = getWorldStory(worldObj.world);
+    const wName = lang === 'en' ? worldObj.nameEn : worldObj.namePt;
+    setTimeout(() => {
+      synth?.playRocketLaunch?.();
+      showFlightPill(
+        `${worldObj.icon} ${lang === 'en' ? 'HYPERSPACE JUMP' : 'SALTO NO HIPERESPAÇO'} → ${wName}!`,
+        'warp'
+      );
+      cinema?.playHyperspaceWarp({
+        accentColor: wStory.planetColor,
+        onDone: () => {
+          const destCoord = getCoordForLevel(worldObj, selectedLevelId);
+          cinema?.emitRing(destCoord, '#34d399');
+          cinema?.emitBurst(destCoord, ['#facc15', wStory.planetColor, '#ffffff'], 22);
+        },
+      });
+    }, 100);
+  } else if (flyFromLevelId && flyToLevelId && flyFromLevelId !== flyToLevelId) {
     setTimeout(() => {
       synth?.playRocketLaunch?.();
       flyShipTo(flyToLevelId);
-    }, 180);
+    }, 160);
   }
 
   container.onclick = (event) => {
     if (event.target === container || event.target.closest('[data-close-modal]')) {
+      cinema?.destroy();
       container.classList.add('hidden');
       onClose?.();
       return;
@@ -667,6 +750,7 @@ export function renderGalaxyJourneyMap(
 
     const replayBtn = event.target.closest('[data-replay-story]');
     if (replayBtn) {
+      cinema?.destroy();
       synth?.playClick?.();
       onReplayStory?.(replayBtn.dataset.replayStory);
       return;
@@ -676,10 +760,7 @@ export function renderGalaxyJourneyMap(
     if (worldBtn) {
       const nextWorld = Number(worldBtn.dataset.mapWorld);
       if (nextWorld !== activeWorldNum) {
-        activeWorldNum = nextWorld;
-        shipAngle = 0;
-        synth?.playRocketLaunch?.();
-        renderFullMap();
+        triggerWorldWarp(nextWorld);
       }
       return;
     }
@@ -691,15 +772,25 @@ export function renderGalaxyJourneyMap(
         const prevShip = shipLevelId;
         selectedLevelId = lvlId;
         synth?.playRocketLaunch?.();
-        // Keep ship at previous base during re-render, then smoothly fly to the clicked base!
+        // Keep ship at previous base during re-render, then fly along the curved Bezier path!
         shipLevelId = prevShip;
         renderFullMap();
         requestAnimationFrame(() => flyShipTo(lvlId));
       } else {
         // Clicking the already-selected base again launches straight in!
+        cinema?.destroy();
         synth?.playRocketLaunch?.();
         container.classList.add('hidden');
         onLaunchLevel?.(lvlId);
+      }
+      return;
+    }
+
+    // Interactive Turbo Boost when tapping the sky during flight!
+    if (event.target.closest('.flight-svg-wrap')) {
+      if (cinema?.triggerTurboBoost()) {
+        synth?.playGiggle?.();
+        showFlightPill(lang === 'en' ? '⚡ SPACE TURBO BOOST!!' : '⚡ TURBO ESPACIAL!!', 'turbo');
       }
       return;
     }
@@ -712,10 +803,12 @@ export function renderGalaxyJourneyMap(
       if (shipEl) {
         shipEl.classList.add('ship-landing');
         setTimeout(() => {
+          cinema?.destroy();
           container.classList.add('hidden');
           onLaunchLevel?.(targetId);
         }, 280);
       } else {
+        cinema?.destroy();
         container.classList.add('hidden');
         onLaunchLevel?.(targetId);
       }

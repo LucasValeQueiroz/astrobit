@@ -1,5 +1,6 @@
 /**
- * AstroBit Block Workspace — Pure AST manipulation helpers + Touch/Mouse/DnD UI renderer.
+ * AstroBit Jigsaw Puzzle Workspace — Interlocking Scratch-style puzzle pieces,
+ * 4-direction compass palette, drag-from-palette, drag-to-reorder, and pure AST helpers.
  */
 
 let nextBlockSeq = 1;
@@ -16,9 +17,6 @@ export function cloneBlocks(blocks = []) {
   return JSON.parse(JSON.stringify(blocks));
 }
 
-/**
- * Appends `newBlock` either to the root list (targetId === null) or inside a nested repeat block.
- */
 export function appendBlockToTarget(blocks, targetId, newBlock) {
   const copy = cloneBlocks(blocks);
   if (!targetId) {
@@ -41,6 +39,31 @@ export function appendBlockToTarget(blocks, targetId, newBlock) {
   };
 
   if (!insertRecursive(copy)) {
+    copy.push(newBlock);
+  }
+  return copy;
+}
+
+/**
+ * Inserts `newBlock` directly before or after `anchorBlockId` inside whichever list holds it.
+ */
+export function insertBlockRelative(blocks, anchorBlockId, newBlock, position = 'after') {
+  const copy = cloneBlocks(blocks);
+  const insertRec = (list) => {
+    const idx = list.findIndex((b) => b.id === anchorBlockId);
+    if (idx !== -1) {
+      const insertAt = position === 'before' ? idx : idx + 1;
+      list.splice(insertAt, 0, newBlock);
+      return true;
+    }
+    for (const item of list) {
+      if (item.type === 'repeat' && Array.isArray(item.body)) {
+        if (insertRec(item.body)) return true;
+      }
+    }
+    return false;
+  };
+  if (!insertRec(copy)) {
     copy.push(newBlock);
   }
   return copy;
@@ -107,6 +130,17 @@ export function updateRepeatTimes(blocks, blockId, delta) {
   return copy;
 }
 
+export function findBlockById(blocks, blockId) {
+  for (const b of blocks) {
+    if (b.id === blockId) return b;
+    if (b.type === 'repeat' && Array.isArray(b.body)) {
+      const found = findBlockById(b.body, blockId);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
 export function findContainerExists(blocks, targetId) {
   if (!targetId) return true;
   for (const item of blocks) {
@@ -119,9 +153,13 @@ export function findContainerExists(blocks, targetId) {
 }
 
 export const BLOCK_META = {
-  forward: { icon: '⬆️', category: 'move' },
-  left: { icon: '↩️', category: 'move' },
-  right: { icon: '↪️', category: 'move' },
+  up: { icon: '⬆️', category: 'dir-up' },
+  down: { icon: '⬇️', category: 'dir-down' },
+  move_left: { icon: '⬅️', category: 'dir-left' },
+  move_right: { icon: '➡️', category: 'dir-right' },
+  forward: { icon: '⬆️', category: 'dir-up' },
+  left: { icon: '↩️', category: 'dir-left' },
+  right: { icon: '↪️', category: 'dir-right' },
   collect: { icon: '💎', category: 'action' },
   repeat: { icon: '🔁', category: 'control' },
 };
@@ -135,38 +173,83 @@ function escapeHtml(text) {
 }
 
 /**
- * Renders the visual block palette filtered to the current level's unlocked blocks.
+ * Renders the 4-direction visual Compass + Action/Loop puzzle palette.
+ * Every piece can be clicked/tapped OR dragged directly onto the puzzle stack!
  */
-export function renderPalette(container, allowedBlocks, { lang, t, onAddBlock }) {
+export function renderPalette(container, allowedBlocks, { lang, t, hintBlockType = null, onAddBlock }) {
   if (!container) return;
-  container.innerHTML = allowedBlocks
-    .filter((type) => BLOCK_META[type])
-    .map((type) => {
-      const meta = BLOCK_META[type];
-      const label = t(lang, `blocks.${type}`);
-      return `
-        <button
-          type="button"
-          class="palette-btn cat-${meta.category}"
-          data-block-type="${type}"
-        >
-          <span class="block-icon" aria-hidden="true">${meta.icon}</span>
-          <span>${escapeHtml(label)}</span>
-        </button>
-      `;
-    })
-    .join('');
+
+  const hasCompass = ['up', 'down', 'move_left', 'move_right'].every((b) => allowedBlocks.includes(b));
+  const otherBlocks = allowedBlocks.filter(
+    (b) => !['up', 'down', 'move_left', 'move_right'].includes(b) && BLOCK_META[b]
+  );
+
+  const pieceBtn = (type, extraClass = '') => {
+    const meta = BLOCK_META[type];
+    const label = t(lang, `blocks.${type}`);
+    const glow = hintBlockType === type ? 'hint-glow' : '';
+    return `
+      <button
+        type="button"
+        class="palette-piece cat-${meta.category} ${extraClass} ${glow}"
+        data-block-type="${type}"
+        draggable="true"
+      >
+        <span class="piece-icon" aria-hidden="true">${meta.icon}</span>
+        <span class="piece-label">${escapeHtml(label)}</span>
+      </button>
+    `;
+  };
+
+  let html = '';
+  if (hasCompass) {
+    html += `
+      <div class="compass-pad" role="group" aria-label="4 Directions">
+        <div class="compass-row">${pieceBtn('up', 'compass-btn')}</div>
+        <div class="compass-row compass-mid">
+          ${pieceBtn('move_left', 'compass-btn')}
+          <div class="compass-center" aria-hidden="true">🧭</div>
+          ${pieceBtn('move_right', 'compass-btn')}
+        </div>
+        <div class="compass-row">${pieceBtn('down', 'compass-btn')}</div>
+      </div>
+    `;
+  } else {
+    html += allowedBlocks
+      .filter((b) => BLOCK_META[b])
+      .map((b) => pieceBtn(b))
+      .join('');
+  }
+
+  if (hasCompass && otherBlocks.length > 0) {
+    html += `<div class="palette-extras">${otherBlocks.map((b) => pieceBtn(b, 'extra-btn')).join('')}</div>`;
+  }
+
+  container.innerHTML = html;
 
   container.onclick = (event) => {
-    const btn = event.target.closest('.palette-btn');
+    const btn = event.target.closest('.palette-piece');
     if (!btn) return;
     onAddBlock(btn.dataset.blockType);
+  };
+
+  container.ondragstart = (event) => {
+    const btn = event.target.closest('.palette-piece');
+    if (!btn) return;
+    event.dataTransfer?.setData('application/x-astrobit-new', btn.dataset.blockType);
+    event.dataTransfer?.setData('text/plain', `new:${btn.dataset.blockType}`);
+    btn.classList.add('dragging');
+  };
+
+  container.ondragend = (event) => {
+    event.target.closest('.palette-piece')?.classList.remove('dragging');
   };
 }
 
 /**
- * Renders the interactive block program tree with tap-to-focus containers,
- * touch-friendly up/down/delete buttons, drag-and-drop, and live debugger highlights.
+ * Renders the interlocking Scratch-style jigsaw puzzle stack.
+ * Zero confusing reorder arrows on the right — clean drag grip (⋮⋮), real jigsaw notches/tabs,
+ * hover tile highlight, and drop-anywhere insertion!
  */
 export function renderWorkspace(
   container,
@@ -177,11 +260,13 @@ export function renderWorkspace(
     activeContainerId,
     runningBlockId,
     failedBlockId,
+    newlyAddedId,
     onSelectContainer,
-    onMoveBlock,
     onRemoveBlock,
     onChangeRepeat,
-    onDropIntoContainer,
+    onDropExisting,
+    onDropNewFromPalette,
+    onHoverBlock,
   }
 ) {
   if (!container) return;
@@ -189,72 +274,72 @@ export function renderWorkspace(
   const renderList = (list, depth = 0) => {
     if (!list || list.length === 0) {
       return depth === 0
-        ? `<div class="workspace-empty">${escapeHtml(t(lang, 'workspaceEmpty'))}</div>`
-        : `<div class="repeat-empty">+ ${escapeHtml(t(lang, 'addingHere'))}</div>`;
+        ? `<div class="puzzle-slot-empty">${escapeHtml(t(lang, 'workspaceEmpty'))}</div>`
+        : `<div class="puzzle-slot-empty inner">${escapeHtml(t(lang, 'repeatEmpty'))}</div>`;
     }
 
     return list
-      .map((block, idx) => {
-        const meta = BLOCK_META[block.type] || { icon: '⬛', category: 'move' };
+      .map((block) => {
+        const meta = BLOCK_META[block.type] || { icon: '🧩', category: 'dir-right' };
         const label = t(lang, `blocks.${block.type}`);
         const isRunning = runningBlockId && block.id === runningBlockId;
         const isFailed = failedBlockId && block.id === failedBlockId;
-        const stateClass = isFailed ? 'block-error' : isRunning ? 'block-active' : '';
-        const upDisabled = idx === 0 ? 'disabled' : '';
-        const downDisabled = idx === list.length - 1 ? 'disabled' : '';
+        const isNew = newlyAddedId && block.id === newlyAddedId;
+        const stateClass = [
+          isFailed ? 'block-error' : isRunning ? 'block-active' : '',
+          isNew ? 'snap-pop' : '',
+        ]
+          .filter(Boolean)
+          .join(' ');
 
         if (block.type === 'repeat') {
           const isFocused = activeContainerId === block.id;
           return `
             <div
-              class="ws-block ws-repeat cat-control ${stateClass} ${isFocused ? 'container-focused' : ''}"
+              class="puzzle-piece puzzle-repeat cat-control ${stateClass} ${isFocused ? 'container-focused' : ''}"
               data-block-id="${block.id}"
               draggable="true"
             >
-              <div class="ws-block-head">
-                <div class="ws-block-title">
-                  <span class="block-icon">${meta.icon}</span>
+              <div class="puzzle-repeat-top">
+                <div class="puzzle-left">
+                  <span class="drag-grip" aria-hidden="true">⋮⋮</span>
+                  <span class="piece-icon">${meta.icon}</span>
                   <span>${escapeHtml(label)}</span>
                   <div class="repeat-stepper">
-                    <button type="button" class="mini-btn" data-action="rep-dec" data-id="${block.id}" aria-label="-">−</button>
+                    <button type="button" class="step-pill-btn" data-action="rep-dec" data-id="${block.id}" aria-label="-">−</button>
                     <span class="repeat-count">${block.times}×</span>
-                    <button type="button" class="mini-btn" data-action="rep-inc" data-id="${block.id}" aria-label="+">+</button>
+                    <button type="button" class="step-pill-btn" data-action="rep-inc" data-id="${block.id}" aria-label="+">+</button>
                   </div>
                 </div>
-                <div class="ws-block-actions">
-                  <button type="button" class="mini-btn" data-action="up" data-id="${block.id}" ${upDisabled} title="↑">↑</button>
-                  <button type="button" class="mini-btn" data-action="down" data-id="${block.id}" ${downDisabled} title="↓">↓</button>
-                  <button type="button" class="mini-btn danger" data-action="remove" data-id="${block.id}" title="✕">✕</button>
+                <button type="button" class="remove-pill-btn" data-action="remove" data-id="${block.id}" title="✕">✕</button>
+              </div>
+              <div class="puzzle-repeat-jaw">
+                <div class="puzzle-spine" aria-hidden="true"></div>
+                <div
+                  class="puzzle-repeat-body ${isFocused ? 'body-focused' : ''}"
+                  data-container-id="${block.id}"
+                >
+                  ${isFocused ? `<span class="focus-tag">✨ ${escapeHtml(t(lang, 'addingHere'))}</span>` : ''}
+                  ${renderList(block.body, depth + 1)}
                 </div>
               </div>
-              <div
-                class="ws-repeat-body ${isFocused ? 'body-focused' : ''}"
-                data-container-id="${block.id}"
-              >
-                ${isFocused ? `<span class="focus-tag">✨ ${escapeHtml(t(lang, 'addingHere'))}</span>` : ''}
-                ${renderList(block.body, depth + 1)}
-              </div>
+              <div class="puzzle-repeat-bottom"></div>
             </div>
           `;
         }
 
         return `
           <div
-            class="ws-block cat-${meta.category} ${stateClass}"
+            class="puzzle-piece puzzle-cmd cat-${meta.category} ${stateClass}"
             data-block-id="${block.id}"
             draggable="true"
           >
-            <div class="ws-block-head">
-              <div class="ws-block-title">
-                <span class="block-icon">${meta.icon}</span>
-                <span>${escapeHtml(label)}</span>
-              </div>
-              <div class="ws-block-actions">
-                <button type="button" class="mini-btn" data-action="up" data-id="${block.id}" ${upDisabled} title="↑">↑</button>
-                <button type="button" class="mini-btn" data-action="down" data-id="${block.id}" ${downDisabled} title="↓">↓</button>
-                <button type="button" class="mini-btn danger" data-action="remove" data-id="${block.id}" title="✕">✕</button>
-              </div>
+            <div class="puzzle-left">
+              <span class="drag-grip" aria-hidden="true">⋮⋮</span>
+              <span class="piece-icon">${meta.icon}</span>
+              <span>${escapeHtml(label)}</span>
             </div>
+            <button type="button" class="remove-pill-btn" data-action="remove" data-id="${block.id}" title="✕">✕</button>
           </div>
         `;
       })
@@ -263,14 +348,14 @@ export function renderWorkspace(
 
   const rootFocused = activeContainerId === null;
   container.innerHTML = `
-    <div class="workspace-target-bar">
-      <button type="button" class="target-pill ${rootFocused ? 'active' : ''}" data-select-root="true">
-        📋 ${escapeHtml(t(lang, 'targetMain'))}
-        ${rootFocused ? `<span class="target-dot">●</span>` : ''}
+    <div class="puzzle-board ${rootFocused ? 'root-focused' : ''}" data-container-id="">
+      <button type="button" class="puzzle-hat ${rootFocused ? 'hat-focused' : ''}" data-select-root="true">
+        <span>🚩 ${escapeHtml(t(lang, 'hatStart'))}</span>
+        ${rootFocused ? `<span class="hat-badge">✨ ${escapeHtml(t(lang, 'addingHere'))}</span>` : ''}
       </button>
-    </div>
-    <div class="ws-root-list ${rootFocused ? 'root-focused' : ''}" data-container-id="">
-      ${renderList(blocks, 0)}
+      <div class="puzzle-stack" data-container-id="">
+        ${renderList(blocks, 0)}
+      </div>
     </div>
   `;
 
@@ -279,67 +364,127 @@ export function renderWorkspace(
     if (actionBtn) {
       event.stopPropagation();
       const { action, id } = actionBtn.dataset;
-      if (action === 'up') onMoveBlock(id, -1);
-      else if (action === 'down') onMoveBlock(id, 1);
-      else if (action === 'remove') onRemoveBlock(id);
+      if (action === 'remove') onRemoveBlock(id);
       else if (action === 'rep-inc') onChangeRepeat(id, 1);
       else if (action === 'rep-dec') onChangeRepeat(id, -1);
       return;
     }
 
-    const rootBtn = event.target.closest('[data-select-root]');
-    if (rootBtn) {
+    if (event.target.closest('[data-select-root]')) {
       onSelectContainer(null);
       return;
     }
 
-    const repeatBody = event.target.closest('.ws-repeat-body');
+    const repeatBody = event.target.closest('.puzzle-repeat-body');
     if (repeatBody) {
       event.stopPropagation();
       onSelectContainer(repeatBody.dataset.containerId || null);
       return;
     }
 
-    if (event.target.closest('.ws-root-list') && !event.target.closest('.ws-repeat')) {
+    if (event.target.closest('.puzzle-board') && !event.target.closest('.puzzle-repeat')) {
       onSelectContainer(null);
     }
   };
 
-  // Smooth drag-and-drop for moving blocks into Repeat containers
-  let draggedBlockId = null;
+  // Hovering a puzzle piece highlights that step's destination tile on the Canvas!
+  container.onmouseover = (event) => {
+    const piece = event.target.closest('.puzzle-piece');
+    onHoverBlock?.(piece?.dataset.blockId || null);
+  };
+  container.onmouseleave = () => {
+    onHoverBlock?.(null);
+  };
+
+  // Full Drag-and-Drop (both from Palette AND reordering existing pieces!)
+  let draggedExistingId = null;
+
+  const clearDropMarkers = () => {
+    container.querySelectorAll('.drop-before, .drop-after, .drop-inside').forEach((el) => {
+      el.classList.remove('drop-before', 'drop-after', 'drop-inside');
+    });
+  };
+
   container.ondragstart = (event) => {
-    const el = event.target.closest('.ws-block');
-    if (!el) return;
+    const piece = event.target.closest('.puzzle-piece');
+    if (!piece) return;
     event.stopPropagation();
-    draggedBlockId = el.dataset.blockId;
-    el.classList.add('dragging');
-    event.dataTransfer?.setData('text/plain', draggedBlockId);
+    draggedExistingId = piece.dataset.blockId;
+    piece.classList.add('dragging');
+    event.dataTransfer?.setData('application/x-astrobit-existing', draggedExistingId);
+    event.dataTransfer?.setData('text/plain', `existing:${draggedExistingId}`);
   };
 
   container.ondragend = (event) => {
-    const el = event.target.closest('.ws-block');
-    el?.classList.remove('dragging');
-    draggedBlockId = null;
+    event.target.closest('.puzzle-piece')?.classList.remove('dragging');
+    draggedExistingId = null;
+    clearDropMarkers();
   };
 
   container.ondragover = (event) => {
-    if (!draggedBlockId) return;
-    const dropZone = event.target.closest('.ws-repeat-body, .ws-root-list');
-    if (dropZone) {
-      event.preventDefault();
+    event.preventDefault();
+    clearDropMarkers();
+
+    const targetPiece = event.target.closest('.puzzle-piece');
+    const targetRepeatBody = event.target.closest('.puzzle-repeat-body');
+
+    if (targetRepeatBody && (!targetPiece || targetRepeatBody.contains(targetPiece))) {
+      if (targetPiece && targetPiece.dataset.blockId !== draggedExistingId) {
+        const rect = targetPiece.getBoundingClientRect();
+        const isTop = event.clientY < rect.top + rect.height / 2;
+        targetPiece.classList.add(isTop ? 'drop-before' : 'drop-after');
+      } else {
+        targetRepeatBody.classList.add('drop-inside');
+      }
+      return;
+    }
+
+    if (targetPiece && targetPiece.dataset.blockId !== draggedExistingId) {
+      const rect = targetPiece.getBoundingClientRect();
+      const isTop = event.clientY < rect.top + rect.height / 2;
+      targetPiece.classList.add(isTop ? 'drop-before' : 'drop-after');
+    } else if (targetRepeatBody) {
+      targetRepeatBody.classList.add('drop-inside');
+    }
+  };
+
+  container.ondragleave = (event) => {
+    if (!container.contains(event.relatedTarget)) {
+      clearDropMarkers();
     }
   };
 
   container.ondrop = (event) => {
-    if (!draggedBlockId) return;
-    const dropZone = event.target.closest('.ws-repeat-body, .ws-root-list');
-    if (!dropZone) return;
     event.preventDefault();
     event.stopPropagation();
-    const targetId = dropZone.dataset.containerId || null;
-    if (targetId !== draggedBlockId) {
-      onDropIntoContainer(draggedBlockId, targetId);
+    const raw = event.dataTransfer?.getData('text/plain') || '';
+    const newType =
+      event.dataTransfer?.getData('application/x-astrobit-new') ||
+      (raw.startsWith('new:') ? raw.slice(4) : '');
+    const existingId =
+      draggedExistingId ||
+      event.dataTransfer?.getData('application/x-astrobit-existing') ||
+      (raw.startsWith('existing:') ? raw.slice(9) : '');
+
+    const targetPiece = event.target.closest('.puzzle-piece');
+    const targetRepeatBody = event.target.closest('.puzzle-repeat-body');
+
+    let dropMeta = { mode: 'append', containerId: null, anchorId: null, position: 'after' };
+    if (targetPiece && targetPiece.dataset.blockId !== existingId) {
+      const rect = targetPiece.getBoundingClientRect();
+      const position = event.clientY < rect.top + rect.height / 2 ? 'before' : 'after';
+      dropMeta = { mode: 'relative', anchorId: targetPiece.dataset.blockId, position, containerId: null };
+    } else if (targetRepeatBody) {
+      dropMeta = { mode: 'append', containerId: targetRepeatBody.dataset.containerId || null };
     }
-    draggedBlockId = null;
+
+    clearDropMarkers();
+    draggedExistingId = null;
+
+    if (newType) {
+      onDropNewFromPalette(newType, dropMeta);
+    } else if (existingId) {
+      onDropExisting(existingId, dropMeta);
+    }
   };
 }

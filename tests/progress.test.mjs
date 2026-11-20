@@ -33,6 +33,7 @@ test('progress store preserves highest star score per level and computes total s
 });
 
 test('i18n translates nested keys and interpolates parameters in PT and EN', () => {
-  assert.equal(t('pt', 'blocksCounter', { used: 4, par: 3 }), '4 blocos · meta 3★: ≤ 3');
+  assert.equal(t('pt', 'blocksCounter', { used: 4, par: 3 }), '4 peças · meta 3★: ≤ 3');
   assert.equal(t('en', 'blocks.repeat'), 'Repeat');
+  assert.equal(t('pt', 'blocks.move_right'), 'Direita');
 });

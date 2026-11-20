@@ -2086,7 +2086,7 @@ button {
 }
 
 .ws-grid-stage {
-  padding: 12px;
+  padding: 8px;
   border-radius: 14px;
   border: 2px solid var(--border);
   background: linear-gradient(180deg, var(--ws-bg-top, #0b1026), var(--ws-bg-bot, #1a234e));
@@ -2098,14 +2098,14 @@ button {
   display: grid;
   gap: 4px;
   width: 100%;
-  max-width: 520px;
+  max-width: 420px;
   user-select: none;
   touch-action: none;
 }
 
 .ws-cell {
   aspect-ratio: 1;
-  min-height: 36px;
+  min-height: 32px;
   border-radius: 8px;
   border: 1.5px solid var(--ws-floor-border, #3b4e8f);
   background: var(--ws-floor, #253263);

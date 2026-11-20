@@ -4,18 +4,18 @@
  * F1/F2 reusable Function stacks, Bug Hunt pre-filled levels, living mascot, and live path preview.
  */
 
-import { createWorldState } from './engine/grid.js';
-import { executeProgram, countProgramBlocks, normalizeProgram } from './engine/interpreter.js';
-import { transpileProgram } from './engine/transpiler.js';
-import { ALL_LEVELS, getLevelById, getNextLevel } from './levels/index.js';
-import { SpaceCanvasRenderer } from './renderer/canvas-renderer.js';
-import { SpaceSoundSynth } from './audio/sound-synth.js';
+import { createWorldState } from './engine/grid.js?v=2.1';
+import { executeProgram, countProgramBlocks, normalizeProgram } from './engine/interpreter.js?v=2.1';
+import { transpileProgram } from './engine/transpiler.js?v=2.1';
+import { ALL_LEVELS, getLevelById, getNextLevel } from './levels/index.js?v=2.1';
+import { SpaceCanvasRenderer } from './renderer/canvas-renderer.js?v=2.1';
+import { SpaceSoundSynth } from './audio/sound-synth.js?v=2.1';
 import {
   loadProgress,
   saveProgress,
   recordLevelCompletion,
   getTotalStars,
-} from './storage/progress.js';
+} from './storage/progress.js?v=2.1';
 import {
   createBlock,
   cloneBlocks,
@@ -28,9 +28,9 @@ import {
   findContainerExists,
   renderPalette,
   renderWorkspace,
-} from './ui/workspace.js';
-import { renderLevelsModal, renderGarageModal } from './ui/modals.js';
-import { t } from './ui/i18n.js';
+} from './ui/workspace.js?v=2.1';
+import { renderLevelsModal, renderGarageModal } from './ui/modals.js?v=2.1';
+import { t } from './ui/i18n.js?v=2.1';
 
 const SPEED_CONFIG = {
   slow: { ms: 540, next: 'normal', labelKey: 'speedSlow' },
@@ -39,6 +39,7 @@ const SPEED_CONFIG = {
 };
 
 const els = {
+  canvasFrame: document.getElementById('canvas-frame'),
   canvas: document.getElementById('game-canvas'),
   levelBadge: document.getElementById('level-badge'),
   totalStarsPill: document.getElementById('total-stars-pill'),
@@ -294,6 +295,9 @@ function renderEditor() {
     },
   });
 
+  const prevBoard = els.workspace.querySelector('.puzzle-board');
+  const prevScrollTop = prevBoard ? prevBoard.scrollTop : 0;
+
   renderWorkspace(els.workspace, state.program, {
     lang: lang(),
     t,
@@ -376,6 +380,11 @@ function renderEditor() {
       renderCodePeek();
     },
   });
+
+  const nextBoard = els.workspace.querySelector('.puzzle-board');
+  if (nextBoard && prevScrollTop > 0) {
+    nextBoard.scrollTop = prevScrollTop;
+  }
 
   state.newlyAddedId = null;
   renderCodePeek();
@@ -740,10 +749,37 @@ els.winNextBtn.addEventListener('click', () => {
 });
 
 window.addEventListener('resize', () => renderer.resize());
+if (typeof ResizeObserver !== 'undefined' && els.canvasFrame) {
+  const ro = new ResizeObserver(() => renderer.resize());
+  ro.observe(els.canvasFrame);
+}
+
 window.addEventListener('keydown', (event) => {
+  const tag = event.target?.tagName;
+  const isFormControl = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
+
+  if (event.key === 'Escape' && !els.modalBackdrop.classList.contains('hidden')) {
+    els.modalBackdrop.classList.add('hidden');
+    return;
+  }
+
   if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') {
     event.preventDefault();
     els.btnUndo.click();
+    return;
+  }
+
+  if (isFormControl || !els.modalBackdrop.classList.contains('hidden')) return;
+
+  if (event.key === ' ' && tag !== 'BUTTON') {
+    event.preventDefault();
+    startRun();
+  } else if (event.key.toLowerCase() === 's' && !event.ctrlKey && !event.metaKey) {
+    event.preventDefault();
+    stepOnce();
+  } else if (event.key.toLowerCase() === 'r' && !event.ctrlKey && !event.metaKey) {
+    event.preventDefault();
+    els.btnReset.click();
   }
 });
 

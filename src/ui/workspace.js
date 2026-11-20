@@ -205,6 +205,27 @@ export const BLOCK_META = {
   call_f2: { icon: '🌟', category: 'fn' },
 };
 
+const JIGSAW_SOCKET_SVG = `
+  <svg class="jigsaw-socket" viewBox="0 0 38 15" aria-hidden="true">
+    <path d="M 0 0 L 10.6 0 C 12.6 1.2 13.2 3.3 11.4 5.4 C 8.9 8.1 10 14.4 19 14.4 C 28 14.4 29.1 8.1 26.6 5.4 C 24.8 3.3 25.4 1.2 27.4 0 L 38 0 Z" fill="var(--board-bg, #070d20)" />
+    <path d="M 10.6 0 C 12.6 1.2 13.2 3.3 11.4 5.4 C 8.9 8.1 10 14.4 19 14.4 C 28 14.4 29.1 8.1 26.6 5.4 C 24.8 3.3 25.4 1.2 27.4 0" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5" />
+  </svg>
+`;
+
+const JIGSAW_KNOB_SVG = (extraClass = '') => `
+  <svg class="jigsaw-knob ${extraClass}" viewBox="0 0 38 15" aria-hidden="true">
+    <path d="M 12.3 0 C 13.9 1.1 14.4 3 12.9 4.9 C 10.7 7.3 11.5 12.9 19 12.9 C 26.5 12.9 27.3 7.3 25.1 4.9 C 23.6 3 24.1 1.1 25.7 0 Z" fill="var(--piece-bot)" stroke="rgba(255,255,255,0.36)" stroke-width="1.4" stroke-linejoin="round" />
+    <path d="M 13.1 0 L 24.9 0" stroke="var(--piece-bot)" stroke-width="3.2" />
+  </svg>
+`;
+
+const PALETTE_TAB_SVG = `
+  <svg class="palette-tab" viewBox="0 0 12 24" aria-hidden="true">
+    <path d="M 0 5 C 1.2 6.4 3 6.8 4.6 5.4 C 6.8 3.5 11.2 4.4 11.2 12 C 11.2 19.6 6.8 20.5 4.6 18.6 C 3 17.2 1.2 17.6 0 19 Z" fill="var(--piece-mid)" stroke="rgba(255,255,255,0.34)" stroke-width="1.2" />
+    <path d="M 0 6.2 L 0 17.8" stroke="var(--piece-mid)" stroke-width="2.8" />
+  </svg>
+`;
+
 function escapeHtml(text) {
   return String(text ?? '')
     .replaceAll('&', '&amp;')
@@ -231,9 +252,11 @@ export function renderPalette(container, allowedBlocks, { lang, t, hintBlockType
         class="palette-piece cat-${meta.category} ${extraClass} ${glow}"
         data-block-type="${type}"
         draggable="true"
+        title="${escapeHtml(t(lang, 'paletteHint'))}"
       >
         <span class="piece-icon" aria-hidden="true">${meta.icon}</span>
         <span class="piece-label">${escapeHtml(label)}</span>
+        ${PALETTE_TAB_SVG}
       </button>
     `;
   };
@@ -259,7 +282,8 @@ export function renderPalette(container, allowedBlocks, { lang, t, hintBlockType
   }
 
   if (hasCompass && otherBlocks.length > 0) {
-    html += `<div class="palette-extras">${otherBlocks.map((b) => pieceBtn(b, 'extra-btn')).join('')}</div>`;
+    const gridCls = otherBlocks.length >= 3 ? 'extras-grid' : '';
+    html += `<div class="palette-extras ${gridCls}">${otherBlocks.map((b) => pieceBtn(b, 'extra-btn')).join('')}</div>`;
   }
 
   container.innerHTML = html;
@@ -312,13 +336,17 @@ export function renderWorkspace(
 
   const renderList = (list, scope, depth = 0, emptyKey = 'workspaceEmpty', emptyParams = {}) => {
     if (!list || list.length === 0) {
-      return `<div class="puzzle-slot-empty ${depth > 0 ? 'inner' : ''}">${escapeHtml(
-        t(lang, emptyKey, emptyParams)
-      )}</div>`;
+      return `
+        <div class="puzzle-slot-empty ${depth > 0 ? 'inner' : ''}">
+          ${JIGSAW_SOCKET_SVG}
+          <span>${escapeHtml(t(lang, emptyKey, emptyParams))}</span>
+        </div>
+      `;
     }
 
     return list
-      .map((block) => {
+      .map((block, idx) => {
+        const zIdx = Math.max(1, 50 - idx);
         const metaKey =
           block.type === 'call'
             ? block.fn === 'F2'
@@ -344,9 +372,11 @@ export function renderWorkspace(
               class="puzzle-piece puzzle-clamp clamp-repeat ${stateClass} ${isFocused ? 'container-focused' : ''}"
               data-block-id="${block.id}"
               data-scope="${scope}"
+              style="z-index:${zIdx}"
               draggable="true"
             >
               <div class="puzzle-clamp-top cat-control">
+                ${JIGSAW_SOCKET_SVG}
                 <div class="puzzle-left">
                   <span class="drag-grip" aria-hidden="true">⋮⋮</span>
                   <span class="piece-icon">${meta.icon}</span>
@@ -358,6 +388,7 @@ export function renderWorkspace(
                   </div>
                 </div>
                 <button type="button" class="remove-pill-btn" data-action="remove" data-id="${block.id}" data-scope="${scope}" title="✕">✕</button>
+                ${JIGSAW_KNOB_SVG('inner-knob')}
               </div>
               <div class="puzzle-clamp-jaw">
                 <div class="puzzle-spine spine-control" aria-hidden="true"></div>
@@ -370,7 +401,9 @@ export function renderWorkspace(
                   ${renderList(block.body, scope, depth + 1, 'repeatEmpty')}
                 </div>
               </div>
-              <div class="puzzle-clamp-bottom bottom-control"></div>
+              <div class="puzzle-clamp-bottom cat-control bottom-control">
+                ${JIGSAW_KNOB_SVG()}
+              </div>
             </div>
           `;
         }
@@ -386,9 +419,11 @@ export function renderWorkspace(
               class="puzzle-piece puzzle-clamp clamp-if ${stateClass} ${isFocused ? 'container-focused' : ''}"
               data-block-id="${block.id}"
               data-scope="${scope}"
+              style="z-index:${zIdx}"
               draggable="true"
             >
               <div class="puzzle-clamp-top cat-sensor">
+                ${JIGSAW_SOCKET_SVG}
                 <div class="puzzle-left">
                   <span class="drag-grip" aria-hidden="true">⋮⋮</span>
                   <span class="piece-icon">${meta.icon}</span>
@@ -398,6 +433,7 @@ export function renderWorkspace(
                   </select>
                 </div>
                 <button type="button" class="remove-pill-btn" data-action="remove" data-id="${block.id}" data-scope="${scope}" title="✕">✕</button>
+                ${JIGSAW_KNOB_SVG('inner-knob')}
               </div>
               <div class="puzzle-clamp-jaw">
                 <div class="puzzle-spine spine-sensor" aria-hidden="true"></div>
@@ -410,7 +446,9 @@ export function renderWorkspace(
                   ${renderList(block.then, scope, depth + 1, 'ifEmpty')}
                 </div>
               </div>
-              <div class="puzzle-clamp-bottom bottom-sensor"></div>
+              <div class="puzzle-clamp-bottom cat-sensor bottom-sensor">
+                ${JIGSAW_KNOB_SVG()}
+              </div>
             </div>
           `;
         }
@@ -420,14 +458,17 @@ export function renderWorkspace(
             class="puzzle-piece puzzle-cmd cat-${meta.category} ${stateClass}"
             data-block-id="${block.id}"
             data-scope="${scope}"
+            style="z-index:${zIdx}"
             draggable="true"
           >
+            ${JIGSAW_SOCKET_SVG}
             <div class="puzzle-left">
               <span class="drag-grip" aria-hidden="true">⋮⋮</span>
               <span class="piece-icon">${meta.icon}</span>
               <span>${escapeHtml(label)}</span>
             </div>
             <button type="button" class="remove-pill-btn" data-action="remove" data-id="${block.id}" data-scope="${scope}" title="✕">✕</button>
+            ${JIGSAW_KNOB_SVG()}
           </div>
         `;
       })
@@ -441,6 +482,7 @@ export function renderWorkspace(
         <button type="button" class="puzzle-hat ${hatClass} ${isRootFocused ? 'hat-focused' : ''}" data-select-scope="${scope}">
           <span>${title}</span>
           ${isRootFocused ? `<span class="hat-badge">✨ ${escapeHtml(t(lang, 'addingHere'))}</span>` : ''}
+          ${JIGSAW_KNOB_SVG()}
         </button>
         <div class="puzzle-stack" data-scope="${scope}" data-container-id="">
           ${renderList(blocks, scope, 0, emptyKey, emptyParams)}
@@ -469,7 +511,36 @@ export function renderWorkspace(
     );
   }
 
-  container.innerHTML = `<div class="puzzle-board">${sectionsHtml}</div>`;
+  let scopeTabsHtml = '';
+  if (showFunctions.length > 0) {
+    const scopes = [
+      { key: 'main', label: `🚩 ${t(lang, 'scopeMain')}`, count: program.main.length },
+      ...showFunctions.map((fn) => ({
+        key: fn,
+        label: `${fn === 'F2' ? '🌟' : '⚡'} ${fn}`,
+        count: (program.functions?.[fn] || []).length,
+      })),
+    ];
+    scopeTabsHtml = `
+      <div class="scope-tabs" role="tablist">
+        ${scopes
+          .map(
+            (s) => `
+              <button
+                type="button"
+                class="scope-tab ${activeScope === s.key ? 'active' : ''}"
+                data-jump-scope="${s.key}"
+              >
+                ${escapeHtml(s.label)} <span class="scope-count">${s.count}</span>
+              </button>
+            `
+          )
+          .join('')}
+      </div>
+    `;
+  }
+
+  container.innerHTML = `${scopeTabsHtml}<div class="puzzle-board">${sectionsHtml}</div>`;
 
   container.onchange = (event) => {
     const sel = event.target.closest('.sensor-select');
@@ -491,6 +562,17 @@ export function renderWorkspace(
       if (action === 'remove') onRemoveBlock(scope, id);
       else if (action === 'rep-inc') onChangeRepeat(scope, id, 1);
       else if (action === 'rep-dec') onChangeRepeat(scope, id, -1);
+      return;
+    }
+
+    const jumpBtn = event.target.closest('[data-jump-scope]');
+    if (jumpBtn) {
+      const targetScope = jumpBtn.dataset.jumpScope;
+      onSelectTarget(targetScope, null);
+      requestAnimationFrame(() => {
+        const sec = container.querySelector(`.puzzle-section[data-scope="${targetScope}"]`);
+        sec?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      });
       return;
     }
 

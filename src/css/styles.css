@@ -1,5 +1,6 @@
 :root {
   --bg: #080d1e;
+  --board-bg: #070d20;
   --surface: #111936;
   --surface-2: #18234a;
   --border: #2a3b75;
@@ -25,19 +26,51 @@
   --hat-dark: #047857;
   --danger: #f43f5e;
   --gold: #facc15;
-  --radius: 16px;
+  --radius: 14px;
 }
 
 * {
   box-sizing: border-box;
 }
 
+html,
 body {
   margin: 0;
+  padding: 0;
+}
+
+body {
   font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
   background: radial-gradient(circle at top, #131c3f 0%, var(--bg) 65%);
   color: var(--text);
-  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Custom sleek space scrollbars (no jarring white Windows scrollbars) */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #33488a rgba(8, 13, 30, 0.4);
+}
+
+*::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+*::-webkit-scrollbar-track {
+  background: rgba(8, 13, 30, 0.35);
+  border-radius: 999px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: #33488a;
+  border-radius: 999px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: #4b67bd;
 }
 
 button {
@@ -50,49 +83,58 @@ button {
 }
 
 .small {
-  font-size: 0.85rem;
-  margin: 4px 0 0;
+  font-size: 0.82rem;
+  margin: 2px 0 0;
 }
 
 .muted {
   color: var(--muted);
 }
 
-/* Topbar */
+/* =========================================================
+   SLIM TOPBAR
+   ========================================================= */
 .topbar {
-  background: rgba(11, 17, 38, 0.92);
+  background: rgba(11, 17, 38, 0.94);
   border-bottom: 1px solid var(--border);
   backdrop-filter: blur(8px);
   position: sticky;
   top: 0;
   z-index: 20;
+  flex-shrink: 0;
 }
 
 .topbar-inner {
-  max-width: 1320px;
+  max-width: 1400px;
   margin: 0 auto;
-  padding: 10px 16px;
+  padding: 6px 14px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 10px;
   flex-wrap: wrap;
 }
 
 .brand {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+}
+
+.brand-text {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .brand-logo {
-  font-size: 1.8rem;
+  font-size: 1.55rem;
+  line-height: 1;
 }
 
 .brand-name {
-  font-size: 1.25rem;
+  font-size: 1.12rem;
   letter-spacing: 0.3px;
-  margin-right: 8px;
 }
 
 .level-pill,
@@ -101,13 +143,14 @@ button {
 .mission-stat {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 5px 11px;
+  gap: 4px;
+  padding: 3px 10px;
   border-radius: 999px;
   background: var(--surface-2);
   border: 1px solid var(--border);
-  font-size: 0.86rem;
+  font-size: 0.8rem;
   font-weight: 700;
+  white-space: nowrap;
 }
 
 .stars-pill {
@@ -118,21 +161,26 @@ button {
 .topbar-actions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   flex-wrap: wrap;
 }
 
 .nav-btn {
-  min-height: 40px;
-  padding: 6px 12px;
-  border-radius: 12px;
+  min-height: 34px;
+  padding: 4px 10px;
+  border-radius: 10px;
   border: 1px solid var(--border);
   background: var(--surface-2);
   color: var(--text);
   font-weight: 600;
-  font-size: 0.88rem;
+  font-size: 0.82rem;
   cursor: pointer;
   transition: transform 0.12s ease, border-color 0.15s ease;
+}
+
+.nav-icon-btn {
+  min-width: 34px;
+  padding: 4px 8px;
 }
 
 .nav-btn:hover {
@@ -145,59 +193,121 @@ button {
   box-shadow: 0 0 0 2px rgba(250, 204, 21, 0.25);
 }
 
-/* Split Layout */
+/* =========================================================
+   1-SCREEN RESPONSIVE SPLIT LAYOUT
+   ========================================================= */
 .game-layout {
-  max-width: 1320px;
+  width: 100%;
+  max-width: 1400px;
   margin: 0 auto;
-  padding: 16px;
+  padding: 10px 14px;
   display: grid;
-  grid-template-columns: minmax(340px, 1.12fr) minmax(340px, 0.98fr);
-  gap: 18px;
-  align-items: start;
+  grid-template-columns: minmax(360px, 1.08fr) minmax(380px, 0.98fr);
+  gap: 12px;
+  align-items: stretch;
+  flex: 1;
 }
 
 .stage-column,
 .editor-column {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 8px;
+  min-width: 0;
 }
 
-/* Mission & Living Mascot Speech Bubble */
+/* Desktop viewport lock: everything fits cleanly in 1 screen with ZERO outer scrollbar! */
+@media (min-width: 901px) and (min-height: 580px) {
+  body {
+    height: 100dvh;
+    overflow: hidden;
+  }
+
+  .game-layout {
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .stage-column,
+  .editor-column {
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .canvas-frame {
+    flex: 1 1 0;
+    min-height: 220px;
+    aspect-ratio: auto !important;
+    max-height: none !important;
+  }
+
+  .controls-bar {
+    flex-wrap: nowrap !important;
+  }
+
+  .workspace-panel {
+    flex: 1 1 0;
+    min-height: 160px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .block-workspace {
+    flex: 1 1 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .puzzle-board {
+    flex: 1 1 0;
+    min-height: 0;
+    max-height: none !important;
+  }
+}
+
+/* =========================================================
+   MISSION & LIVING MASCOT SPEECH BUBBLE (COMPACT)
+   ========================================================= */
 .mission-banner {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 12px 16px;
+  padding: 8px 12px;
+  flex-shrink: 0;
 }
 
 .mission-title-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 10px;
+  gap: 8px;
+  margin-bottom: 6px;
 }
 
 .mission-title-row h1 {
   margin: 0;
-  font-size: 1.25rem;
+  font-size: 1.05rem;
+  line-height: 1.2;
 }
 
 .mascot-row {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 .mascot-avatar-btn {
-  width: 48px;
-  height: 48px;
+  width: 38px;
+  height: 38px;
   flex-shrink: 0;
   border-radius: 50%;
   border: 2px solid var(--dir-up);
   background: radial-gradient(circle at 30% 30%, #1e3a8a, #0f172a);
-  font-size: 1.6rem;
+  font-size: 1.35rem;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -206,7 +316,7 @@ button {
 }
 
 .mascot-avatar-btn:hover {
-  transform: scale(1.08) rotate(-6deg);
+  transform: scale(1.1) rotate(-6deg);
 }
 
 .mascot-bubble {
@@ -214,22 +324,22 @@ button {
   flex: 1;
   background: var(--surface-2);
   border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 10px 14px;
-  font-size: 0.93rem;
+  border-radius: 12px;
+  padding: 6px 11px;
+  font-size: 0.84rem;
   font-weight: 600;
-  line-height: 1.38;
+  line-height: 1.32;
   color: #e2e8f0;
 }
 
 .mascot-bubble::before {
   content: '';
   position: absolute;
-  left: -7px;
+  left: -6px;
   top: 50%;
   transform: translateY(-50%) rotate(45deg);
-  width: 12px;
-  height: 12px;
+  width: 10px;
+  height: 10px;
   background: var(--surface-2);
   border-left: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
@@ -257,17 +367,19 @@ button {
   border-color: #22c55e;
 }
 
-/* Canvas Stage */
+/* =========================================================
+   CANVAS STAGE
+   ========================================================= */
 .canvas-frame {
   position: relative;
   width: 100%;
   aspect-ratio: 4 / 3;
-  min-height: 290px;
-  max-height: 520px;
+  min-height: 260px;
+  max-height: 460px;
   border-radius: var(--radius);
   overflow: hidden;
   border: 2px solid var(--border);
-  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.45);
 }
 
 #game-canvas {
@@ -277,32 +389,35 @@ button {
   cursor: pointer;
 }
 
-/* Action Controls */
+/* =========================================================
+   SINGLE-ROW ACTION CONTROLS BAR
+   ========================================================= */
 .controls-bar {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   flex-wrap: wrap;
+  flex-shrink: 0;
 }
 
 .btn {
-  min-height: 48px;
-  padding: 10px 16px;
-  border-radius: 14px;
+  min-height: 42px;
+  padding: 7px 11px;
+  border-radius: 12px;
   border: 2px solid transparent;
   font-weight: 700;
-  font-size: 0.95rem;
+  font-size: 0.86rem;
   color: #ffffff;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 5px;
   white-space: nowrap;
   transition: transform 0.12s ease, filter 0.15s ease;
 }
 
 .btn:hover:not(:disabled) {
-  transform: translateY(-2px);
+  transform: translateY(-1px);
   filter: brightness(1.08);
 }
 
@@ -314,15 +429,15 @@ button {
 .btn-run {
   background: linear-gradient(180deg, #22c55e, #16a34a);
   border-color: #4ade80;
-  flex: 1.25;
-  min-width: 120px;
-  box-shadow: 0 6px 20px rgba(34, 197, 94, 0.35);
+  flex: 1.3;
+  min-width: 96px;
+  box-shadow: 0 4px 16px rgba(34, 197, 94, 0.35);
 }
 
 .btn-run.stopping {
   background: linear-gradient(180deg, #f43f5e, #e11d48);
   border-color: #fb7185;
-  box-shadow: 0 6px 20px rgba(244, 63, 94, 0.35);
+  box-shadow: 0 4px 16px rgba(244, 63, 94, 0.35);
 }
 
 .btn-step {
@@ -353,47 +468,62 @@ button {
 }
 
 .btn-sm {
-  min-height: 36px;
-  padding: 6px 12px;
-  font-size: 0.84rem;
+  min-height: 34px;
+  padding: 5px 11px;
+  font-size: 0.82rem;
 }
 
-/* Panels */
+/* =========================================================
+   PANELS
+   ========================================================= */
 .panel {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 14px 16px;
+  padding: 10px 12px;
+}
+
+.palette-panel {
+  flex-shrink: 0;
 }
 
 .panel-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 8px;
   flex-wrap: wrap;
 }
 
 .panel-head h2 {
   margin: 0;
-  font-size: 1.05rem;
+  font-size: 0.96rem;
 }
 
 .head-actions {
   display: flex;
-  gap: 8px;
+  gap: 6px;
 }
 
 .mini-text-btn {
-  min-height: 36px;
-  padding: 5px 10px;
-  border-radius: 10px;
+  min-height: 30px;
+  padding: 3px 9px;
+  border-radius: 9px;
   border: 1px solid var(--border);
   background: var(--surface-2);
   color: var(--text);
   font-weight: 600;
-  font-size: 0.84rem;
+  font-size: 0.79rem;
   cursor: pointer;
+}
+
+.mini-text-btn:hover:not(:disabled) {
+  border-color: var(--dir-up);
+}
+
+.mini-text-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .mini-text-btn.danger:hover {
@@ -401,27 +531,81 @@ button {
   color: #fda4af;
 }
 
-/* 4-Direction Compass Palette */
+/* =========================================================
+   CATEGORY COLOR TOKENS (SHARED BY PIECES + SVG JIGSAW KNOBS)
+   ========================================================= */
+.cat-dir-up {
+  --piece-top: #38bdf8;
+  --piece-mid: #0ea5e9;
+  --piece-bot: #0369a1;
+  background: linear-gradient(180deg, var(--piece-top), var(--piece-bot));
+}
+.cat-dir-down {
+  --piece-top: #60a5fa;
+  --piece-mid: #3b82f6;
+  --piece-bot: #1d4ed8;
+  background: linear-gradient(180deg, var(--piece-top), var(--piece-bot));
+}
+.cat-dir-left {
+  --piece-top: #2dd4bf;
+  --piece-mid: #14b8a6;
+  --piece-bot: #0f766e;
+  background: linear-gradient(180deg, var(--piece-top), var(--piece-bot));
+}
+.cat-dir-right {
+  --piece-top: #22d3ee;
+  --piece-mid: #06b6d4;
+  --piece-bot: #0e7490;
+  background: linear-gradient(180deg, var(--piece-top), var(--piece-bot));
+}
+.cat-action {
+  --piece-top: #fbbf24;
+  --piece-mid: #f59e0b;
+  --piece-bot: #b45309;
+  background: linear-gradient(180deg, var(--piece-top), var(--piece-bot));
+}
+.cat-control {
+  --piece-top: #c084fc;
+  --piece-mid: #a855f7;
+  --piece-bot: #7e22ce;
+  background: linear-gradient(180deg, var(--piece-top), var(--piece-bot));
+}
+.cat-sensor {
+  --piece-top: #f472b6;
+  --piece-mid: #ec4899;
+  --piece-bot: #be185d;
+  background: linear-gradient(180deg, var(--piece-top), var(--piece-bot));
+}
+.cat-fn {
+  --piece-top: #fb923c;
+  --piece-mid: #f97316;
+  --piece-bot: #c2410c;
+  background: linear-gradient(180deg, var(--piece-top), var(--piece-bot));
+}
+
+/* =========================================================
+   COMPACT JIGSAW COMPASS PALETTE
+   ========================================================= */
 .block-palette {
-  margin-top: 12px;
+  margin-top: 8px;
   display: flex;
-  align-items: center;
+  align-items: stretch;
   justify-content: space-between;
-  gap: 14px;
-  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .compass-pad {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
-  background: rgba(8, 13, 30, 0.55);
+  justify-content: center;
+  gap: 5px;
+  background: rgba(7, 13, 32, 0.65);
   border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 10px 10px;
-  flex: 1.35;
-  min-width: 268px;
+  border-radius: 13px;
+  padding: 7px 10px;
+  flex: 1.1;
+  min-width: 230px;
 }
 
 .compass-row {
@@ -432,41 +616,70 @@ button {
 }
 
 .compass-center {
-  width: 34px;
-  height: 34px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   background: var(--surface-2);
   border: 1px solid var(--border);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.05rem;
+  font-size: 0.92rem;
   flex-shrink: 0;
 }
 
 .palette-extras {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  flex: 0.85;
-  min-width: 148px;
+  justify-content: center;
+  gap: 6px;
+  flex: 0.95;
+  min-width: 140px;
+}
+
+.palette-extras.extras-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-content: center;
+  gap: 6px 10px;
+  padding-right: 4px;
 }
 
 .palette-piece {
-  min-height: 44px;
-  padding: 7px 11px;
-  border-radius: 12px;
-  border: 2px solid rgba(255, 255, 255, 0.25);
+  position: relative;
+  min-height: 36px;
+  padding: 5px 10px;
+  border-radius: 10px;
+  border: 1.5px solid rgba(255, 255, 255, 0.3);
   color: #ffffff;
   font-weight: 800;
-  font-size: 0.88rem;
+  font-size: 0.81rem;
   cursor: grab;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.35);
+  gap: 4px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.28),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.25),
+    0 3px 0 rgba(0, 0, 0, 0.35);
   transition: transform 0.12s ease, filter 0.15s ease;
+}
+
+.palette-piece .palette-tab {
+  position: absolute;
+  right: -9px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 10px;
+  height: 20px;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.palette-piece.compass-btn .palette-tab {
+  display: none;
 }
 
 .palette-piece:hover {
@@ -480,17 +693,19 @@ button {
 }
 
 .palette-piece.compass-btn {
-  min-width: 98px;
+  min-width: 86px;
+  padding: 5px 8px;
 }
 
 .palette-piece.extra-btn {
-  min-height: 46px;
-  font-size: 0.92rem;
+  min-height: 36px;
+  padding: 5px 8px;
+  font-size: 0.82rem;
 }
 
 .palette-piece.hint-glow {
-  box-shadow: 0 0 0 3px var(--gold), 0 0 22px rgba(250, 204, 21, 0.85);
-  animation: hintPulse 0.7s ease-in-out infinite alternate;
+  box-shadow: 0 0 0 3px var(--gold), 0 0 20px rgba(250, 204, 21, 0.85);
+  animation: hintPulse 0.65s ease-in-out infinite alternate;
 }
 
 @keyframes hintPulse {
@@ -498,35 +713,71 @@ button {
   to { transform: scale(1.06); }
 }
 
-.cat-dir-up { background: linear-gradient(180deg, var(--dir-up), var(--dir-up-dark)); }
-.cat-dir-down { background: linear-gradient(180deg, var(--dir-down), var(--dir-down-dark)); }
-.cat-dir-left { background: linear-gradient(180deg, var(--dir-left), var(--dir-left-dark)); }
-.cat-dir-right { background: linear-gradient(180deg, var(--dir-right), var(--dir-right-dark)); }
-.cat-action { background: linear-gradient(180deg, var(--action), var(--action-dark)); }
-.cat-control { background: linear-gradient(180deg, var(--control), var(--control-dark)); }
-.cat-sensor { background: linear-gradient(180deg, var(--sensor), var(--sensor-dark)); }
-.cat-fn { background: linear-gradient(180deg, var(--fn), var(--fn-dark)); }
-
 /* =========================================================
-   INTERLOCKING JIGSAW PUZZLE WORKSPACE (Scratch-style!)
+   QUICK-JUMP SCOPE TABS (PRINCIPAL / F1 / F2)
    ========================================================= */
 .block-workspace {
-  margin-top: 10px;
+  margin-top: 8px;
 }
 
+.scope-tabs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.scope-tab {
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.12s ease;
+}
+
+.scope-tab:hover {
+  color: var(--text);
+  border-color: var(--dir-up);
+}
+
+.scope-tab.active {
+  background: rgba(250, 204, 21, 0.16);
+  border-color: var(--gold);
+  color: #fef08a;
+}
+
+.scope-count {
+  padding: 0 5px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.55);
+  font-size: 0.72rem;
+}
+
+/* =========================================================
+   REAL INTERLOCKING JIGSAW PUZZLE WORKSPACE (SVG KNOB + SOCKET!)
+   ========================================================= */
 .puzzle-board {
   min-height: 150px;
   max-height: 440px;
   overflow-y: auto;
-  padding: 14px;
-  border-radius: 14px;
+  padding: 12px 14px 20px;
+  border-radius: 12px;
   background:
-    radial-gradient(rgba(148, 163, 184, 0.16) 1px, transparent 1px) 0 0 / 18px 18px,
-    rgba(8, 13, 30, 0.75);
+    radial-gradient(rgba(148, 163, 184, 0.14) 1.2px, transparent 1.2px) 0 0 / 18px 18px,
+    var(--board-bg);
   border: 2px dashed var(--border);
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 20px;
 }
 
 .puzzle-section {
@@ -534,198 +785,198 @@ button {
   flex-direction: column;
 }
 
-/* Rounded Event Hat Piece at Top */
+/* SVG Jigsaw Keyhole Socket & Bulb Knob */
+.jigsaw-socket {
+  position: absolute;
+  left: 30px;
+  top: -2px;
+  width: 38px;
+  height: 15px;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.jigsaw-knob {
+  position: absolute;
+  left: 30px;
+  bottom: -13.5px;
+  width: 38px;
+  height: 15px;
+  pointer-events: none;
+  z-index: 6;
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.45));
+}
+
+.jigsaw-knob.inner-knob {
+  left: 50px;
+}
+
+/* Rounded Event / Function Hat Piece at Top */
 .puzzle-hat {
+  --piece-bot: var(--hat-dark);
   position: relative;
   width: 100%;
   max-width: 330px;
-  padding: 10px 16px;
-  border-radius: 26px 26px 10px 10px;
-  border: 2px solid rgba(255, 255, 255, 0.28);
-  background: linear-gradient(180deg, var(--hat), var(--hat-dark));
+  padding: 9px 14px;
+  border-radius: 22px 22px 9px 9px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  background: linear-gradient(180deg, #34d399, var(--hat-dark));
   color: #ffffff;
   font-weight: 800;
-  font-size: 0.94rem;
+  font-size: 0.88rem;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.32),
+    0 3px 10px rgba(16, 185, 129, 0.25);
   margin-bottom: 0;
-  z-index: 3;
+  z-index: 60;
 }
 
 .puzzle-hat.hat-fn {
-  background: linear-gradient(180deg, var(--fn), var(--fn-dark));
-  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.25);
+  --piece-bot: var(--fn-dark);
+  background: linear-gradient(180deg, #fb923c, var(--fn-dark));
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.32),
+    0 3px 10px rgba(249, 115, 22, 0.25);
 }
 
 .puzzle-hat.hat-focused {
-  box-shadow: 0 0 0 2px var(--gold);
-}
-
-/* Bottom puzzle tab protruding from the Hat piece */
-.puzzle-hat::after {
-  content: '';
-  position: absolute;
-  left: 34px;
-  bottom: -9px;
-  width: 32px;
-  height: 9px;
-  background: var(--hat-dark);
-  border-radius: 0 0 8px 8px;
-  border: 2px solid rgba(255, 255, 255, 0.24);
-  border-top: none;
-  z-index: 4;
-}
-
-.puzzle-hat.hat-fn::after {
-  background: var(--fn-dark);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.35),
+    0 0 0 2px var(--gold);
 }
 
 .hat-badge {
-  font-size: 0.72rem;
-  background: rgba(15, 23, 42, 0.4);
+  font-size: 0.7rem;
+  background: rgba(15, 23, 42, 0.45);
   color: var(--gold);
-  padding: 2px 8px;
+  padding: 2px 7px;
   border-radius: 999px;
 }
 
 .puzzle-stack {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
-  padding-top: 2px;
   gap: 0;
 }
 
+/* Empty Jigsaw Drop Ghost Slot */
 .puzzle-slot-empty {
-  margin-top: 12px;
-  padding: 14px 12px;
-  border-radius: 12px;
-  border: 2px dashed rgba(148, 163, 184, 0.35);
+  position: relative;
+  margin-top: -1px;
+  padding: 17px 12px 11px;
+  border-radius: 10px;
+  border: 2px dashed rgba(148, 163, 184, 0.38);
+  background: rgba(24, 35, 74, 0.28);
   color: var(--muted);
-  font-size: 0.88rem;
+  font-size: 0.82rem;
   font-weight: 600;
   text-align: center;
-  max-width: 310px;
+  max-width: 320px;
 }
 
 .puzzle-slot-empty.inner {
-  margin-top: 4px;
-  padding: 10px;
-  font-size: 0.82rem;
+  margin-top: -1px;
+  padding: 15px 10px 9px;
+  font-size: 0.78rem;
 }
 
-/* Command Jigsaw Piece (interlocks seamlessly into the piece above!) */
+/* Interlocking Jigsaw Command Piece */
 .puzzle-piece {
   position: relative;
   width: 100%;
-  max-width: 310px;
+  max-width: 320px;
   color: #ffffff;
   font-weight: 800;
-  font-size: 0.94rem;
+  font-size: 0.88rem;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
   cursor: grab;
-  transition: transform 0.14s ease, box-shadow 0.15s ease;
+  transition: transform 0.14s ease, filter 0.15s ease;
 }
 
 .puzzle-cmd {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  min-height: 46px;
-  padding: 9px 12px 9px 12px;
-  margin-top: 2px;
-  border-radius: 10px;
-  border: 2px solid rgba(255, 255, 255, 0.24);
-  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.3);
-}
-
-/* Top notch socket visually receiving the tab from above */
-.puzzle-cmd::before,
-.puzzle-clamp-top::before {
-  content: '';
-  position: absolute;
-  left: 34px;
-  top: -2px;
-  width: 32px;
-  height: 8px;
-  background: #0a1026;
-  border-radius: 0 0 7px 7px;
-  border: 2px solid rgba(255, 255, 255, 0.22);
-  border-top: none;
-}
-
-/* Bottom jigsaw tab protruding out to lock into the next piece */
-.puzzle-cmd::after,
-.puzzle-clamp-bottom::after {
-  content: '';
-  position: absolute;
-  left: 34px;
-  bottom: -9px;
-  width: 32px;
-  height: 9px;
-  background: inherit;
-  border-radius: 0 0 8px 8px;
-  border: 2px solid rgba(255, 255, 255, 0.24);
-  border-top: none;
-  z-index: 4;
+  gap: 8px;
+  min-height: 44px;
+  padding: 12px 10px 7px 10px;
+  margin-top: -2px;
+  border-radius: 9px;
+  border: 2px solid rgba(255, 255, 255, 0.28);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.26),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.25);
 }
 
 .puzzle-left {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 7px;
   flex-wrap: wrap;
 }
 
 .drag-grip {
-  opacity: 0.6;
-  font-size: 1rem;
+  opacity: 0.65;
+  font-size: 0.92rem;
   letter-spacing: -2px;
   cursor: grab;
   user-select: none;
 }
 
 .piece-icon {
-  font-size: 1.12rem;
+  font-size: 1.02rem;
+  line-height: 1;
 }
 
 .remove-pill-btn {
-  min-width: 30px;
-  min-height: 30px;
-  border-radius: 8px;
+  min-width: 26px;
+  min-height: 26px;
+  border-radius: 7px;
   border: 1px solid rgba(255, 255, 255, 0.3);
-  background: rgba(15, 23, 42, 0.32);
+  background: rgba(15, 23, 42, 0.34);
   color: #ffffff;
+  font-size: 0.78rem;
   font-weight: 800;
   cursor: pointer;
 }
 
 .remove-pill-btn:hover {
-  background: rgba(244, 63, 94, 0.9);
+  background: rgba(244, 63, 94, 0.92);
 }
 
-/* True C-Shaped Clamp Pieces (Repeat & If Sensor) */
+/* =========================================================
+   TRUE C-SHAPED JIGSAW CLAMP PIECES (REPEAT & IF SENSOR)
+   ========================================================= */
 .puzzle-clamp {
-  max-width: 365px;
-  margin-top: 2px;
+  max-width: 370px;
+  margin-top: -2px;
   background: transparent !important;
 }
 
 .puzzle-clamp-top {
   position: relative;
+  z-index: 60;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 9px 12px;
-  border-radius: 10px 10px 10px 0;
-  border: 2px solid rgba(255, 255, 255, 0.25);
+  padding: 12px 10px 8px 10px;
+  border-radius: 9px 9px 9px 0;
+  border: 2px solid rgba(255, 255, 255, 0.28);
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.26);
 }
 
 .puzzle-clamp-jaw {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: stretch;
 }
@@ -733,8 +984,8 @@ button {
 .puzzle-spine {
   width: 14px;
   flex-shrink: 0;
-  border-left: 2px solid rgba(255, 255, 255, 0.25);
-  border-right: 2px solid rgba(255, 255, 255, 0.15);
+  border-left: 2px solid rgba(255, 255, 255, 0.28);
+  border-right: 2px solid rgba(255, 255, 255, 0.16);
 }
 
 .spine-control,
@@ -749,9 +1000,9 @@ button {
 
 .puzzle-clamp-body {
   flex: 1;
-  padding: 8px 8px 12px 10px;
-  background: rgba(15, 23, 42, 0.52);
-  border-right: 2px dashed rgba(168, 85, 247, 0.4);
+  padding: 0 6px 16px 8px;
+  background: rgba(7, 13, 32, 0.55);
+  border-right: 2px dashed rgba(168, 85, 247, 0.35);
   display: flex;
   flex-direction: column;
   gap: 0;
@@ -767,20 +1018,22 @@ button {
 
 .puzzle-clamp-bottom {
   position: relative;
-  height: 18px;
-  border-radius: 0 10px 10px 10px;
-  border: 2px solid rgba(255, 255, 255, 0.25);
+  z-index: 1;
+  height: 16px;
+  border-radius: 0 9px 9px 9px;
+  border: 2px solid rgba(255, 255, 255, 0.28);
   border-top: none;
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.28);
 }
 
 .sensor-select {
-  background: rgba(15, 23, 42, 0.55);
+  background: rgba(15, 23, 42, 0.58);
   color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.35);
-  border-radius: 8px;
-  padding: 4px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.38);
+  border-radius: 7px;
+  padding: 2px 6px;
   font: inherit;
-  font-size: 0.84rem;
+  font-size: 0.78rem;
   font-weight: 700;
   cursor: pointer;
 }
@@ -793,43 +1046,48 @@ button {
 .repeat-stepper {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  background: rgba(15, 23, 42, 0.4);
-  padding: 2px 6px;
-  border-radius: 10px;
+  gap: 4px;
+  background: rgba(15, 23, 42, 0.42);
+  padding: 2px 5px;
+  border-radius: 8px;
 }
 
 .step-pill-btn {
-  min-width: 28px;
-  min-height: 28px;
-  border-radius: 7px;
+  min-width: 24px;
+  min-height: 24px;
+  border-radius: 6px;
   border: 1px solid rgba(255, 255, 255, 0.3);
   background: rgba(255, 255, 255, 0.14);
   color: #ffffff;
   font-weight: 900;
+  font-size: 0.82rem;
   cursor: pointer;
 }
 
 .repeat-count {
-  min-width: 24px;
+  min-width: 22px;
   text-align: center;
+  font-size: 0.84rem;
 }
 
 .focus-tag {
-  font-size: 0.74rem;
+  align-self: flex-end;
+  font-size: 0.7rem;
   color: var(--gold);
   font-weight: 700;
-  margin-bottom: 4px;
+  margin: 4px 2px 2px;
 }
 
-/* Snap, Drag & Debugger Animations */
+/* =========================================================
+   SNAP, DRAG & DEBUGGER ANIMATIONS
+   ========================================================= */
 .snap-pop {
-  animation: snapPop 0.26s cubic-bezier(0.22, 1.4, 0.36, 1);
+  animation: snapPop 0.28s cubic-bezier(0.22, 1.45, 0.36, 1);
 }
 
 @keyframes snapPop {
-  0% { transform: scale(0.86) translateY(-10px); opacity: 0.6; }
-  65% { transform: scale(1.04) translateY(2px); }
+  0% { transform: scale(0.88) translateY(-10px); opacity: 0.65; }
+  65% { transform: scale(1.03) translateY(2px); }
   100% { transform: scale(1) translateY(0); opacity: 1; }
 }
 
@@ -846,14 +1104,18 @@ button {
 }
 
 .block-active {
-  box-shadow: 0 0 0 3px var(--gold), 0 0 20px rgba(250, 204, 21, 0.7);
-  z-index: 6;
+  filter: drop-shadow(0 0 10px rgba(250, 204, 21, 0.9));
+  outline: 2.5px solid var(--gold);
+  outline-offset: 1px;
+  z-index: 80 !important;
 }
 
 .block-error {
-  box-shadow: 0 0 0 3px #fb923c, 0 0 22px rgba(249, 115, 22, 0.9);
+  filter: drop-shadow(0 0 12px rgba(249, 115, 22, 0.95));
+  outline: 2.5px solid #fb923c;
+  outline-offset: 1px;
   animation: pulseBug 0.55s ease-in-out infinite alternate;
-  z-index: 6;
+  z-index: 80 !important;
 }
 
 @keyframes pulseBug {
@@ -861,20 +1123,30 @@ button {
   to { transform: translateX(2px); }
 }
 
-/* Live Code Peek Panel */
+/* =========================================================
+   LIVE CODE PEEK PANEL (BOUNDED SO 1-SCREEN LAYOUT NEVER BREAKS)
+   ========================================================= */
+.code-peek-panel {
+  flex-shrink: 0;
+  max-height: 165px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
 .code-lang-tabs {
   display: flex;
-  gap: 6px;
+  gap: 5px;
 }
 
 .tab-btn {
-  padding: 5px 10px;
-  border-radius: 8px;
+  padding: 3px 9px;
+  border-radius: 7px;
   border: 1px solid var(--border);
   background: var(--surface-2);
   color: var(--muted);
   font-weight: 700;
-  font-size: 0.82rem;
+  font-size: 0.76rem;
   cursor: pointer;
 }
 
@@ -885,21 +1157,22 @@ button {
 }
 
 .code-peek-lines {
-  margin-top: 10px;
-  padding: 10px;
-  border-radius: 12px;
+  margin-top: 6px;
+  padding: 8px;
+  border-radius: 10px;
   background: #070b17;
   border: 1px solid var(--border);
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 0.84rem;
-  overflow-x: auto;
+  font-size: 0.8rem;
+  overflow: auto;
+  flex: 1;
 }
 
 .code-line {
   display: flex;
   gap: 10px;
-  padding: 2px 6px;
-  border-radius: 6px;
+  padding: 1px 5px;
+  border-radius: 5px;
   white-space: pre;
 }
 
@@ -910,12 +1183,14 @@ button {
 
 .code-ln {
   color: #475569;
-  min-width: 22px;
+  min-width: 20px;
   text-align: right;
   user-select: none;
 }
 
-/* Victory Overlay */
+/* =========================================================
+   VICTORY OVERLAY
+   ========================================================= */
 .win-overlay {
   position: absolute;
   inset: 0;
@@ -931,9 +1206,9 @@ button {
 .win-card {
   background: linear-gradient(180deg, #1b2856, #101836);
   border: 2px solid var(--gold);
-  border-radius: 20px;
-  padding: 24px;
-  max-width: 420px;
+  border-radius: 18px;
+  padding: 20px;
+  max-width: 390px;
   width: 100%;
   text-align: center;
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
@@ -946,9 +1221,9 @@ button {
 }
 
 .win-stars {
-  font-size: 2.6rem;
+  font-size: 2.4rem;
   letter-spacing: 6px;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .star-icon.earned {
@@ -961,19 +1236,19 @@ button {
 }
 
 .win-card h2 {
-  margin: 0 0 8px;
-  font-size: 1.35rem;
+  margin: 0 0 6px;
+  font-size: 1.25rem;
 }
 
 .win-sub {
-  margin: 0 0 18px;
+  margin: 0 0 16px;
   color: #cbd5e1;
-  font-size: 0.94rem;
+  font-size: 0.9rem;
 }
 
 .win-actions {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   flex-wrap: wrap;
   justify-content: center;
 }
@@ -982,7 +1257,9 @@ button {
   flex: 1 1 auto;
 }
 
-/* Modals (Planet Map & Garage) */
+/* =========================================================
+   MODALS (PLANET MAP & GARAGE)
+   ========================================================= */
 .modal-backdrop {
   position: fixed;
   inset: 0;
@@ -991,24 +1268,24 @@ button {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 16px;
-  z-index: 50;
+  padding: 14px;
+  z-index: 100;
 }
 
 .modal-card {
   background: var(--surface);
   border: 2px solid var(--border);
-  border-radius: 20px;
+  border-radius: 18px;
   max-width: 680px;
   width: 100%;
-  max-height: 85vh;
+  max-height: 86dvh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
 }
 
 .modal-head {
-  padding: 16px 20px;
+  padding: 14px 18px;
   border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
@@ -1018,26 +1295,26 @@ button {
 
 .modal-head h3 {
   margin: 0;
-  font-size: 1.2rem;
+  font-size: 1.15rem;
 }
 
 .icon-btn {
-  width: 38px;
-  height: 38px;
+  width: 36px;
+  height: 36px;
   border-radius: 10px;
   border: 1px solid var(--border);
   background: var(--surface-2);
   color: var(--text);
-  font-size: 1.1rem;
+  font-size: 1rem;
   cursor: pointer;
 }
 
 .modal-body {
-  padding: 18px 20px;
+  padding: 16px 18px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 16px;
 }
 
 .world-header {
@@ -1045,13 +1322,13 @@ button {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
   flex-wrap: wrap;
 }
 
 .world-header h4 {
   margin: 0;
-  font-size: 1.05rem;
+  font-size: 1rem;
 }
 
 .concept-pill {
@@ -1060,26 +1337,26 @@ button {
   background: rgba(168, 85, 247, 0.2);
   border: 1px solid rgba(168, 85, 247, 0.5);
   color: #e9d5ff;
-  font-size: 0.78rem;
+  font-size: 0.76rem;
   font-weight: 700;
 }
 
 .level-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(145px, 1fr));
+  gap: 9px;
 }
 
 .level-tile {
-  padding: 12px;
-  border-radius: 14px;
+  padding: 10px;
+  border-radius: 12px;
   border: 2px solid var(--border);
   background: var(--surface-2);
   color: var(--text);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   cursor: pointer;
   transition: transform 0.12s ease, border-color 0.15s ease;
 }
@@ -1099,36 +1376,36 @@ button {
 }
 
 .level-num {
-  font-size: 0.78rem;
+  font-size: 0.76rem;
   color: var(--muted);
   font-weight: 700;
 }
 
 .level-title {
-  font-size: 0.9rem;
+  font-size: 0.86rem;
   font-weight: 700;
   text-align: center;
 }
 
 .level-stars {
-  font-size: 1.05rem;
+  font-size: 1rem;
 }
 
 .skin-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(165px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 10px;
 }
 
 .skin-card {
-  padding: 14px;
-  border-radius: 16px;
+  padding: 12px;
+  border-radius: 14px;
   border: 2px solid var(--border);
   background: var(--surface-2);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   text-align: center;
 }
 
@@ -1141,9 +1418,9 @@ button {
 }
 
 .skin-avatar {
-  width: 68px;
-  height: 64px;
-  border-radius: 18px;
+  width: 64px;
+  height: 60px;
+  border-radius: 16px;
   border: 3px solid;
   display: flex;
   flex-direction: column;
@@ -1153,25 +1430,36 @@ button {
 }
 
 .skin-visor {
-  padding: 3px 10px;
-  border-radius: 8px;
-  font-size: 0.78rem;
+  padding: 3px 9px;
+  border-radius: 7px;
+  font-size: 0.75rem;
   letter-spacing: 3px;
 }
 
 .skin-acc {
   position: absolute;
-  top: -12px;
-  font-size: 1.15rem;
+  top: -11px;
+  font-size: 1.1rem;
 }
 
-@media (max-width: 920px) {
+/* =========================================================
+   MOBILE / SMALL TABLET STACKING
+   ========================================================= */
+@media (max-width: 900px) {
   .game-layout {
     grid-template-columns: 1fr;
-    padding: 12px;
+    padding: 10px;
   }
 
   .canvas-frame {
     max-height: 360px;
+  }
+
+  .block-palette {
+    flex-wrap: wrap;
+  }
+
+  .compass-pad {
+    min-width: 240px;
   }
 }

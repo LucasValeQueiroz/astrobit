@@ -4,28 +4,28 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AstroBit — Jogo Espacial de Programação para Crianças</title>
-  <meta name="description" content="Aprenda lógica de programação, loops e código real (JavaScript e Python) montando quebra-cabeças para guiar o robô AstroBit pelo espaço!" />
+  <meta name="description" content="Aprenda lógica de programação, loops, sensores, funções e código real (JavaScript e Python) montando quebra-cabeças para guiar o robô AstroBit pelo espaço!" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🤖</text></svg>" />
-  <link rel="stylesheet" href="src/css/styles.css" />
+  <link rel="stylesheet" href="src/css/styles.css?v=2.1" />
 </head>
 <body>
   <header class="topbar">
     <div class="topbar-inner">
       <div class="brand">
         <span class="brand-logo" aria-hidden="true">🤖</span>
-        <div>
+        <div class="brand-text">
           <strong class="brand-name">AstroBit</strong>
           <span id="level-badge" class="level-pill">Fase 1-1</span>
         </div>
       </div>
 
       <nav class="topbar-actions" aria-label="Game controls">
-        <span id="total-stars-pill" class="stars-pill">⭐ 0 / 36</span>
+        <span id="total-stars-pill" class="stars-pill">⭐ 0 / 90</span>
         <button id="btn-levels" class="nav-btn" type="button">🗺️ <span data-i18n="navLevels">Fases</span></button>
         <button id="btn-garage" class="nav-btn" type="button">🎨 <span data-i18n="navGarage">Garagem</span></button>
         <button id="btn-code-toggle" class="nav-btn" type="button">👀 <span data-i18n="navCode">Ver Código</span></button>
-        <button id="btn-sound" class="nav-btn" type="button" aria-label="Sound">🔊</button>
-        <button id="btn-lang" class="nav-btn" type="button">PT</button>
+        <button id="btn-sound" class="nav-btn nav-icon-btn" type="button" aria-label="Sound">🔊</button>
+        <button id="btn-lang" class="nav-btn nav-icon-btn" type="button">PT</button>
       </nav>
     </div>
   </header>
@@ -39,12 +39,12 @@
           <span id="crystals-pill" class="mission-stat">💎 0/1</span>
         </div>
         <div class="mascot-row">
-          <button id="mascot-avatar-btn" class="mascot-avatar-btn" type="button" title="AstroBit!">🤖</button>
+          <button id="mascot-avatar-btn" class="mascot-avatar-btn" type="button" title="Clique no AstroBit!">🤖</button>
           <div id="mascot-bubble" class="mascot-bubble" role="status" aria-live="polite"></div>
         </div>
       </div>
 
-      <div class="canvas-frame">
+      <div id="canvas-frame" class="canvas-frame">
         <canvas id="game-canvas" aria-label="AstroBit game board"></canvas>
 
         <!-- Victory celebration overlay -->
@@ -62,22 +62,21 @@
       </div>
 
       <div class="controls-bar">
-        <button id="btn-run" class="btn btn-run" type="button">▶️ <span data-i18n="btnRun">Rodar</span></button>
-        <button id="btn-step" class="btn btn-step" type="button">⏭️ <span data-i18n="btnStep">1 Passo</span></button>
-        <button id="btn-hint" class="btn btn-hint" type="button">💡 <span data-i18n="btnHint">Dica</span></button>
-        <button id="btn-reset" class="btn btn-secondary" type="button">🔄 <span data-i18n="btnReset">Reiniciar</span></button>
-        <button id="btn-speed" class="btn btn-secondary" type="button">🚀 Normal</button>
+        <button id="btn-run" class="btn btn-run" type="button" title="Rodar / Parar (Espaço)">▶️ <span data-i18n="btnRun">Rodar</span></button>
+        <button id="btn-step" class="btn btn-step" type="button" title="Executar 1 passo (S)">⏭️ <span data-i18n="btnStep">1 Passo</span></button>
+        <button id="btn-hint" class="btn btn-hint" type="button" title="Mostrar próxima peça">💡 <span data-i18n="btnHint">Dica</span></button>
+        <button id="btn-reset" class="btn btn-secondary" type="button" title="Reiniciar tabuleiro (R)">🔄 <span data-i18n="btnReset">Reiniciar</span></button>
+        <button id="btn-speed" class="btn btn-secondary" type="button" title="Velocidade">🚀 Normal</button>
       </div>
     </section>
 
-    <!-- RIGHT: 4-Direction Compass Palette, Interlocking Jigsaw Puzzle & Live Code Peek -->
+    <!-- RIGHT: 4-Direction Jigsaw Palette, Interlocking Puzzle Board & Live Code Peek -->
     <section class="editor-column">
-      <div class="panel">
+      <div class="panel palette-panel">
         <div class="panel-head">
-          <h2 data-i18n="paletteTitle">Peças do Quebra-Cabeça</h2>
+          <h2 data-i18n="paletteTitle">🧩 Peças do Quebra-Cabeça</h2>
           <span id="blocks-counter" class="counter-pill">0 peças</span>
         </div>
-        <p class="small muted" data-i18n="paletteHint"></p>
         <div id="block-palette" class="block-palette"></div>
       </div>
 
@@ -85,8 +84,8 @@
         <div class="panel-head">
           <h2 data-i18n="workspaceTitle">Montagem do Programa</h2>
           <div class="head-actions">
-            <button id="btn-undo" class="mini-text-btn" type="button">↩️ <span data-i18n="btnUndo">Desfazer</span></button>
-            <button id="btn-clear" class="mini-text-btn danger" type="button">🗑️ <span data-i18n="btnClear">Limpar</span></button>
+            <button id="btn-undo" class="mini-text-btn" type="button" title="Desfazer (Ctrl+Z)">↩️ <span data-i18n="btnUndo">Desfazer</span></button>
+            <button id="btn-clear" class="mini-text-btn danger" type="button" title="Limpar programa">🗑️ <span data-i18n="btnClear">Limpar</span></button>
           </div>
         </div>
         <div id="block-workspace" class="block-workspace"></div>
@@ -94,10 +93,7 @@
 
       <div id="code-peek-panel" class="panel code-peek-panel hidden">
         <div class="panel-head">
-          <div>
-            <h2>👀 <span data-i18n="codePeekTitle">Código Real ao Vivo</span></h2>
-            <p class="small muted" data-i18n="codePeekSub"></p>
-          </div>
+          <h2>👀 <span data-i18n="codePeekTitle">Código Real ao Vivo</span></h2>
           <div class="code-lang-tabs">
             <button type="button" class="tab-btn active" data-code-lang="js">JavaScript</button>
             <button type="button" class="tab-btn" data-code-lang="python">Python</button>
@@ -110,6 +106,6 @@
 
   <div id="modal-backdrop" class="modal-backdrop hidden" role="dialog" aria-modal="true"></div>
 
-  <script type="module" src="src/app.js"></script>
+  <script type="module" src="src/app.js?v=2.1"></script>
 </body>
 </html>

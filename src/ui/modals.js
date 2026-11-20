@@ -2,9 +2,9 @@
  * AstroBit Modals — Planet Star Map, Robot Garage, and Victory Celebration Overlay.
  */
 
-import { CAMPAIGN_WORLDS } from '../levels/index.js';
-import { ROBOT_SKINS } from '../renderer/robot-skins.js';
-import { getTotalStars } from '../storage/progress.js';
+import { CAMPAIGN_WORLDS } from '../levels/index.js?v=2.1';
+import { ROBOT_SKINS } from '../renderer/robot-skins.js?v=2.1';
+import { getTotalStars } from '../storage/progress.js?v=2.1';
 
 function escapeHtml(text) {
   return String(text ?? '')

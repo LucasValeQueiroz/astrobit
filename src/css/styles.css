@@ -2512,3 +2512,33 @@ button {
     transform: translateX(0) scale(1);
   }
 }
+
+/* ===== Magnetic Tactile Drag & Drop Ghost & Glowing Snap Rails ===== */
+.magnetic-drag-ghost {
+  position: fixed;
+  z-index: 1200;
+  pointer-events: none;
+  transform: translate(-50%, -65%) scale(1.06) rotate(-2deg);
+  padding: 8px 14px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #2563eb, #7c3aed);
+  color: #ffffff;
+  font-weight: 800;
+  font-size: 0.88rem;
+  border: 2px solid #fde047;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.48), 0 0 18px rgba(250, 204, 21, 0.45);
+  white-space: nowrap;
+}
+
+.puzzle-piece.drop-before {
+  box-shadow: 0 -4px 0 0 #fde047, 0 -6px 16px rgba(250, 204, 21, 0.65);
+}
+
+.puzzle-piece.drop-after {
+  box-shadow: 0 4px 0 0 #fde047, 0 6px 16px rgba(250, 204, 21, 0.65);
+}
+
+.puzzle-clamp-body.drop-inside {
+  outline: 2.5px dashed #fde047;
+  background: rgba(250, 204, 21, 0.14);
+}

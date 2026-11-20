@@ -1,0 +1,25 @@
+{
+  "name": "astrobit",
+  "version": "0.1.0",
+  "description": "Educational space coding puzzle game teaching kids computational thinking, loops, sensors, functions, and real JS/Python code.",
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/*.test.mjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/LucasValeQueiroz/astrobit.git"
+  },
+  "homepage": "https://lucasvalequeiroz.github.io/astrobit/",
+  "keywords": [
+    "educational-game",
+    "coding-for-kids",
+    "learn-to-code",
+    "puzzle-game",
+    "canvas",
+    "computational-thinking",
+    "javascript"
+  ],
+  "author": "Lucas Vale Queiroz",
+  "license": "MIT"
+}

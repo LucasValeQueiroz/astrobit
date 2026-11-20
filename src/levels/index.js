@@ -7,6 +7,7 @@ import { WORLD_2_LEVELS } from './world2-loops.js?v=4.0';
 import { WORLD_3_LEVELS } from './world3-sensores.js?v=4.0';
 import { WORLD_4_LEVELS } from './world4-funcoes.js?v=4.0';
 import { WORLD_5_LEVELS } from './world5-desafios.js?v=4.0';
+import { WORLD_6_LEVELS } from './world6-portais.js?v=5.0';
 
 export const CAMPAIGN_WORLDS = [
   {
@@ -53,6 +54,15 @@ export const CAMPAIGN_WORLDS = [
     conceptPt: 'Caça ao Bug & Desafio Final',
     conceptEn: 'Bug Hunt & Grand Finale',
     levels: WORLD_5_LEVELS,
+  },
+  {
+    world: 6,
+    icon: '🌀',
+    namePt: 'Buraco de Minhoca',
+    nameEn: 'Wormhole Dimension',
+    conceptPt: 'Mundo Bônus · Cadeias de Portais',
+    conceptEn: 'Bonus World · Portal Chains',
+    levels: WORLD_6_LEVELS,
   },
 ];
 

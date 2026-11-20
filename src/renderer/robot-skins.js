@@ -75,6 +75,18 @@ export const ROBOT_SKINS = [
     accent: '#facc15',
     accessory: 'crown',
   },
+  {
+    id: 'quantum',
+    starsRequired: 75,
+    namePt: 'AstroQuântico',
+    nameEn: 'Quantum Astro',
+    body: '#e879f9',
+    bodyDark: '#7e22ce',
+    visor: '#09051a',
+    eye: '#22d3ee',
+    accent: '#38bdf8',
+    accessory: 'crown',
+  },
 ];
 
 export const WORLD_PALETTES = {
@@ -137,6 +149,18 @@ export const WORLD_PALETTES = {
     wallTop: '#6d5a96',
     crystal: '#c084fc',
     crystalGlow: '#e9d5ff',
+  },
+  6: {
+    namePt: 'Buraco de Minhoca',
+    nameEn: 'Wormhole Dimension',
+    bgTop: '#0c0521',
+    bgBottom: '#2b0b47',
+    floor: '#28134a',
+    floorBorder: '#7e22ce',
+    wall: '#3b1c5e',
+    wallTop: '#6b21a8',
+    crystal: '#38bdf8',
+    crystalGlow: '#f0abfc',
   },
 };
 

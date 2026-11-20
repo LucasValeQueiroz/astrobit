@@ -2225,6 +2225,18 @@ button {
   font-size: 0.78rem;
 }
 
+.ws-cell.wt-portal3 {
+  background: rgba(251, 146, 60, 0.28);
+  border-color: #fb923c;
+  font-size: 0.78rem;
+}
+
+.ws-cell.wt-portal4 {
+  background: rgba(244, 114, 182, 0.28);
+  border-color: #f472b6;
+  font-size: 0.78rem;
+}
+
 .ws-options-row {
   display: flex;
   align-items: center;

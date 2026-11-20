@@ -238,6 +238,35 @@ export const WORLD_STORIES = {
       { x: 680, y: 95 },
     ],
   },
+  6: {
+    world: 6,
+    galaxyPos: { x: 735, y: 78 },
+    sectorPt: 'Setor Bônus · Dimensão Quântica',
+    sectorEn: 'Bonus Sector · Quantum Dimension',
+    actPt: 'Ato Bônus — O Buraco de Minhoca!',
+    actEn: 'Bonus Act — The Wormhole!',
+    planetColor: '#e879f9',
+    planetDark: '#7e22ce',
+    ringColor: '#38bdf8',
+    arrivalPt:
+      'Uau!! O brilho do Farol Solar abriu um Buraco de Minhoca secreto cheio de portais coloridos (1, 2, 3 e 4)! Encadeie saltos quânticos e domine os portais!',
+    arrivalEn:
+      'Whoa!! The Solar Beacon’s light opened a secret Wormhole full of colorful paired portals (1, 2, 3, and 4)! Chain quantum leaps and master the portals!',
+    completedPt:
+      'MESTRE DO BURACO DE MINHOCA! Você dobrou o espaço-tempo com perfeição absoluta!',
+    completedEn:
+      'WORMHOLE MASTER! You folded space-time with absolute precision!',
+    upgradePt: '🌀 Dobrador de Portais Quânticos',
+    upgradeEn: '🌀 Quantum Portal Warper',
+    baseCoords: [
+      { x: 85, y: 175 },
+      { x: 205, y: 100 },
+      { x: 330, y: 195 },
+      { x: 455, y: 115 },
+      { x: 575, y: 185 },
+      { x: 685, y: 105 },
+    ],
+  },
 };
 
 export const LEVEL_STORIES = {
@@ -429,6 +458,43 @@ export const LEVEL_STORIES = {
     briefEn: '☀️ FINAL MISSION! Combine everything you mastered (⚡ F1, 🌟 F2, 🔁 Repeat & 🔎 If) to reignite the Solar Beacon and SAVE HUMANITY!',
     winPt: '🏆🌍 O FAROL SOLAR ACENDEU!! VOCÊ SALVOU A HUMANIDADE, ENGENHEIRO(A) ESPACIAL!!',
     winEn: '🏆🌍 THE SOLAR BEACON IS LIT!! YOU SAVED HUMANITY, SPACE ENGINEER!!',
+  },
+  // WORLD 6 (BONUS): Wormhole Dimension
+  'w6-1': {
+    briefPt: 'Ilhas Quânticas: atravesse o portal roxo (1) e o azul (2) com um único loop!',
+    briefEn: 'Quantum Isles: hop through the purple (1) and blue (2) portals in one loop!',
+    winPt: 'Zuuuuum! Salto duplo concluído em velocidade de dobra!',
+    winEn: 'Whoooosh! Double warp cleared at lightspeed!',
+  },
+  'w6-2': {
+    briefPt: 'Escada Quântica: cada ilha tem um degrau secreto que leva direto ao próximo portal!',
+    briefEn: 'Quantum Staircase: each island drops one step into the next portal!',
+    winPt: 'Que ritmo perfeito! O espaço-tempo obedece ao seu código!',
+    winEn: 'Flawless rhythm! Space-time obeys your code!',
+  },
+  'w6-3': {
+    briefPt: 'Triângulo dos Portais: combine 3 pares de portais, desligue o laser A e cruze até ★!',
+    briefEn: 'Portal Triangle: chain 3 portal pairs, power down laser A, and zip to ★!',
+    winPt: 'Três portais seguidos! Você já navega no Buraco de Minhoca como um craque!',
+    winEn: 'Three portals in a row! You navigate the Wormhole like a pro!',
+  },
+  'w6-4': {
+    briefPt: 'Radar no Vórtice: nem toda ilha tem cristal — use 🔎 Se (💎 Cristal aqui?) para não perder tempo!',
+    briefEn: 'Vortex Radar: not every island has a crystal — use 🔎 If (💎 Crystal here?) to stay sharp!',
+    winPt: 'Sensor quântico calibrado com 100% de precisão!',
+    winEn: 'Quantum sensor calibrated with 100% accuracy!',
+  },
+  'w6-5': {
+    briefPt: 'Super-Chip de Dobra: crie um único ⚡ F1 e chame 3× para limpar 3 ilhas ligadas por portais!',
+    briefEn: 'Warp Super-Chip: craft one ⚡ F1 and call it 3× to clear 3 portal-linked islands!',
+    winPt: 'Super-Chip de Dobra aprovado! O núcleo do Buraco de Minhoca está logo ali!',
+    winEn: 'Warp Super-Chip approved! The Wormhole Core lies just ahead!',
+  },
+  'w6-6': {
+    briefPt: '🌀👑 CHEFÃO DOS PORTAIS! Todos os 4 pares de portais (1, 2, 3, 4), ponte de luz e laser no desafio supremo!',
+    briefEn: '🌀👑 PORTAL BOSS! All 4 portal pairs (1, 2, 3, 4), light bridge, and laser in the ultimate warp challenge!',
+    winPt: '🌀🏆 LENDA QUÂNTICA!! VOCÊ DOMINOU O BURACO DE MINHOCA INTEIRO!!',
+    winEn: '🌀🏆 QUANTUM LEGEND!! YOU CONQUERED THE ENTIRE WORMHOLE DIMENSION!!',
   },
 };
 

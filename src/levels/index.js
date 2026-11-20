@@ -4,6 +4,7 @@
 
 import { WORLD_1_LEVELS } from './world1-sequencia.js';
 import { WORLD_2_LEVELS } from './world2-loops.js';
+import { WORLD_3_LEVELS } from './world3-sensores.js';
 
 export const CAMPAIGN_WORLDS = [
   {
@@ -23,6 +24,15 @@ export const CAMPAIGN_WORLDS = [
     conceptPt: 'Loops (Repetir)',
     conceptEn: 'Loops (Repeat)',
     levels: WORLD_2_LEVELS,
+  },
+  {
+    world: 3,
+    icon: '⚡',
+    namePt: 'Cinturão de Lasers',
+    nameEn: 'Laser Belt',
+    conceptPt: 'Sensores, Portais & Lasers',
+    conceptEn: 'Sensors, Portals & Lasers',
+    levels: WORLD_3_LEVELS,
   },
 ];
 

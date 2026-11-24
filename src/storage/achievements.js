@@ -102,6 +102,14 @@ export const SPACE_BADGES = [
     descPt: 'Domine o Mundo 6 Bônus: Buraco de Minhoca (Fase 6-6)',
     descEn: 'Conquer Bonus World 6: Wormhole Dimension (Level 6-6)',
   },
+  {
+    id: 'aaa-engineer',
+    icon: '🧪',
+    namePt: 'Engenheiro de Games AAA',
+    nameEn: 'AAA Game Engineer',
+    descPt: 'Domine todos os 7 segredos no Laboratório de Games AAA',
+    descEn: 'Master all 7 secrets in the AAA Game Engineering Lab',
+  },
 ];
 
 function programHasType(blocks = [], targetType) {
@@ -150,6 +158,9 @@ export function evaluateBadges(progress, context = {}) {
   }
   if (Number(starsMap['w5-6'] || 0) > 0) grant('earth-savior');
   if (Number(starsMap['w6-6'] || 0) > 0) grant('wormhole-legend');
+  if (Array.isArray(progress?.labMasteredTopics) && progress.labMasteredTopics.length >= 7) {
+    grant('aaa-engineer');
+  }
 
   if (context.won) {
     const main = context.program?.main || [];

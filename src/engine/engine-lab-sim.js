@@ -18,6 +18,13 @@ export const ENGINE_LAB_TOPICS = [
     proEn: 'Frustum Culling tests the 6 camera planes; Occlusion Culling skips hidden objects to prevent overdraw.',
     tipPt: '🎮 Mexa o mouse (ou dedo) no espaço para girar a câmera!',
     tipEn: '🎮 Move your mouse (or finger) in space to aim the camera!',
+    quiz: {
+      qPt: 'O que o Corte de Visão (Culling) faz para deixar o jogo rápido?',
+      qEn: 'What does Field-of-View Culling do to keep games fast?',
+      optsPt: ['Só desenha o que está visível na câmera', 'Diminui o brilho da tela', 'Apaga o jogo inteiro'],
+      optsEn: ['Only draws what the camera can see', 'Dims the screen brightness', 'Deletes the whole game'],
+      correctIdx: 0,
+    },
   },
   {
     id: 'lod',
@@ -32,6 +39,13 @@ export const ENGINE_LAB_TOPICS = [
     proEn: 'LOD adapts polygon/meshlet density to screen-space size and GPU load, saving massive vertex work.',
     tipPt: '🎮 Arraste para a esquerda/direita no espaço para aproximar ou afastar o planeta!',
     tipEn: '🎮 Drag left/right in space to move the planet closer or farther!',
+    quiz: {
+      qPt: 'Quando um planeta está bem LONGE, qual nível de detalhe (LOD) a GPU usa?',
+      qEn: 'When a planet is FAR away, which Level of Detail (LOD) does the GPU pick?',
+      optsPt: ['Mais triângulos (LOD0)', 'Menos triângulos (LOD2) para economizar GPU', 'Nenhum planeta'],
+      optsEn: ['More triangles (LOD0)', 'Fewer triangles (LOD2) to save GPU work', 'No planet at all'],
+      correctIdx: 1,
+    },
   },
   {
     id: 'streaming',
@@ -46,6 +60,13 @@ export const ENGINE_LAB_TOPICS = [
     proEn: 'Async streaming predicts upcoming map cells from velocity vectors and evicts old sectors from VRAM.',
     tipPt: '🎮 Mexa o mouse (ou dedo) para pilotar a nave pela galáxia infinita!',
     tipEn: '🎮 Move your mouse (or finger) to pilot the ship across the open galaxy!',
+    quiz: {
+      qPt: 'Como jogos de mundo aberto cabem na memória (VRAM) do videogame?',
+      qEn: 'How do huge open-world games fit inside console VRAM?',
+      optsPt: ['Carregam setores à frente e liberam os antigos', 'Carregam o universo inteiro de uma vez', 'Usam apenas 1 fase pequena'],
+      optsEn: ['Pre-load sectors ahead and unload old ones', 'Load the entire universe at once', 'Use only one tiny room'],
+      correctIdx: 0,
+    },
   },
   {
     id: 'ai_lod',
@@ -60,6 +81,13 @@ export const ENGINE_LAB_TOPICS = [
     proEn: 'AI LOD runs full behavior trees + A* near the player and lightweight ECS/boids flow fields at lower tick rates afar.',
     tipPt: '🎮 Mexa o AstroBit no mapa para ver os robôs mudarem de enxame para IA completa!',
     tipEn: '🎮 Move AstroBit around to watch bots switch from flock mode to full AI!',
+    quiz: {
+      qPt: 'Por que os robôs distantes usam regras simples de bando (Boids) em vez de A*?',
+      qEn: 'Why do distant bots use lightweight flock rules (Boids) instead of full A*?',
+      optsPt: ['Para economizar muita CPU mantendo o mundo vivo', 'Porque esqueceram o caminho', 'Para o jogo ficar mais lento'],
+      optsEn: ['To save huge CPU while keeping the world alive', 'Because they forgot the map', 'To make the game slower'],
+      correctIdx: 0,
+    },
   },
   {
     id: 'fluids',
@@ -74,6 +102,13 @@ export const ENGINE_LAB_TOPICS = [
     proEn: 'Macro waves via periodic/FFT vertex shaders blended with localized particle & wake physics near the hull.',
     tipPt: '🎮 Deslize o mouse (ou dedo) sobre o mar espacial para navegar e criar espuma!',
     tipEn: '🎮 Slide your mouse (or finger) across the space ocean to steer and splash!',
+    quiz: {
+      qPt: 'Onde o motor ativa a simulação pesada de espuma e física real da água?',
+      qEn: 'Where does the engine run heavy splash and wake physics?',
+      optsPt: ['No oceano inteiro de ponta a ponta', 'Só na área bem perto do barco/personagem', 'Em lugar nenhum'],
+      optsEn: ['Across the entire ocean at once', 'Only in the local zone around the boat/player', 'Nowhere at all'],
+      correctIdx: 1,
+    },
   },
   {
     id: 'raytracing',
@@ -88,6 +123,13 @@ export const ENGINE_LAB_TOPICS = [
     proEn: 'BVH trees discard millions of triangles per ray for real-time hybrid ray tracing + reflections + denoisers.',
     tipPt: '🎮 Mexa o mouse (ou dedo) para mirar o raio de luz nos espelhos e caixas BVH!',
     tipEn: '🎮 Move your mouse (or finger) to aim the light ray across BVH boxes and mirrors!',
+    quiz: {
+      qPt: 'Qual é o superpoder da árvore BVH no Ray Tracing?',
+      qEn: 'What is the superpower of a BVH tree in Ray Tracing?',
+      optsPt: ['Pular caixas inteiras que o raio não toca', 'Aumentar o número de testes de triângulos', 'Desligar todas as luzes'],
+      optsEn: ['Skip entire bounding boxes the ray misses', 'Increase triangle tests', 'Turn off all lights'],
+      correctIdx: 0,
+    },
   },
   {
     id: 'upscaling',
@@ -102,6 +144,13 @@ export const ENGINE_LAB_TOPICS = [
     proEn: 'Temporal neural upscaling (DLSS/FSR/PSSR) blends lower internal res + motion vectors + frame history into crisp 4K.',
     tipPt: '🎮 Arraste para a esquerda/direita na tela para comparar Baixa Res vs IA 4K!',
     tipEn: '🎮 Drag left/right across the screen to compare Low-Res vs AI 4K!',
+    quiz: {
+      qPt: 'Como DLSS / FSR / PSSR entregam 4K nítido gastando muito menos energia?',
+      qEn: 'How do DLSS / FSR / PSSR deliver crisp 4K using far less GPU power?',
+      optsPt: ['Renderizam em resolução menor e a IA reconstrói em 4K', 'Desenham cada pixel 4 vezes mais devagar', 'Usam apenas preto e branco'],
+      optsEn: ['Render at lower resolution and AI reconstructs 4K', 'Draw every pixel 4× slower', 'Use black and white only'],
+      correctIdx: 0,
+    },
   },
 ];
 

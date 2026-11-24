@@ -35,10 +35,11 @@ test('computeDailyStreak tracks consecutive days and resets on gaps', () => {
 });
 
 test('evaluateBadges unlocks space medals accurately and avoids duplicates', () => {
-  assert.equal(SPACE_BADGES.length, 12);
+  assert.equal(SPACE_BADGES.length, 13);
   let progress = createDefaultProgress();
   progress.starsByLevel = { 'w1-1': 3, 'w5-6': 3 };
   progress.dailyCompletedDates = ['2026-11-20'];
+  progress.labMasteredTopics = ['culling', 'lod', 'streaming', 'ai_lod', 'fluids', 'raytracing', 'upscaling'];
 
   const first = evaluateBadges(progress, {
     won: true,
@@ -56,6 +57,7 @@ test('evaluateBadges unlocks space medals accurately and avoids duplicates', () 
   assert.ok(ids.has('bug-hunter'));
   assert.ok(ids.has('daily-hero'));
   assert.ok(ids.has('earth-savior'));
+  assert.ok(ids.has('aaa-engineer'));
 
   // Calling again with updated progress should not re-trigger already unlocked badges
   progress.unlockedBadges = first.unlockedBadges;

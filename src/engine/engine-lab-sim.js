@@ -75,6 +75,34 @@ export const ENGINE_LAB_TOPICS = [
     tipPt: '🎮 Deslize o mouse (ou dedo) sobre o mar espacial para navegar e criar espuma!',
     tipEn: '🎮 Slide your mouse (or finger) across the space ocean to steer and splash!',
   },
+  {
+    id: 'raytracing',
+    num: 6,
+    icon: '✨',
+    term: 'Ray Tracing & BVH Tree',
+    titlePt: 'Ray Tracing (BVH)',
+    titleEn: 'Ray Tracing & BVH',
+    kidPt: 'Em vez de testar cada pedacinho do espaço, caixas mágicas (BVH) pulam áreas vazias e refletem a luz rapidinho!',
+    kidEn: 'Instead of testing every tiny piece of space, magic boxes (BVH) skip empty areas and bounce light fast!',
+    proPt: 'Árvores BVH (Bounding Volume Hierarchy) descartam milhões de triângulos por raio em ray tracing híbrido + denoisers.',
+    proEn: 'BVH trees discard millions of triangles per ray for real-time hybrid ray tracing + reflections + denoisers.',
+    tipPt: '🎮 Mexa o mouse (ou dedo) para mirar o raio de luz nos espelhos e caixas BVH!',
+    tipEn: '🎮 Move your mouse (or finger) to aim the light ray across BVH boxes and mirrors!',
+  },
+  {
+    id: 'upscaling',
+    num: 7,
+    icon: '🤖',
+    term: 'AI Temporal Upscaling (DLSS/FSR)',
+    titlePt: 'Reconstrução por IA',
+    titleEn: 'AI Upscaling (DLSS/FSR)',
+    kidPt: 'A placa desenha um quadro menor (4× mais rápido!) e a IA usa vetores de movimento para reconstruir em 4K nítido!',
+    kidEn: 'The GPU renders a smaller frame (4× faster!) and AI uses motion vectors to reconstruct razor-sharp 4K!',
+    proPt: 'Inferência temporal (DLSS/FSR/PSSR) combina resolução interna menor + motion vectors + histórico de quadros em 4K.',
+    proEn: 'Temporal neural upscaling (DLSS/FSR/PSSR) blends lower internal res + motion vectors + frame history into crisp 4K.',
+    tipPt: '🎮 Arraste para a esquerda/direita na tela para comparar Baixa Res vs IA 4K!',
+    tipEn: '🎮 Drag left/right across the screen to compare Low-Res vs AI 4K!',
+  },
 ];
 
 function normalizeAngle(rad) {
@@ -358,5 +386,99 @@ export function evaluateHybridFluidWave({
       fps,
       energyPct,
     },
+  };
+}
+
+/**
+ * 2D Ray vs Axis-Aligned Bounding Box (slab method) for BVH acceleration demo.
+ */
+function intersectRayAabb(ox, oy, dx, dy, box) {
+  const invX = dx !== 0 ? 1 / dx : Infinity;
+  const invY = dy !== 0 ? 1 / dy : Infinity;
+  const t1 = (box.x - ox) * invX;
+  const t2 = (box.x + box.w - ox) * invX;
+  const t3 = (box.y - oy) * invY;
+  const t4 = (box.y + box.h - oy) * invY;
+  const tmin = Math.max(Math.min(t1, t2), Math.min(t3, t4));
+  const tmax = Math.min(Math.max(t1, t2), Math.max(t3, t4));
+  if (tmax < 0 || tmin > tmax) return null;
+  const tHit = tmin >= 0 ? tmin : tmax;
+  return { t: tHit, x: ox + dx * tHit, y: oy + dy * tHit };
+}
+
+/**
+ * Evaluates a single light ray against BVH bounding boxes (each holding `triangles` geometry).
+ * When `bvhEnabled` is true, only intersected BVH boxes have their triangles tested!
+ */
+export function evaluateRayTracingBvh({
+  originX = 64,
+  originY = 155,
+  rayAngle = 0,
+  boxes = [],
+  bvhEnabled = true,
+}) {
+  const dx = Math.cos(rayAngle);
+  const dy = Math.sin(rayAngle);
+  let closestHit = null;
+  let triangleTests = 0;
+  let boxesHit = 0;
+
+  const evaluatedBoxes = boxes.map((box) => {
+    const hit = intersectRayAabb(originX, originY, dx, dy, box);
+    const tris = Number(box.triangles) || 400;
+    if (hit) {
+      boxesHit += 1;
+      triangleTests += tris;
+      if (!closestHit || hit.t < closestHit.t) {
+        closestHit = { ...hit, box };
+      }
+    } else if (!bvhEnabled) {
+      triangleTests += tris;
+    }
+    return { ...box, hit: Boolean(hit), testedTriangles: hit || !bvhEnabled ? tris : 0 };
+  });
+
+  const totalTriangles = boxes.reduce((s, b) => s + (Number(b.triangles) || 400), 0);
+  const ratio = totalTriangles > 0 ? triangleTests / totalTriangles : 0;
+  const fps = bvhEnabled ? Math.round(60 - ratio * 10) : 14;
+  const gpuPct = bvhEnabled ? Math.round(24 + ratio * 40) : 98;
+  const energyPct = bvhEnabled ? Math.round(28 + ratio * 34) : 96;
+
+  return {
+    boxes: evaluatedBoxes,
+    closestHit,
+    stats: {
+      boxesTotal: boxes.length,
+      boxesHit,
+      triangleTests,
+      totalTriangles,
+      fps,
+      gpuPct,
+      energyPct,
+    },
+  };
+}
+
+/**
+ * Evaluates AI Temporal Upscaling (DLSS / FSR / PSSR) metrics vs Native 4K rendering.
+ */
+export function evaluateAiUpscaling({ upscalingEnabled = true } = {}) {
+  if (upscalingEnabled) {
+    return {
+      internalRes: '1080p',
+      outputRes: '4K (AI)',
+      shadedMillions: 2.07,
+      fps: 60,
+      gpuPct: 38,
+      energyPct: 40,
+    };
+  }
+  return {
+    internalRes: '4K Native',
+    outputRes: '4K Native',
+    shadedMillions: 8.29,
+    fps: 23,
+    gpuPct: 97,
+    energyPct: 94,
   };
 }

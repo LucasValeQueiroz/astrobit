@@ -11,7 +11,9 @@ import {
   computeStreamingChunks,
   evaluateAiLodAgents,
   evaluateHybridFluidWave,
-} from '../engine/engine-lab-sim.js?v=5.3';
+  evaluateRayTracingBvh,
+  evaluateAiUpscaling,
+} from '../engine/engine-lab-sim.js?v=5.4';
 
 function escapeHtml(text) {
   return String(text ?? '')
@@ -600,6 +602,204 @@ export function renderEngineLabModal(container, { lang = 'pt', synth = null, onT
     });
   };
 
+  const drawRayTracing = (ctx, w, h) => {
+    const ox = 58;
+    const oy = h / 2;
+    const rayAngle = Math.atan2(pointer.y * h - oy, Math.max(24, pointer.x * w - ox));
+    const boxes = [
+      { id: 'BVH-A', x: 185, y: 26, w: 120, h: 74, triangles: 1200 },
+      { id: 'BVH-B', x: 325, y: 112, w: 135, h: 86, triangles: 1600 },
+      { id: 'BVH-C', x: 195, y: 208, w: 125, h: 74, triangles: 1400 },
+    ];
+
+    const res = evaluateRayTracingBvh({
+      originX: ox,
+      originY: oy,
+      rayAngle,
+      boxes,
+      bvhEnabled: trickEnabled,
+    });
+
+    ctx.save();
+    // Draw BVH bounding boxes
+    for (const b of res.boxes) {
+      const tested = b.hit || !trickEnabled;
+      ctx.fillStyle = b.hit
+        ? 'rgba(56, 189, 248, 0.24)'
+        : tested
+        ? 'rgba(244, 63, 94, 0.18)'
+        : 'rgba(30, 41, 59, 0.42)';
+      ctx.strokeStyle = b.hit ? '#38bdf8' : tested ? '#fb7185' : 'rgba(148, 163, 184, 0.25)';
+      ctx.lineWidth = b.hit ? 2.5 : 1.5;
+      ctx.fillRect(b.x, b.y, b.w, b.h);
+      ctx.strokeRect(b.x, b.y, b.w, b.h);
+
+      // Crystal mirror inside box
+      ctx.fillStyle = b.hit ? '#e0f2fe' : '#64748b';
+      ctx.beginPath();
+      ctx.arc(b.x + b.w / 2, b.y + b.h / 2, 16, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = b.hit ? '#7dd3fc' : tested ? '#fda4af' : '#64748b';
+      ctx.font = '700 10px system-ui, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText(
+        `${b.id} (${b.hit ? 'HIT' : trickEnabled ? 'SKIP' : 'TEST'})`,
+        b.x + 6,
+        b.y + 14
+      );
+    }
+
+    // Primary light ray + specular reflection bounce
+    const endX = res.closestHit ? res.closestHit.x : ox + Math.cos(rayAngle) * 520;
+    const endY = res.closestHit ? res.closestHit.y : oy + Math.sin(rayAngle) * 520;
+    ctx.strokeStyle = '#fde047';
+    ctx.shadowColor = '#facc15';
+    ctx.shadowBlur = 12;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(ox, oy);
+    ctx.lineTo(endX, endY);
+    ctx.stroke();
+
+    if (res.closestHit) {
+      const bounceAngle = -rayAngle + Math.PI * 0.85;
+      ctx.strokeStyle = '#38bdf8';
+      ctx.shadowColor = '#38bdf8';
+      ctx.lineWidth = 2.2;
+      ctx.beginPath();
+      ctx.moveTo(endX, endY);
+      ctx.lineTo(endX + Math.cos(bounceAngle) * 140, endY + Math.sin(bounceAngle) * 140);
+      ctx.stroke();
+    }
+
+    ctx.shadowBlur = 0;
+    ctx.font = '20px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('☀️', ox, oy + 7);
+    ctx.restore();
+
+    updateMeters({
+      fps: res.stats.fps,
+      memLabel: '✨ GPU',
+      memVal: `${res.stats.gpuPct}%`,
+      energyPct: res.stats.energyPct,
+      extra: isEn
+        ? `Triangle tests: ${res.stats.triangleTests.toLocaleString()} / ${res.stats.totalTriangles.toLocaleString()} · BVH boxes hit: ${res.stats.boxesHit}/${res.stats.boxesTotal}`
+        : `Testes de triângulos: ${res.stats.triangleTests.toLocaleString()} / ${res.stats.totalTriangles.toLocaleString()} · Caixas BVH atingidas: ${res.stats.boxesHit}/${res.stats.boxesTotal}`,
+    });
+  };
+
+  const drawUpscaling = (ctx, w, h) => {
+    const splitX = Math.max(70, Math.min(w - 70, pointer.x * w));
+    const stats = evaluateAiUpscaling({ upscalingEnabled: trickEnabled });
+    const planetX = w * 0.5 + Math.sin(elapsed * 1.1) * 18;
+    const planetY = h * 0.5 + Math.cos(elapsed * 0.8) * 10;
+
+    // LEFT HALF: Low-Res pixelated internal render + Motion Vectors
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, 0, splitX, h);
+    ctx.clip();
+
+    const block = 12;
+    for (let y = 0; y < h; y += block) {
+      for (let x = 0; x < splitX; x += block) {
+        const d = Math.hypot(x + block / 2 - planetX, y + block / 2 - planetY);
+        if (d < 66) {
+          ctx.fillStyle = d < 32 ? '#38bdf8' : '#1d4ed8';
+          ctx.fillRect(x, y, block - 1, block - 1);
+        } else if (Math.abs(d - 88) < 9) {
+          ctx.fillStyle = '#eab308';
+          ctx.fillRect(x, y, block - 1, block - 1);
+        }
+      }
+    }
+
+    // Motion Vector arrows showing temporal history fed to AI
+    ctx.strokeStyle = 'rgba(34, 211, 238, 0.85)';
+    ctx.lineWidth = 1.6;
+    const mvX = Math.cos(elapsed * 1.1) * 16;
+    const mvY = -Math.sin(elapsed * 0.8) * 10;
+    for (let i = -1; i <= 1; i++) {
+      const ax = planetX - 28;
+      const ay = planetY + i * 28;
+      ctx.beginPath();
+      ctx.moveTo(ax, ay);
+      ctx.lineTo(ax + mvX, ay + mvY);
+      ctx.stroke();
+    }
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '800 11px system-ui, sans-serif';
+    ctx.fillText(isEn ? 'INTERNAL 1080p + MOTION VECTORS' : 'INTERNO 1080p + VETORES', 14, 24);
+    ctx.restore();
+
+    // RIGHT HALF: Crisp AI-Reconstructed 4K Output (or Native 4K)
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(splitX, 0, w - splitX, h);
+    ctx.clip();
+
+    const pGrad = ctx.createRadialGradient(planetX - 20, planetY - 20, 8, planetX, planetY, 68);
+    pGrad.addColorStop(0, '#7dd3fc');
+    pGrad.addColorStop(0.55, '#2563eb');
+    pGrad.addColorStop(1, '#1e1b4b');
+    ctx.fillStyle = pGrad;
+    ctx.beginPath();
+    ctx.arc(planetX, planetY, 66, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = '#fde047';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.ellipse(planetX, planetY, 96, 26, 0.24, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.fillStyle = trickEnabled ? '#4ade80' : '#fb7185';
+    ctx.font = '800 11px system-ui, sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(
+      trickEnabled
+        ? isEn
+          ? 'AI RECONSTRUCTED 4K (DLSS/FSR)'
+          : 'RECONSTRUÇÃO IA 4K (DLSS/FSR)'
+        : isEn
+        ? 'NATIVE 4K (HEAVY GPU)'
+        : '4K NATIVO (GPU PESADA)',
+      w - 14,
+      24
+    );
+    ctx.restore();
+
+    // Split slider handle
+    ctx.save();
+    ctx.strokeStyle = '#f8fafc';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(splitX, 0);
+    ctx.lineTo(splitX, h);
+    ctx.stroke();
+    ctx.fillStyle = '#facc15';
+    ctx.beginPath();
+    ctx.arc(splitX, h / 2, 11, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#0f172a';
+    ctx.font = '900 11px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('⇄', splitX, h / 2 + 4);
+    ctx.restore();
+
+    updateMeters({
+      fps: stats.fps,
+      memLabel: '🤖 GPU',
+      memVal: `${stats.gpuPct}%`,
+      energyPct: stats.energyPct,
+      extra: isEn
+        ? `${stats.internalRes} → ${stats.outputRes} · ${stats.shadedMillions}M pixels shaded/frame`
+        : `${stats.internalRes} → ${stats.outputRes} · ${stats.shadedMillions}M pixels calculados/quadro`,
+    });
+  };
+
   const loop = (ts) => {
     const dt = lastTs ? Math.min(0.05, (ts - lastTs) / 1000) : 0.016;
     lastTs = ts;
@@ -618,6 +818,8 @@ export function renderEngineLabModal(container, { lang = 'pt', synth = null, onT
       else if (activeTopicId === 'streaming') drawStreaming(ctx, w, h);
       else if (activeTopicId === 'ai_lod') drawAiLod(ctx, w, h);
       else if (activeTopicId === 'fluids') drawFluids(ctx, w, h);
+      else if (activeTopicId === 'raytracing') drawRayTracing(ctx, w, h);
+      else if (activeTopicId === 'upscaling') drawUpscaling(ctx, w, h);
     }
     rafId = requestAnimationFrame(loop);
   };

@@ -225,7 +225,7 @@ function renderSceneArtwork(visual, totalStars = 0) {
       <circle cx="210" cy="82" r="44" fill="#eab308" stroke="#fef08a" stroke-width="4"/>
       <circle cx="210" cy="82" r="35" fill="#ca8a04" stroke="#fde047" stroke-width="1.5"/>
       <text x="210" y="92" text-anchor="middle" font-size="34">🏆</text>
-      <text x="210" y="174" text-anchor="middle" fill="#fef08a" font-size="13" font-weight="800">⭐ ${totalStars} / 90</text>
+      <text x="210" y="174" text-anchor="middle" fill="#fef08a" font-size="13" font-weight="800">⭐ ${totalStars} / 108</text>
       <text x="96" y="70" font-size="24">✨</text>
       <text x="306" y="70" font-size="24">✨</text>
     </svg>

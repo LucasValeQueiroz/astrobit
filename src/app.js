@@ -43,7 +43,7 @@ import { installTactilePointerDnD } from './ui/touch-dnd.js?v=5.0';
 import { renderStoryCinematic, renderWorldArrivalModal, renderGalaxyJourneyMap } from './ui/story-map.js?v=5.0';
 import { renderWorkshopModal } from './ui/workshop.js?v=5.0';
 import { getLevelStory } from './story/campaign-story.js?v=5.0';
-import { t } from './ui/i18n.js?v=4.0';
+import { t } from './ui/i18n.js?v=5.1';
 
 const SPEED_CONFIG = {
   slow: { ms: 540, next: 'normal', labelKey: 'speedSlow' },
@@ -1090,6 +1090,15 @@ window.addEventListener('keydown', (event) => {
     els.btnReset.click();
   }
 });
+
+// Retroactively unlock any earned Space Medals for returning players
+{
+  const retro = evaluateBadges(state.progress);
+  if (retro.newlyUnlocked.length > 0) {
+    state.progress = { ...state.progress, unlockedBadges: retro.unlockedBadges };
+    saveProgress(state.progress);
+  }
+}
 
 music = new SpaceMusicEngine(state.progress.musicMuted);
 // Start procedural space soundtrack gently on first user click/tap when unmuted

@@ -39,6 +39,7 @@ import {
   renderWorkspace,
 } from './ui/workspace.js?v=4.0';
 import { renderGarageModal, renderBadgesModal } from './ui/modals.js?v=5.0';
+import { renderEngineLabModal } from './ui/engine-lab.js?v=5.2';
 import { installTactilePointerDnD } from './ui/touch-dnd.js?v=5.0';
 import { renderStoryCinematic, renderWorldArrivalModal, renderGalaxyJourneyMap } from './ui/story-map.js?v=5.0';
 import { renderWorkshopModal } from './ui/workshop.js?v=5.0';
@@ -81,6 +82,7 @@ const els = {
   btnClear: document.getElementById('btn-clear'),
   btnStory: document.getElementById('btn-story'),
   btnDaily: document.getElementById('btn-daily'),
+  btnEngineLab: document.getElementById('btn-engine-lab'),
   dailyBtnLabel: document.getElementById('daily-btn-label'),
   btnBadges: document.getElementById('btn-badges'),
   badgesCount: document.getElementById('badges-count'),
@@ -1008,6 +1010,14 @@ els.btnDaily?.addEventListener('click', () => {
   synth.playRocketLaunch();
   const dailyLvl = generateDailyLevel(getTodayDateKey());
   loadCustomLevel(dailyLvl);
+});
+
+els.btnEngineLab?.addEventListener('click', () => {
+  synth.playClick();
+  renderEngineLabModal(els.modalBackdrop, {
+    lang: lang(),
+    synth,
+  });
 });
 
 els.btnBadges?.addEventListener('click', () => {

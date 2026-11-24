@@ -5,6 +5,8 @@ import {
   evaluateFrustumAndOcclusion,
   selectLodTier,
   computeStreamingChunks,
+  evaluateAiLodAgents,
+  evaluateHybridFluidWave,
 } from '../src/engine/engine-lab-sim.js';
 
 test('evaluateFrustumAndOcclusion culls out-of-cone and moon-occluded entities cleanly', () => {
@@ -64,4 +66,30 @@ test('computeStreamingChunks keeps VRAM bounded and prefetches in velocity direc
   assert.ok(on.stats.vramPct < off.stats.vramPct);
   assert.equal(off.stats.vramPct, 100);
   assert.ok(ENGINE_LAB_TOPICS.length >= 3);
+});
+
+test('evaluateAiLodAgents keeps full A* AI local and slashes CPU load on distant crowd boids', () => {
+  const agents = [
+    { id: 1, x: 110, y: 100 },
+    { id: 2, x: 350, y: 100 },
+    { id: 3, x: 420, y: 200 },
+  ];
+  const on = evaluateAiLodAgents({ playerX: 100, playerY: 100, nearRadius: 90, agents, aiLodEnabled: true });
+  const off = evaluateAiLodAgents({ playerX: 100, playerY: 100, nearRadius: 90, agents, aiLodEnabled: false });
+
+  assert.equal(on.stats.fullAiCount, 1);
+  assert.equal(on.stats.crowdCount, 2);
+  assert.equal(off.stats.fullAiCount, 3);
+  assert.ok(on.stats.cpuPct < off.stats.cpuPct);
+  assert.ok(on.stats.fps > off.stats.fps);
+});
+
+test('evaluateHybridFluidWave restricts heavy physics to local boat zone while keeping ocean waves active', () => {
+  const on = evaluateHybridFluidWave({ samples: 40, width: 400, boatX: 200, localRadius: 60, time: 1.2, hybridEnabled: true });
+  const off = evaluateHybridFluidWave({ samples: 40, width: 400, boatX: 200, localRadius: 60, time: 1.2, hybridEnabled: false });
+
+  assert.equal(on.points.length, 40);
+  assert.ok(on.stats.localPhysCount < 40);
+  assert.equal(off.stats.localPhysCount, 40);
+  assert.ok(on.stats.fps > off.stats.fps);
 });

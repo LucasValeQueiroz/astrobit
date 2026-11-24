@@ -9,7 +9,9 @@ import {
   evaluateFrustumAndOcclusion,
   selectLodTier,
   computeStreamingChunks,
-} from '../engine/engine-lab-sim.js?v=5.2';
+  evaluateAiLodAgents,
+  evaluateHybridFluidWave,
+} from '../engine/engine-lab-sim.js?v=5.3';
 
 function escapeHtml(text) {
   return String(text ?? '')
@@ -45,6 +47,14 @@ export function renderEngineLabModal(container, { lang = 'pt', synth = null, onT
       r: 7 + (i % 4) * 2.5,
     };
   });
+
+  // Deterministic space-bot swarm for Demo 4 (AI LOD)
+  const aiBots = Array.from({ length: 26 }, (_, i) => ({
+    id: i,
+    baseX: 48 + ((i * 79) % 444),
+    baseY: 42 + ((i * 53) % 226),
+    phase: i * 0.7,
+  }));
 
   const stopLoop = () => {
     if (rafId) {
@@ -438,6 +448,158 @@ export function renderEngineLabModal(container, { lang = 'pt', synth = null, onT
     });
   };
 
+  const drawAiLod = (ctx, w, h) => {
+    const px = pointer.x * w;
+    const py = pointer.y * h;
+    const nearRadius = 112;
+
+    const movedBots = aiBots.map((b) => ({
+      ...b,
+      x: (b.baseX + Math.sin(elapsed * 0.9 + b.phase) * 24 + w) % w,
+      y: (b.baseY + Math.cos(elapsed * 0.8 + b.phase) * 18 + h) % h,
+    }));
+
+    const res = evaluateAiLodAgents({
+      playerX: px,
+      playerY: py,
+      nearRadius,
+      agents: movedBots,
+      aiLodEnabled: trickEnabled,
+    });
+
+    // Near AI zone ring
+    ctx.save();
+    ctx.strokeStyle = trickEnabled ? 'rgba(56, 189, 248, 0.75)' : 'rgba(244, 63, 94, 0.65)';
+    ctx.fillStyle = trickEnabled ? 'rgba(56, 189, 248, 0.10)' : 'rgba(244, 63, 94, 0.08)';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([6, 4]);
+    ctx.beginPath();
+    ctx.arc(px, py, nearRadius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    for (const bot of res.agents) {
+      if (bot.tier === 'full') {
+        // Draw A* path vector line toward/around player
+        ctx.strokeStyle = 'rgba(250, 204, 21, 0.45)';
+        ctx.lineWidth = 1.4;
+        ctx.beginPath();
+        ctx.moveTo(bot.x, bot.y);
+        ctx.lineTo(bot.x + (px - bot.x) * 0.28, bot.y + (py - bot.y) * 0.28);
+        ctx.stroke();
+
+        ctx.fillStyle = '#facc15';
+        ctx.beginPath();
+        ctx.arc(bot.x, bot.y, 7, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#0f172a';
+        ctx.font = '800 8px system-ui, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('A*', bot.x, bot.y + 3);
+      } else {
+        // Lightweight crowd boid dot
+        ctx.fillStyle = '#94a3b8';
+        ctx.beginPath();
+        ctx.arc(bot.x, bot.y, 4.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    ctx.font = '22px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('🤖', px, py + 8);
+    ctx.restore();
+
+    updateMeters({
+      fps: res.stats.fps,
+      memLabel: '🧠 CPU',
+      memVal: `${res.stats.cpuPct}%`,
+      energyPct: res.stats.energyPct,
+      extra: isEn
+        ? `Full AI (A*): ${res.stats.fullAiCount} · Lightweight Boids: ${res.stats.crowdCount}`
+        : `IA Completa (A*): ${res.stats.fullAiCount} · Bando Leve (Boids): ${res.stats.crowdCount}`,
+    });
+  };
+
+  const drawFluids = (ctx, w, h) => {
+    const boatX = Math.max(46, Math.min(w - 46, pointer.x * w));
+    const localRadius = 78;
+    const baseY = h * 0.58;
+
+    const res = evaluateHybridFluidWave({
+      samples: 46,
+      width: w,
+      boatX,
+      localRadius,
+      time: elapsed,
+      hybridEnabled: trickEnabled,
+    });
+
+    // Local physics zone highlight
+    ctx.save();
+    ctx.fillStyle = trickEnabled ? 'rgba(56, 189, 248, 0.14)' : 'rgba(244, 63, 94, 0.14)';
+    if (trickEnabled) {
+      ctx.fillRect(boatX - localRadius, 36, localRadius * 2, h - 52);
+      ctx.strokeStyle = 'rgba(125, 211, 252, 0.6)';
+      ctx.setLineDash([5, 4]);
+      ctx.strokeRect(boatX - localRadius, 36, localRadius * 2, h - 52);
+      ctx.setLineDash([]);
+    } else {
+      ctx.fillRect(0, 36, w, h - 52);
+    }
+
+    // Ocean fill
+    const waterGrad = ctx.createLinearGradient(0, baseY - 25, 0, h);
+    waterGrad.addColorStop(0, 'rgba(14, 165, 233, 0.65)');
+    waterGrad.addColorStop(1, 'rgba(30, 58, 138, 0.92)');
+    ctx.fillStyle = waterGrad;
+    ctx.beginPath();
+    ctx.moveTo(0, h);
+    for (const pt of res.points) {
+      ctx.lineTo(pt.x, baseY + pt.yOffset);
+    }
+    ctx.lineTo(w, h);
+    ctx.closePath();
+    ctx.fill();
+
+    // Highlight active physics vertices + foam droplets near boat
+    for (const pt of res.points) {
+      ctx.fillStyle = pt.isPhysicsSample ? '#fde047' : '#38bdf8';
+      ctx.beginPath();
+      ctx.arc(pt.x, baseY + pt.yOffset, pt.isPhysicsSample ? 3.2 : 1.8, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Foam splash particles around boat hull
+    for (let i = 0; i < 10; i++) {
+      const side = i % 2 === 0 ? -1 : 1;
+      const spread = 14 + ((i * 11 + elapsed * 45) % 42);
+      const lift = Math.abs(Math.sin(elapsed * 6 + i)) * 18;
+      ctx.fillStyle = 'rgba(224, 242, 254, 0.85)';
+      ctx.beginPath();
+      ctx.arc(boatX + side * spread, baseY - 6 - lift, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Space boat on wave crest
+    const nearest = res.points.reduce((best, p) => (Math.abs(p.x - boatX) < Math.abs(best.x - boatX) ? p : best), res.points[0]);
+    ctx.font = '28px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('🚤', boatX, baseY + nearest.yOffset - 8);
+    ctx.restore();
+
+    updateMeters({
+      fps: res.stats.fps,
+      memLabel: '🌊 CPU',
+      memVal: `${res.stats.cpuPct}%`,
+      energyPct: res.stats.energyPct,
+      extra: isEn
+        ? `Local physics nodes: ${res.stats.localPhysCount}/${res.stats.samples} · Light FFT wave nodes: ${res.stats.macroOnlyCount}`
+        : `Nós com física real: ${res.stats.localPhysCount}/${res.stats.samples} · Nós onda leve (FFT): ${res.stats.macroOnlyCount}`,
+    });
+  };
+
   const loop = (ts) => {
     const dt = lastTs ? Math.min(0.05, (ts - lastTs) / 1000) : 0.016;
     lastTs = ts;
@@ -454,6 +616,8 @@ export function renderEngineLabModal(container, { lang = 'pt', synth = null, onT
       if (activeTopicId === 'culling') drawCulling(ctx, w, h);
       else if (activeTopicId === 'lod') drawLod(ctx, w, h);
       else if (activeTopicId === 'streaming') drawStreaming(ctx, w, h);
+      else if (activeTopicId === 'ai_lod') drawAiLod(ctx, w, h);
+      else if (activeTopicId === 'fluids') drawFluids(ctx, w, h);
     }
     rafId = requestAnimationFrame(loop);
   };

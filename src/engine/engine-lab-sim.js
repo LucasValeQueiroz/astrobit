@@ -47,6 +47,34 @@ export const ENGINE_LAB_TOPICS = [
     tipPt: '🎮 Mexa o mouse (ou dedo) para pilotar a nave pela galáxia infinita!',
     tipEn: '🎮 Move your mouse (or finger) to pilot the ship across the open galaxy!',
   },
+  {
+    id: 'ai_lod',
+    num: 4,
+    icon: '🧠',
+    term: 'AI LOD & ECS Boids',
+    titlePt: 'IA em Camadas',
+    titleEn: 'Layered AI (AI LOD)',
+    kidPt: 'Robôs perto do AstroBit pensam sozinhos (desviam e planejam rotas); os de longe voam em bando leve!',
+    kidEn: 'Robots close to AstroBit think individually (pathfinding); far ones fly in a lightweight flock!',
+    proPt: 'AI LOD usa árvores de comportamento + A* perto do jogador e ECS / flow fields / boids com baixa taxa de tick à distância.',
+    proEn: 'AI LOD runs full behavior trees + A* near the player and lightweight ECS/boids flow fields at lower tick rates afar.',
+    tipPt: '🎮 Mexa o AstroBit no mapa para ver os robôs mudarem de enxame para IA completa!',
+    tipEn: '🎮 Move AstroBit around to watch bots switch from flock mode to full AI!',
+  },
+  {
+    id: 'fluids',
+    num: 5,
+    icon: '🌊',
+    term: 'Hybrid Fluid Mesh (FFT + Local)',
+    titlePt: 'Fluidos Híbridos',
+    titleEn: 'Hybrid Fluid Mesh',
+    kidPt: 'O oceano inteiro usa ondas matemáticas super leves — e só perto do barco a física real cria espuma e rastro!',
+    kidEn: 'The whole ocean uses super-light math waves — real splash physics only wakes up right around the boat!',
+    proPt: 'Ondas macro via seno/FFT em vertex shaders combinadas com simulação local de partículas/altura ao redor da embarcação.',
+    proEn: 'Macro waves via periodic/FFT vertex shaders blended with localized particle & wake physics near the hull.',
+    tipPt: '🎮 Deslize o mouse (ou dedo) sobre o mar espacial para navegar e criar espuma!',
+    tipEn: '🎮 Slide your mouse (or finger) across the space ocean to steer and splash!',
+  },
 ];
 
 function normalizeAngle(rad) {
@@ -239,6 +267,94 @@ export function computeStreamingChunks({
       loadedCount,
       prefetchCount,
       vramPct,
+      fps,
+      energyPct,
+    },
+  };
+}
+
+/**
+ * Evaluates AI LOD tiers: agents within `nearRadius` run full individual AI (A* / behavior tree);
+ * distant agents run lightweight crowd/boid flow-field rules when `aiLodEnabled` is true.
+ */
+export function evaluateAiLodAgents({
+  playerX,
+  playerY,
+  nearRadius = 110,
+  agents = [],
+  aiLodEnabled = true,
+}) {
+  let fullAiCount = 0;
+  let crowdCount = 0;
+
+  const classified = agents.map((a) => {
+    const dist = Math.hypot(a.x - playerX, a.y - playerY);
+    const tier = !aiLodEnabled || dist <= nearRadius ? 'full' : 'crowd';
+    if (tier === 'full') fullAiCount += 1;
+    else crowdCount += 1;
+    return { ...a, dist, tier };
+  });
+
+  // Full AI costs ~10x more CPU than crowd boids
+  const totalCost = fullAiCount * 10 + crowdCount * 1;
+  const maxCost = Math.max(1, agents.length * 10);
+  const cpuRatio = totalCost / maxCost;
+  const cpuPct = Math.round(Math.min(100, 12 + cpuRatio * 84));
+  const fps = Math.round(Math.max(19, 60 - cpuRatio * 36));
+  const energyPct = Math.round(Math.min(100, 16 + cpuRatio * 78));
+
+  return {
+    agents: classified,
+    stats: {
+      total: agents.length,
+      fullAiCount,
+      crowdCount,
+      cpuPct,
+      fps,
+      energyPct,
+    },
+  };
+}
+
+/**
+ * Evaluates a 1D slice of the Hybrid Fluid Mesh: macro periodic/FFT wave + local hull wake physics.
+ */
+export function evaluateHybridFluidWave({
+  samples = 48,
+  width = 540,
+  boatX = 270,
+  localRadius = 78,
+  time = 0,
+  hybridEnabled = true,
+}) {
+  const points = [];
+  let localPhysCount = 0;
+
+  for (let i = 0; i < samples; i++) {
+    const x = (i / (samples - 1)) * width;
+    const macroY = Math.sin(x * 0.032 + time * 2.4) * 10 + Math.cos(x * 0.07 - time * 1.5) * 4;
+    const dx = Math.abs(x - boatX);
+    const inLocal = dx <= localRadius;
+    const isPhysicsSample = !hybridEnabled || inLocal;
+    if (isPhysicsSample) localPhysCount += 1;
+
+    const wakeFactor = inLocal ? Math.cos((dx / localRadius) * (Math.PI / 2)) : 0;
+    const wakeY = wakeFactor * Math.sin(dx * 0.25 - time * 9) * 11;
+    points.push({ x, yOffset: macroY + wakeY, inLocal, isPhysicsSample });
+  }
+
+  const ratio = localPhysCount / Math.max(1, samples);
+  const cpuPct = Math.round(Math.min(100, 14 + ratio * 84));
+  const fps = hybridEnabled ? 60 : 17;
+  const energyPct = hybridEnabled ? 28 : 95;
+
+  return {
+    points,
+    stats: {
+      samples,
+      localPhysCount,
+      macroOnlyCount: samples - localPhysCount,
+      cpuPct,
       fps,
       energyPct,
     },

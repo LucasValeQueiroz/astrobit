@@ -2,7 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-e3b341?style=for-the-badge)](LICENSE)
 [![Zero Dependencies](https://img.shields.io/badge/Dependencies-Zero-3fb950?style=for-the-badge)](#architecture)
-[![Tests](https://img.shields.io/badge/Node_Tests-34%2F34_Passing-2ea043?style=for-the-badge)](#local-development--tests)
+[![Tests](https://img.shields.io/badge/Node_Tests-42%2F42_Passing-2ea043?style=for-the-badge)](#local-development--tests)
 [![Live Demo](https://img.shields.io/badge/Play_Online-GitHub_Pages-2f81f7?style=for-the-badge&logo=github)](https://lucasvalequeiroz.github.io/astrobit/)
 
 An open-source **educational space coding puzzle game** built to teach young learners (ages 5–10+) computational thinking — from visual **interlocking SVG jigsaw blocks** all the way to **loops**, **conditional sensors**, **reusable functions (`F1`/`F2`)**, **multi-portal wormholes**, **"Bug Hunt!" debugging**, and live **JavaScript / Python** code previews.
@@ -28,8 +28,17 @@ An open-source **educational space coding puzzle game** built to teach young lea
   4. 🛰️ **Function Station** — Decomposition & reusable subroutines (`F1`, `F2`)
   5. 🌌 **Engineer Nebula** — 3 interactive **"🐛 Bug Hunt!"** debugging puzzles & Grand Finale
   6. 🌀 **Wormhole Dimension (Bonus)** — 6 multi-portal chain levels (`1`–`4` portal pairs) with rotating vortex & quantum warp beam FX!
-- **🔥 Daily Space Mission & Streak + 🏆 12 Space Medals:**
-  - Deterministic daily puzzle generator (100 consecutive days mathematically proven `3★`) with **Daily Streak 🔥** tracking, plus **12 unlockable Space Medals** with animated videogame unlock toasts and fanfare!
+- **🔥 Daily Space Mission & Streak + 🏆 13 Space Medals:**
+  - Deterministic daily puzzle generator (100 consecutive days mathematically proven `3★`) with **Daily Streak 🔥** tracking, plus **13 unlockable Space Medals** (including **🧪 AAA Game Engineer**) with animated videogame unlock toasts and fanfare!
+- **🧪 AAA Game Engineering Lab (7 Interactive 60fps Simulators):**
+  - Hands-on visual playground teaching how blockbuster games run inside strict **Memory, CPU/GPU, and Energy** budgets — with a live **FPS Profiler Sparkline**, **ON/OFF optimization toggle**, and **Quick-Challenge Quizzes**:
+    1. 🔦 **Frustum & Occlusion Culling**
+    2. 🔺 **Dynamic Level of Detail (LOD)**
+    3. 📦 **Open-World Data Streaming (VRAM / SSD Prefetch)**
+    4. 🧠 **Layered AI (AI LOD & ECS Boids)**
+    5. 🌊 **Hybrid Fluid Mesh (FFT Waves + Local Hull Physics)**
+    6. ✨ **Ray Tracing & BVH Acceleration**
+    7. 🤖 **AI Temporal Upscaling (DLSS / FSR / PSSR Split-Screen)**
 - **🎵 Interactive Procedural Space Soundtrack (Web Audio API):**
   - 6 unique planet themes synthesized in real time (zero audio files!) that dynamically accelerate BPM in **Turbo** mode and pulse during execution, with independent **🎵 Music** and **🔊 SFX** toggles.
 - **👀 Visual Step-by-Step Debugger & Live JS / Python Code Peek:**

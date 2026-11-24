@@ -40,8 +40,8 @@ export function renderEngineLabModal(
   const fpsHistory = Array.from({ length: 44 }, () => 60);
   let sparkTick = 0;
 
-  // Interactive pointer states per demo
-  const pointer = { x: 0.72, y: 0.45, vx: 1, vy: 0 };
+  // Interactive pointer states per demo (50/50 centered default for crisp split-screen)
+  const pointer = { x: 0.5, y: 0.45, vx: 1, vy: 0 };
   let lodDist = 0.25;
   let shipPos = { x: 0.5, y: 0.5, vx: 0.25, vy: 0.05 };
 
@@ -171,7 +171,7 @@ export function renderEngineLabModal(
 
         <div class="lab-body">
           <div class="lab-stage-wrap">
-            <canvas id="engine-lab-canvas" class="engine-lab-canvas" width="540" height="310"></canvas>
+            <canvas id="engine-lab-canvas" class="engine-lab-canvas" width="540" height="266"></canvas>
             <div class="lab-tip">${escapeHtml(isEn ? topic.tipEn : topic.tipPt)}</div>
             ${quizHtml}
           </div>
@@ -855,11 +855,11 @@ export function renderEngineLabModal(
     ctx.fillText(
       trickEnabled
         ? isEn
-          ? 'AI RECONSTRUCTED 4K (DLSS/FSR)'
-          : 'RECONSTRUÇÃO IA 4K (DLSS/FSR)'
+          ? 'AI 4K (DLSS/FSR)'
+          : 'IA 4K (DLSS/FSR)'
         : isEn
-        ? 'NATIVE 4K (HEAVY GPU)'
-        : '4K NATIVO (GPU PESADA)',
+        ? 'NATIVE 4K (HEAVY)'
+        : '4K NATIVO (PESADO)',
       w - 14,
       24
     );

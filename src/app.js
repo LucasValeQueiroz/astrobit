@@ -39,7 +39,7 @@ import {
   renderWorkspace,
 } from './ui/workspace.js?v=4.0';
 import { renderGarageModal, renderBadgesModal } from './ui/modals.js?v=5.0';
-import { renderEngineLabModal } from './ui/engine-lab.js?v=5.5';
+import { renderEngineLabModal } from './ui/engine-lab.js?v=5.6';
 import { installTactilePointerDnD } from './ui/touch-dnd.js?v=5.0';
 import { renderStoryCinematic, renderWorldArrivalModal, renderGalaxyJourneyMap } from './ui/story-map.js?v=5.0';
 import { renderWorkshopModal } from './ui/workshop.js?v=5.0';

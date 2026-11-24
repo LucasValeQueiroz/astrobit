@@ -2796,3 +2796,18 @@ button {
 .lab-quiz-msg.warn {
   color: #fbbf24;
 }
+
+/* Ensure progress fill span renders cleanly in Lab AAA, Badges & Garage modals */
+.garage-progress-fill {
+  display: block;
+  height: 100%;
+}
+
+.engine-lab-modal .lab-quiz-box {
+  padding: 8px 10px;
+  gap: 5px;
+}
+
+.engine-lab-modal .lab-quiz-opt {
+  padding: 5px 8px;
+}

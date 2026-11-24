@@ -18,6 +18,7 @@ export function createDefaultProgress() {
     customLevels: [],
     unlockedBadges: [],
     dailyCompletedDates: [],
+    labMasteredTopics: [],
     musicMuted: false,
   };
 }
@@ -44,6 +45,9 @@ export function loadProgress(storage = globalThis.localStorage) {
       unlockedBadges: Array.isArray(parsed?.unlockedBadges) ? [...parsed.unlockedBadges] : [],
       dailyCompletedDates: Array.isArray(parsed?.dailyCompletedDates)
         ? [...parsed.dailyCompletedDates]
+        : [],
+      labMasteredTopics: Array.isArray(parsed?.labMasteredTopics)
+        ? [...parsed.labMasteredTopics]
         : [],
       musicMuted: Boolean(parsed?.musicMuted),
     };

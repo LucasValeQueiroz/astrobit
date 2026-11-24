@@ -13,7 +13,7 @@ import {
   evaluateHybridFluidWave,
   evaluateRayTracingBvh,
   evaluateAiUpscaling,
-} from '../engine/engine-lab-sim.js?v=5.4';
+} from '../engine/engine-lab-sim.js?v=5.5';
 
 function escapeHtml(text) {
   return String(text ?? '')
@@ -23,7 +23,10 @@ function escapeHtml(text) {
     .replaceAll('"', '&quot;');
 }
 
-export function renderEngineLabModal(container, { lang = 'pt', synth = null, onTopicExplored, onClose } = {}) {
+export function renderEngineLabModal(
+  container,
+  { lang = 'pt', synth = null, masteredTopics = [], onTopicMastered, onClose } = {}
+) {
   if (!container) return;
   const isEn = lang === 'en';
 
@@ -32,6 +35,10 @@ export function renderEngineLabModal(container, { lang = 'pt', synth = null, onT
   let rafId = null;
   let elapsed = 0;
   let lastTs = 0;
+  const masteredSet = new Set(Array.isArray(masteredTopics) ? masteredTopics : []);
+  let quizFeedback = null; // null | 'correct' | 'wrong'
+  const fpsHistory = Array.from({ length: 44 }, () => 60);
+  let sparkTick = 0;
 
   // Interactive pointer states per demo
   const pointer = { x: 0.72, y: 0.45, vx: 1, vy: 0 };
@@ -69,18 +76,74 @@ export function renderEngineLabModal(container, { lang = 'pt', synth = null, onT
 
   const renderShell = () => {
     const topic = getTopic();
+    const isMastered = masteredSet.has(topic.id);
+    const masteredCount = masteredSet.size;
+    const totalTopics = ENGINE_LAB_TOPICS.length;
+    const pct = Math.round((masteredCount / totalTopics) * 100);
+
     const tabsHtml = ENGINE_LAB_TOPICS.map(
       (tp) => `
         <button
           type="button"
-          class="lab-tab ${tp.id === activeTopicId ? 'active' : ''}"
+          class="lab-tab ${tp.id === activeTopicId ? 'active' : ''} ${masteredSet.has(tp.id) ? 'mastered' : ''}"
           data-lab-topic="${tp.id}"
         >
-          <span>${tp.icon}</span>
+          <span>${masteredSet.has(tp.id) ? '✅' : tp.icon}</span>
           <span>${tp.num}. ${escapeHtml(isEn ? tp.titleEn : tp.titlePt)}</span>
         </button>
       `
     ).join('');
+
+    const quiz = topic.quiz;
+    const quizOpts = quiz ? (isEn ? quiz.optsEn : quiz.optsPt) : [];
+    const quizHtml = quiz
+      ? `
+        <div class="lab-quiz-box ${isMastered ? 'is-mastered' : ''}">
+          <div class="lab-quiz-title">
+            ${
+              isMastered
+                ? isEn
+                  ? '✅ Secret Mastered!'
+                  : '✅ Segredo Dominado!'
+                : isEn
+                ? '🎯 Quick Challenge!'
+                : '🎯 Desafio Relâmpago!'
+            }
+          </div>
+          <p class="lab-quiz-q">${escapeHtml(isEn ? quiz.qEn : quiz.qPt)}</p>
+          <div class="lab-quiz-opts">
+            ${quizOpts
+              .map(
+                (opt, idx) => `
+                  <button
+                    type="button"
+                    class="lab-quiz-opt ${isMastered && idx === quiz.correctIdx ? 'correct' : ''}"
+                    data-quiz-idx="${idx}"
+                  >
+                    ${escapeHtml(opt)}
+                  </button>
+                `
+              )
+              .join('')}
+          </div>
+          ${
+            quizFeedback === 'wrong'
+              ? `<div class="lab-quiz-msg warn">${
+                  isEn
+                    ? 'Oops! Toggle the trick ON/OFF above and try again! 😉'
+                    : 'Quase! Teste ligar/desligar o truque acima e tente de novo! 😉'
+                }</div>`
+              : quizFeedback === 'correct'
+              ? `<div class="lab-quiz-msg good">${
+                  isEn
+                    ? '🎉 Nailed it! You think like a AAA game engineer!'
+                    : '🎉 Acertou em cheio! Você já pensa como engenheiro de games AAA!'
+                }</div>`
+              : ''
+          }
+        </div>
+      `
+      : '';
 
     container.innerHTML = `
       <div class="modal-card modal-wide engine-lab-modal">
@@ -90,12 +153,18 @@ export function renderEngineLabModal(container, { lang = 'pt', synth = null, onT
             <p class="modal-sub">
               ${
                 isEn
-                  ? 'Play with the real tricks blockbuster games use to run fast on limited memory, CPU/GPU, and battery!'
-                  : 'Brinque com os segredos reais que os grandes jogos usam para rodar rápido dentro dos limites de memória, CPU/GPU e energia!'
+                  ? `Play with all 7 blockbuster engine secrets! Progress: ${masteredCount}/${totalTopics} mastered`
+                  : `Brinque com os 7 segredos dos grandes jogos! Progresso: ${masteredCount}/${totalTopics} dominados`
               }
             </p>
           </div>
           <button type="button" class="icon-btn" data-lab-close="true" aria-label="Close">✕</button>
+        </div>
+
+        <div class="garage-progress" style="margin-bottom:10px">
+          <div class="garage-progress-bar">
+            <span class="garage-progress-fill" style="width:${pct}%"></span>
+          </div>
         </div>
 
         <div class="lab-tabs">${tabsHtml}</div>
@@ -104,6 +173,7 @@ export function renderEngineLabModal(container, { lang = 'pt', synth = null, onT
           <div class="lab-stage-wrap">
             <canvas id="engine-lab-canvas" class="engine-lab-canvas" width="540" height="310"></canvas>
             <div class="lab-tip">${escapeHtml(isEn ? topic.tipEn : topic.tipPt)}</div>
+            ${quizHtml}
           </div>
 
           <div class="lab-sidebar">
@@ -149,7 +219,6 @@ export function renderEngineLabModal(container, { lang = 'pt', synth = null, onT
     `;
 
     container.classList.remove('hidden');
-    onTopicExplored?.(activeTopicId);
 
     const canvas = container.querySelector('#engine-lab-canvas');
     const updatePointerFromEvent = (ev) => {
@@ -184,6 +253,7 @@ export function renderEngineLabModal(container, { lang = 'pt', synth = null, onT
       if (tab) {
         synth?.playClick?.();
         activeTopicId = tab.dataset.labTopic;
+        quizFeedback = null;
         renderShell();
         return;
       }
@@ -191,11 +261,35 @@ export function renderEngineLabModal(container, { lang = 'pt', synth = null, onT
         trickEnabled = !trickEnabled;
         synth?.playSnap?.();
         renderShell();
+        return;
+      }
+      const optBtn = event.target.closest('[data-quiz-idx]');
+      if (optBtn && topic.quiz) {
+        const picked = Number(optBtn.dataset.quizIdx);
+        if (picked === topic.quiz.correctIdx) {
+          quizFeedback = 'correct';
+          const isNew = !masteredSet.has(topic.id);
+          masteredSet.add(topic.id);
+          if (masteredSet.size >= ENGINE_LAB_TOPICS.length && isNew) {
+            synth?.playFanfare?.();
+          } else {
+            synth?.playCollect?.(masteredSet.size);
+          }
+          onTopicMastered?.(topic.id);
+          renderShell();
+        } else {
+          quizFeedback = 'wrong';
+          synth?.playBump?.();
+          renderShell();
+        }
       }
     };
   };
 
+  let latestFps = 60;
+
   const updateMeters = ({ fps, memLabel, memVal, energyPct, extra }) => {
+    latestFps = fps;
     const fpsEl = container.querySelector('#lab-fps-val');
     const memLblEl = container.querySelector('#lab-mem-label');
     const memEl = container.querySelector('#lab-mem-val');
@@ -820,6 +914,38 @@ export function renderEngineLabModal(container, { lang = 'pt', synth = null, onT
       else if (activeTopicId === 'fluids') drawFluids(ctx, w, h);
       else if (activeTopicId === 'raytracing') drawRayTracing(ctx, w, h);
       else if (activeTopicId === 'upscaling') drawUpscaling(ctx, w, h);
+
+      // Live Game-Engine Profiler FPS Sparkline overlay (bottom-left)
+      sparkTick += 1;
+      if (sparkTick % 3 === 0) {
+        fpsHistory.push(latestFps);
+        if (fpsHistory.length > 44) fpsHistory.shift();
+      }
+      const gx = 10;
+      const gy = h - 42;
+      const gw = 114;
+      const gh = 32;
+      ctx.save();
+      ctx.fillStyle = 'rgba(2, 6, 23, 0.78)';
+      ctx.strokeStyle = 'rgba(148, 163, 184, 0.35)';
+      ctx.lineWidth = 1;
+      ctx.fillRect(gx, gy, gw, gh);
+      ctx.strokeRect(gx, gy, gw, gh);
+      ctx.strokeStyle = latestFps >= 50 ? '#4ade80' : '#fb7185';
+      ctx.lineWidth = 1.8;
+      ctx.beginPath();
+      fpsHistory.forEach((v, i) => {
+        const px = gx + 3 + (i / (fpsHistory.length - 1)) * (gw - 6);
+        const py = gy + gh - 3 - (Math.min(60, Math.max(10, v)) / 60) * (gh - 10);
+        if (i === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      });
+      ctx.stroke();
+      ctx.fillStyle = latestFps >= 50 ? '#4ade80' : '#fb7185';
+      ctx.font = '800 9px system-ui, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText(`PROFILER ${latestFps} FPS`, gx + 4, gy + 10);
+      ctx.restore();
     }
     rafId = requestAnimationFrame(loop);
   };

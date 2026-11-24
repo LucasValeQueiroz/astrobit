@@ -23,8 +23,8 @@ import {
   saveProgress,
   recordLevelCompletion,
   getTotalStars,
-} from './storage/progress.js?v=5.0';
-import { SPACE_BADGES, evaluateBadges } from './storage/achievements.js?v=5.0';
+} from './storage/progress.js?v=5.5';
+import { SPACE_BADGES, evaluateBadges } from './storage/achievements.js?v=5.5';
 import {
   createBlock,
   cloneBlocks,
@@ -39,7 +39,7 @@ import {
   renderWorkspace,
 } from './ui/workspace.js?v=4.0';
 import { renderGarageModal, renderBadgesModal } from './ui/modals.js?v=5.0';
-import { renderEngineLabModal } from './ui/engine-lab.js?v=5.4';
+import { renderEngineLabModal } from './ui/engine-lab.js?v=5.5';
 import { installTactilePointerDnD } from './ui/touch-dnd.js?v=5.0';
 import { renderStoryCinematic, renderWorldArrivalModal, renderGalaxyJourneyMap } from './ui/story-map.js?v=5.0';
 import { renderWorkshopModal } from './ui/workshop.js?v=5.0';
@@ -1017,6 +1017,17 @@ els.btnEngineLab?.addEventListener('click', () => {
   renderEngineLabModal(els.modalBackdrop, {
     lang: lang(),
     synth,
+    masteredTopics: state.progress.labMasteredTopics || [],
+    onTopicMastered: (topicId) => {
+      const prev = new Set(state.progress.labMasteredTopics || []);
+      if (!prev.has(topicId)) {
+        prev.add(topicId);
+        state.progress = { ...state.progress, labMasteredTopics: [...prev] };
+        saveProgress(state.progress);
+        checkAndAwardBadges();
+        updateTopbar();
+      }
+    },
   });
 });
 

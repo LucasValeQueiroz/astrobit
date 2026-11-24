@@ -120,3 +120,13 @@ test('evaluateAiUpscaling cuts shaded pixels by ~75% while boosting FPS and ener
   assert.ok(ai.fps > native.fps);
   assert.ok(ai.energyPct < native.energyPct);
 });
+
+test('all 7 AAA Engine Lab topics include valid bilingual quick-challenge quizzes', () => {
+  assert.equal(ENGINE_LAB_TOPICS.length, 7);
+  for (const topic of ENGINE_LAB_TOPICS) {
+    assert.ok(topic.quiz?.qPt && topic.quiz?.qEn, `Topic ${topic.id} must have PT/EN quiz question`);
+    assert.equal(topic.quiz.optsPt.length, 3);
+    assert.equal(topic.quiz.optsEn.length, 3);
+    assert.ok(topic.quiz.correctIdx >= 0 && topic.quiz.correctIdx < 3);
+  }
+});

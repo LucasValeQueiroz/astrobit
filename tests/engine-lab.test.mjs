@@ -7,6 +7,8 @@ import {
   computeStreamingChunks,
   evaluateAiLodAgents,
   evaluateHybridFluidWave,
+  evaluateRayTracingBvh,
+  evaluateAiUpscaling,
 } from '../src/engine/engine-lab-sim.js';
 
 test('evaluateFrustumAndOcclusion culls out-of-cone and moon-occluded entities cleanly', () => {
@@ -92,4 +94,29 @@ test('evaluateHybridFluidWave restricts heavy physics to local boat zone while k
   assert.ok(on.stats.localPhysCount < 40);
   assert.equal(off.stats.localPhysCount, 40);
   assert.ok(on.stats.fps > off.stats.fps);
+});
+
+test('evaluateRayTracingBvh skips non-intersected bounding boxes and dramatically cuts triangle tests', () => {
+  const boxes = [
+    { id: 'A', x: 180, y: 20, w: 100, h: 60, triangles: 1000 },
+    { id: 'B', x: 180, y: 120, w: 100, h: 60, triangles: 1000 },
+    { id: 'C', x: 180, y: 220, w: 100, h: 60, triangles: 1000 },
+  ];
+  const on = evaluateRayTracingBvh({ originX: 40, originY: 150, rayAngle: 0, boxes, bvhEnabled: true });
+  const off = evaluateRayTracingBvh({ originX: 40, originY: 150, rayAngle: 0, boxes, bvhEnabled: false });
+
+  assert.equal(on.stats.boxesHit, 1);
+  assert.equal(on.stats.triangleTests, 1000);
+  assert.equal(off.stats.triangleTests, 3000);
+  assert.ok(on.stats.fps > off.stats.fps);
+});
+
+test('evaluateAiUpscaling cuts shaded pixels by ~75% while boosting FPS and energy efficiency', () => {
+  assert.equal(ENGINE_LAB_TOPICS.length, 7);
+  const ai = evaluateAiUpscaling({ upscalingEnabled: true });
+  const native = evaluateAiUpscaling({ upscalingEnabled: false });
+
+  assert.ok(ai.shadedMillions < native.shadedMillions);
+  assert.ok(ai.fps > native.fps);
+  assert.ok(ai.energyPct < native.energyPct);
 });

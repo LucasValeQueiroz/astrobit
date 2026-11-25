@@ -3424,3 +3424,163 @@ button {
   min-width: 26px;
   color: #facc15;
 }
+
+/* =========================================================
+   UX/DX RESPONSIVE POLISH (DESKTOP 1280+ | TABLET | MOBILE 390px)
+   ========================================================= */
+@media (min-width: 1180px) {
+  .topbar-inner {
+    flex-wrap: nowrap;
+  }
+
+  .controls-bar {
+    flex-wrap: nowrap;
+    gap: 5px;
+  }
+
+  .controls-bar .btn {
+    padding: 6px 9px;
+    font-size: 0.8rem;
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 900px) {
+  body {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .topbar-inner {
+    padding: 6px 10px;
+    gap: 6px;
+    flex-wrap: nowrap;
+  }
+
+  .brand {
+    flex-shrink: 0;
+  }
+
+  .topbar-actions {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    gap: 5px;
+    padding-bottom: 2px;
+  }
+
+  .topbar-actions::-webkit-scrollbar {
+    display: none;
+  }
+
+  .game-layout {
+    gap: 10px;
+    padding: 8px 10px 14px;
+  }
+
+  .canvas-frame {
+    min-height: 240px;
+    max-height: 38dvh;
+  }
+
+  .controls-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .controls-bar .btn {
+    flex: 1 1 auto;
+    min-height: 40px;
+    justify-content: center;
+  }
+
+  .controls-bar .btn-run {
+    flex: 1 1 42%;
+  }
+}
+
+@media (max-width: 600px) {
+  .brand-name {
+    font-size: 0.96rem;
+  }
+
+  .level-pill {
+    font-size: 0.72rem;
+    padding: 2px 7px;
+  }
+
+  .mission-title-row {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .mission-title-row h1 {
+    font-size: 1.02rem;
+  }
+
+  .mascot-bubble {
+    font-size: 0.8rem;
+    padding: 7px 10px;
+  }
+
+  .guided-tutorial-bar {
+    padding: 7px 10px;
+    gap: 8px;
+  }
+
+  .tutorial-msg {
+    font-size: 0.78rem;
+  }
+
+  .modal-card {
+    width: calc(100vw - 16px) !important;
+    max-width: calc(100vw - 16px) !important;
+    max-height: 92dvh;
+    padding: 14px;
+    border-radius: 16px;
+  }
+
+  .pilot-tabs {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    scrollbar-width: none;
+  }
+
+  .pilot-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .pilot-tab {
+    flex: 0 0 auto;
+    white-space: nowrap;
+    font-size: 0.78rem;
+    padding: 7px 10px;
+  }
+
+  .galaxy-ribbon {
+    overflow-x: auto;
+    justify-content: flex-start;
+    padding-bottom: 4px;
+  }
+
+  .mission-deck {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .mission-launch-btn {
+    width: 100%;
+    min-height: 44px;
+  }
+
+  .quests-list {
+    grid-template-columns: 1fr;
+  }
+
+  .history-row {
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+}

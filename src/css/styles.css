@@ -3016,3 +3016,56 @@ button {
   font-size: 0.78rem;
   font-weight: 700;
 }
+
+/* 3-Act Orbital Cinema, Replay Button & Space Fun Fact */
+.planet-stage-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.replay-orbital-btn {
+  border-color: rgba(251, 146, 60, 0.55) !important;
+  color: #fed7aa !important;
+}
+
+.mission-deck-fact {
+  margin: 4px 0 0;
+  font-size: 0.79rem;
+  color: #7dd3fc;
+  line-height: 1.35;
+}
+
+@keyframes shipOrbitalLiftoff {
+  0% {
+    transform: translate(-50%, -50%) rotate(var(--ship-rot, 0deg)) scale(1);
+    opacity: 1;
+  }
+  35% {
+    transform: translate(-50%, -65%) rotate(-90deg) scale(1.1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -260%) rotate(-90deg) scale(0.55);
+    opacity: 0;
+  }
+}
+
+.flying-starship.ship-liftoff {
+  animation: shipOrbitalLiftoff 0.62s cubic-bezier(0.32, 0, 0.67, 0) forwards;
+}
+
+@keyframes chunkStreamPop {
+  0% {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.planet-route-svg.streaming-chunks {
+  animation: chunkStreamPop 0.9s ease-out both;
+}

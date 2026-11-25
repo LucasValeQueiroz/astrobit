@@ -20,7 +20,7 @@ test('all 7 planets have unique biome kinds and 6 named bilingual regions (42 to
     kinds.add(biome.kind);
     assert.equal(biome.regions.length, 6);
     for (const r of biome.regions) {
-      assert.ok(r.flag && r.shortPt && r.shortEn && r.hubPt && r.hubEn);
+      assert.ok(r.flag && r.landmark && r.shortPt && r.shortEn && r.hubPt && r.hubEn && r.factPt && r.factEn);
       totalRegions += 1;
     }
   }
@@ -46,8 +46,10 @@ test('computeOrbitalTransitionState models AAA LOD 0 <-> LOD 3 streaming across 
   const descentMid = computeOrbitalTransitionState('descent', 0.5);
   const descentEnd = computeOrbitalTransitionState('descent', 1);
   assert.equal(descentStart.lodTier, 'LOD 3');
-  assert.equal(descentMid.lodTier, 'LOD 1');
+  assert.equal(descentMid.lodTier, 'LOD 2');
+  assert.ok(descentMid.shieldTempC >= 1500, 'Re-entry mid-atmosphere should peak thermal shield');
   assert.equal(descentEnd.lodTier, 'LOD 0');
   assert.equal(descentEnd.chunksLoaded, 6);
   assert.equal(descentEnd.altitudeKm, 0);
+  assert.equal(descentEnd.shieldTempC, 24);
 });

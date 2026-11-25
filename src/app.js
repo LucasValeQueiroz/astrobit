@@ -33,6 +33,7 @@ import {
 } from './engine/companions-and-hints.js?v=5.9';
 import { computeGuidedTutorialStep } from './engine/guided-tutorial.js?v=6.6';
 import { computeLiveWayfinder } from './engine/pathfinder-coach.js?v=6.6';
+import { computeXpLevel, computeWinXp, applyGameplayRewards } from './engine/xp-and-quests.js?v=6.7';
 import { ALL_LEVELS, CAMPAIGN_WORLDS, getLevelById, getNextLevel } from './levels/index.js?v=5.7';
 import { SpaceCanvasRenderer } from './renderer/canvas-renderer.js?v=6.6';
 import { SpaceSoundSynth } from './audio/sound-synth.js?v=6.4';
@@ -57,7 +58,7 @@ import {
   renderPalette,
   renderWorkspace,
 } from './ui/workspace.js?v=4.0';
-import { renderGarageModal, renderBadgesModal } from './ui/modals.js?v=6.0';
+import { renderGarageModal, renderBadgesModal, renderQuestsModal } from './ui/modals.js?v=6.7';
 import { renderPassportModal } from './ui/passport-modal.js?v=6.0';
 import { renderEngineLabModal } from './ui/engine-lab.js?v=5.6';
 import { installTactilePointerDnD } from './ui/touch-dnd.js?v=5.0';
@@ -81,6 +82,9 @@ const els = {
   mascotAvatarBtn: document.getElementById('mascot-avatar-btn'),
   mascotBubble: document.getElementById('mascot-bubble'),
   crystalsPill: document.getElementById('crystals-pill'),
+  btnXpQuests: document.getElementById('btn-xp-quests'),
+  xpLevelLabel: document.getElementById('xp-level-label'),
+  xpMiniFill: document.getElementById('xp-mini-fill'),
   blocksCounter: document.getElementById('blocks-counter'),
   palette: document.getElementById('block-palette'),
   workspace: document.getElementById('block-workspace'),
@@ -700,6 +704,7 @@ function loadCustomLevel(customLevel) {
   els.btnHint?.classList.remove('hint-nudge');
   updateGhostUi();
   updateCrystalsHud(fresh.crystals.size, fresh.totalCrystals);
+  updateXpHud();
   updateTopbar();
   setMascotSay(lang() === 'en' ? state.level.hintEn : state.level.hintPt, 'good');
   renderEditor();
@@ -736,6 +741,7 @@ function loadLevel(levelId, { showArrivalIfNew = false } = {}) {
   els.btnHint?.classList.remove('hint-nudge');
   updateGhostUi();
   updateCrystalsHud(fresh.crystals.size, fresh.totalCrystals);
+  updateXpHud();
   updateTopbar();
   setMascotSay(
     state.level.isBugHunt
@@ -797,6 +803,47 @@ function showBadgeToast(badge) {
   }, 4200);
 }
 
+function updateXpHud() {
+  const info = computeXpLevel(state.progress?.xp || 0);
+  if (els.xpLevelLabel) {
+    els.xpLevelLabel.textContent = `⚡ Lv.${info.level}`;
+  }
+  if (els.xpMiniFill) {
+    els.xpMiniFill.style.width = `${info.pct}%`;
+  }
+}
+
+function awardXpAndQuests(rewardEvent) {
+  const res = applyGameplayRewards(state.progress, rewardEvent);
+  if (res.xpGained > 0 || res.completedQuests.length > 0) {
+    state.progress = res.progress;
+    saveProgress(state.progress);
+    updateXpHud();
+
+    res.completedQuests.forEach((q, idx) => {
+      setTimeout(() => {
+        showBadgeToast({
+          icon: q.icon,
+          namePt: `${q.titlePt} (+${q.xpReward} XP)`,
+          nameEn: `${q.titleEn} (+${q.xpReward} XP)`,
+        });
+      }, idx * 450);
+    });
+
+    if (res.leveledUp) {
+      synth.playNewRecord();
+      setTimeout(() => {
+        showBadgeToast({
+          icon: '🎉',
+          namePt: `LEVEL UP! Piloto Nível ${res.newLevel}!`,
+          nameEn: `LEVEL UP! Pilot Level ${res.newLevel}!`,
+        });
+      }, res.completedQuests.length * 450 + 200);
+    }
+  }
+  return res;
+}
+
 function checkAndAwardBadges(context = {}) {
   const { unlockedBadges, newlyUnlocked } = evaluateBadges(state.progress, context);
   if (newlyUnlocked.length > 0) {
@@ -838,6 +885,21 @@ function showWinOverlay(run) {
   checkAndAwardBadges({
     won: true,
     level: state.level,
+    program: state.program,
+    events: run.events,
+  });
+  const baseXp = computeWinXp({
+    stars: run.stars,
+    firstTry: state.levelFailCount === 0,
+    isDaily: Boolean(state.level?.isDaily),
+    isArcade: Boolean(state.level?.isArcade),
+    arcadeMultiplier: state.arcadeRun?.multiplier || 1,
+  });
+  awardXpAndQuests({
+    type: 'level_win',
+    baseXp,
+    stars: run.stars,
+    isArcade: Boolean(state.level?.isArcade),
     program: state.program,
     events: run.events,
   });
@@ -1185,8 +1247,16 @@ els.btnXray?.addEventListener('click', () => {
       ? 'X-Ray'
       : 'Raio-X';
   }
+  if (state.xrayEnabled) {
+    awardXpAndQuests({ type: 'xray_toggle' });
+  }
   synth.playClick();
   renderEditor();
+});
+
+els.btnXpQuests?.addEventListener('click', () => {
+  synth.playClick();
+  renderQuestsModal(els.modalBackdrop, state.progress, { lang: lang() });
 });
 
 els.btnGhost?.addEventListener('click', () => {

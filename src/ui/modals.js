@@ -6,6 +6,7 @@ import { CAMPAIGN_WORLDS } from '../levels/index.js?v=5.8';
 import { ROBOT_SKINS } from '../renderer/robot-skins.js?v=5.8';
 import { getTotalStars } from '../storage/progress.js?v=5.8';
 import { COMPANION_DRONES } from '../engine/companions-and-hints.js?v=5.9';
+import { SPACE_QUESTS, computeXpLevel } from '../engine/xp-and-quests.js?v=6.7';
 
 function escapeHtml(text) {
   return String(text ?? '')
@@ -283,6 +284,72 @@ export function renderBadgesModal(
       onOpenPassport?.();
       return;
     }
+    if (event.target === container || event.target.closest('[data-close]')) {
+      container.classList.add('hidden');
+      onClose?.();
+    }
+  };
+}
+
+/**
+ * Renders the Space Quests & Pilot XP Level Modal.
+ */
+export function renderQuestsModal(container, progress, { lang = 'pt', onClose }) {
+  if (!container) return;
+  const isEn = lang === 'en';
+  const lvl = computeXpLevel(progress?.xp || 0);
+  const completedSet = new Set(Array.isArray(progress?.completedQuests) ? progress.completedQuests : []);
+  const qProg = progress?.questProgress || {};
+
+  const questsHtml = SPACE_QUESTS.map((q) => {
+    const done = completedSet.has(q.id);
+    const cur = done ? q.target : Math.min(q.target, Number(qProg[q.id]) || 0);
+    const pct = Math.round((cur / q.target) * 100);
+    const title = isEn ? q.titleEn : q.titlePt;
+    return `
+      <div class="quest-card ${done ? 'done' : ''}">
+        <div class="quest-top">
+          <span class="quest-title">${q.icon} ${escapeHtml(title)}</span>
+          <span class="quest-reward">${done ? '✅' : `+${q.xpReward} XP`}</span>
+        </div>
+        <div class="quest-bar-row">
+          <div class="garage-bar-track"><div class="garage-bar-fill" style="width:${pct}%"></div></div>
+          <span class="quest-count">${cur}/${q.target}</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  container.innerHTML = `
+    <div class="modal-card modal-wide quests-modal">
+      <div class="modal-head">
+        <div>
+          <h2>⚡ ${isEn ? `Pilot Level ${lvl.level} & Space Quests` : `Piloto Nível ${lvl.level} & Missões Relâmpago`}</h2>
+          <p class="modal-sub">
+            ${
+              lvl.isMax
+                ? isEn
+                  ? `MAX LEVEL REACHED! (${lvl.totalXp} Total XP)`
+                  : `NÍVEL MÁXIMO ALCANÇADO! (${lvl.totalXp} XP Total)`
+                : isEn
+                ? `${lvl.currentLevelXp} / ${lvl.nextLevelXp} XP to Level ${lvl.level + 1} (${lvl.totalXp} Total XP)`
+                : `${lvl.currentLevelXp} / ${lvl.nextLevelXp} XP para o Nível ${lvl.level + 1} (${lvl.totalXp} XP Total)`
+            }
+          </p>
+        </div>
+        <button type="button" class="icon-btn" data-close="true" aria-label="Close">✕</button>
+      </div>
+      <div class="garage-progress">
+        <div class="garage-bar-track">
+          <div class="garage-bar-fill" style="width:${lvl.pct}%"></div>
+        </div>
+      </div>
+      <div class="quests-list">${questsHtml}</div>
+    </div>
+  `;
+
+  container.classList.remove('hidden');
+  container.onclick = (event) => {
     if (event.target === container || event.target.closest('[data-close]')) {
       container.classList.add('hidden');
       onClose?.();

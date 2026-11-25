@@ -4,7 +4,7 @@
  * only when configured, keeping offline/local play 100% instant and dependency-free.
  */
 
-import { FIREBASE_CONFIG } from './firebase-config.js?v=6.8';
+import { FIREBASE_CONFIG } from './firebase-config.js?v=6.9';
 
 let cachedSdk = null;
 let currentUser = null;
@@ -73,4 +73,23 @@ export async function saveCloudProgress(uid, progress) {
     { merge: true }
   );
   return true;
+}
+
+/**
+ * Restores an existing Google session silently on page load if the user already signed in.
+ */
+export async function watchGoogleAuthSession(onUserChange) {
+  const sdk = await loadFirebaseSdk();
+  if (!sdk) return () => {};
+  return sdk.authMod.onAuthStateChanged(sdk.auth, (user) => {
+    currentUser = user
+      ? {
+          uid: user.uid,
+          displayName: user.displayName || '',
+          photoURL: user.photoURL || '',
+          email: user.email || '',
+        }
+      : null;
+    onUserChange?.(currentUser);
+  });
 }

@@ -56,7 +56,8 @@ import {
   signOutGoogle,
   loadCloudProgress,
   saveCloudProgress,
-} from './storage/google-cloud-sync.js?v=6.8';
+  watchGoogleAuthSession,
+} from './storage/google-cloud-sync.js?v=6.9';
 import { SPACE_BADGES, evaluateBadges } from './storage/achievements.js?v=5.7';
 import {
   createBlock,
@@ -1621,6 +1622,27 @@ window.addEventListener('keydown', (event) => {
     state.progress = { ...state.progress, unlockedBadges: retro.unlockedBadges };
     saveProgress(state.progress);
   }
+}
+
+// Silently restore existing Google Sign-In session and sync cloud progress!
+if (isGoogleCloudConfigured()) {
+  watchGoogleAuthSession(async (user) => {
+    if (!user?.uid) return;
+    try {
+      const remote = await loadCloudProgress(user.uid);
+      if (remote) {
+        state.progress = mergeProgressSnapshots(state.progress, remote);
+        if (!state.progress.pilotName && user.displayName) {
+          state.progress.pilotName = user.displayName;
+        }
+        saveProgress(state.progress);
+        updateTopbar();
+        updateXpHud();
+      }
+    } catch {
+      // Offline or transient network error — keep local progress safely
+    }
+  }).catch(() => {});
 }
 
 music = new SpaceMusicEngine(state.progress.musicMuted);

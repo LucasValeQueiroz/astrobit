@@ -24,6 +24,9 @@ export function createDefaultProgress() {
     arcadeBestScore: 0,
     arcadeBestRound: 0,
     ghostsByLevel: {},
+    xp: 0,
+    questProgress: {},
+    completedQuests: [],
     musicMuted: false,
   };
 }
@@ -60,6 +63,12 @@ export function loadProgress(storage = globalThis.localStorage) {
         parsed?.ghostsByLevel && typeof parsed.ghostsByLevel === 'object'
           ? { ...parsed.ghostsByLevel }
           : {},
+      xp: Math.max(0, Math.floor(Number(parsed?.xp) || 0)),
+      questProgress:
+        parsed?.questProgress && typeof parsed.questProgress === 'object'
+          ? { ...parsed.questProgress }
+          : {},
+      completedQuests: Array.isArray(parsed?.completedQuests) ? [...parsed.completedQuests] : [],
       musicMuted: Boolean(parsed?.musicMuted),
     };
   } catch {

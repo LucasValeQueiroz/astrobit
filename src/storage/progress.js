@@ -10,6 +10,7 @@ export function createDefaultProgress() {
     currentLevelId: 'w1-1',
     skinId: 'explorer',
     droneId: 'spark',
+    pilotName: '',
     lang: 'pt',
     speed: 'normal', // 'slow' | 'normal' | 'fast'
     codeLang: 'js',  // 'js' | 'python'

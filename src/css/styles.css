@@ -2931,3 +2931,43 @@ button {
   animation: hintNudgePulse 1.3s ease-in-out infinite;
   border-color: #facc15;
 }
+
+/* Exportable Space Passport & Certificate Modal */
+.modal-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.passport-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.passport-input {
+  flex: 1;
+  min-width: 210px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1.5px solid rgba(56, 189, 248, 0.45);
+  background: rgba(15, 23, 42, 0.85);
+  color: #f8fafc;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.passport-canvas-wrap {
+  width: 100%;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  background: #070b1e;
+}
+
+.passport-canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+}

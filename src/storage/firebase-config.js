@@ -1,12 +1,13 @@
 /**
- * Optional Firebase Web Configuration for Google Sign-In + Firestore Cloud Sync.
- * Leave as `null` for 100% local-only GitHub Pages mode (localStorage + JSON Backup).
- *
- * To activate Google Sign-In & Cloud Sync:
- *  1. Create a free Spark project at https://console.firebase.google.com/
- *  2. Enable Authentication -> Google provider, and add `lucasvalequeiroz.github.io` to Authorized Domains.
- *  3. Enable Firestore Database with rule:
- *       match /users/{uid} { allow read, write: if request.auth != null && request.auth.uid == uid; }
- *  4. Paste your public Web App config object below instead of `null`.
+ * Firebase Web Configuration for AstroBit Google Sign-In + Firestore Cloud Sync.
+ * Public Web App identifiers (security is enforced server-side by Firestore Rules:
+ * `match /users/{uid} { allow read, write: if request.auth != null && request.auth.uid == uid; }`).
  */
-export const FIREBASE_CONFIG = null;
+export const FIREBASE_CONFIG = {
+  apiKey: 'AIzaSyBjvb2W4eIkncCNkQzK9Z8-jPbrhZ5GmPU',
+  authDomain: 'astrobit-game.firebaseapp.com',
+  projectId: 'astrobit-game',
+  storageBucket: 'astrobit-game.firebasestorage.app',
+  messagingSenderId: '210068348816',
+  appId: '1:210068348816:web:f66e13e790b8eda5cf1d15',
+};

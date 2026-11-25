@@ -55,7 +55,8 @@ import {
   renderPalette,
   renderWorkspace,
 } from './ui/workspace.js?v=4.0';
-import { renderGarageModal, renderBadgesModal } from './ui/modals.js?v=5.0';
+import { renderGarageModal, renderBadgesModal } from './ui/modals.js?v=6.0';
+import { renderPassportModal } from './ui/passport-modal.js?v=6.0';
 import { renderEngineLabModal } from './ui/engine-lab.js?v=5.6';
 import { installTactilePointerDnD } from './ui/touch-dnd.js?v=5.0';
 import { renderStoryCinematic, renderWorldArrivalModal, renderGalaxyJourneyMap } from './ui/story-map.js?v=5.0';
@@ -1255,6 +1256,19 @@ els.btnBadges?.addEventListener('click', () => {
   const streak = computeDailyStreak(state.progress.dailyCompletedDates);
   renderBadgesModal(els.modalBackdrop, state.progress, SPACE_BADGES, streak, {
     lang: lang(),
+    onOpenPassport: () => {
+      synth.playFanfare();
+      renderPassportModal(els.modalBackdrop, state.progress, {
+        lang: lang(),
+        totalMaxStars: ALL_LEVELS.length * 3,
+        totalBadges: SPACE_BADGES.length,
+        dailyStreak: streak,
+        onSavePilotName: (name) => {
+          state.progress = { ...state.progress, pilotName: name };
+          saveProgress(state.progress);
+        },
+      });
+    },
   });
 });
 

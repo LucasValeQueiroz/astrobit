@@ -222,7 +222,7 @@ export function renderBadgesModal(
   progress,
   badges,
   dailyStreak,
-  { lang = 'pt', onClose }
+  { lang = 'pt', onOpenPassport, onClose }
 ) {
   const unlockedSet = new Set(Array.isArray(progress?.unlockedBadges) ? progress.unlockedBadges : []);
   const count = unlockedSet.size;
@@ -261,7 +261,12 @@ export function renderBadgesModal(
             }
           </p>
         </div>
-        <button type="button" class="icon-btn" data-close="true" aria-label="Close">✕</button>
+        <div class="modal-head-actions">
+          <button type="button" class="btn btn-run btn-sm" data-open-passport="true">
+            🪪 ${isEn ? 'Export Passport PNG' : 'Passaporte PNG'}
+          </button>
+          <button type="button" class="icon-btn" data-close="true" aria-label="Close">✕</button>
+        </div>
       </div>
       <div class="garage-progress">
         <div class="garage-progress-bar">
@@ -274,6 +279,10 @@ export function renderBadgesModal(
 
   container.classList.remove('hidden');
   container.onclick = (event) => {
+    if (event.target.closest('[data-open-passport]')) {
+      onOpenPassport?.();
+      return;
+    }
     if (event.target === container || event.target.closest('[data-close]')) {
       container.classList.add('hidden');
       onClose?.();

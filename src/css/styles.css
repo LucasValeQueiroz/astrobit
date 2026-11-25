@@ -161,19 +161,20 @@ button {
 .topbar-actions {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   flex-wrap: wrap;
 }
 
 .nav-btn {
-  min-height: 34px;
-  padding: 4px 10px;
+  min-height: 32px;
+  padding: 4px 8px;
   border-radius: 10px;
   border: 1px solid var(--border);
   background: var(--surface-2);
   color: var(--text);
   font-weight: 600;
-  font-size: 0.82rem;
+  font-size: 0.77rem;
+  white-space: nowrap;
   cursor: pointer;
   transition: transform 0.12s ease, border-color 0.15s ease;
 }
@@ -2970,4 +2971,48 @@ button {
   display: block;
   width: 100%;
   height: auto;
+}
+
+/* 60fps Planet Biome Canvas & AAA Orbital Telemetry */
+.planet-biome-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.planet-route-svg {
+  position: relative;
+  z-index: 1;
+}
+
+.planet-aaa-telemetry {
+  position: absolute;
+  left: 10px;
+  bottom: 8px;
+  z-index: 4;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(7, 11, 30, 0.78);
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  color: #bae6fd;
+  font-size: 0.73rem;
+  font-weight: 700;
+  pointer-events: none;
+  backdrop-filter: blur(4px);
+}
+
+.region-hub-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: rgba(56, 189, 248, 0.18);
+  border: 1px solid rgba(56, 189, 248, 0.45);
+  color: #e0f2fe;
+  font-size: 0.78rem;
+  font-weight: 700;
 }

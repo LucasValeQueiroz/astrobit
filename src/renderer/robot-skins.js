@@ -87,6 +87,18 @@ export const ROBOT_SKINS = [
     accent: '#38bdf8',
     accessory: 'crown',
   },
+  {
+    id: 'frost',
+    starsRequired: 95,
+    namePt: 'AstroGlacial',
+    nameEn: 'Glacial Astro',
+    body: '#bae6fd',
+    bodyDark: '#0284c7',
+    visor: '#082f49',
+    eye: '#e0f2fe',
+    accent: '#22d3ee',
+    accessory: 'crown',
+  },
 ];
 
 export const WORLD_PALETTES = {
@@ -161,6 +173,18 @@ export const WORLD_PALETTES = {
     wallTop: '#6b21a8',
     crystal: '#38bdf8',
     crystalGlow: '#f0abfc',
+  },
+  7: {
+    namePt: 'Planeta Congelado',
+    nameEn: 'Frozen Planet',
+    bgTop: '#041428',
+    bgBottom: '#0c2d4d',
+    floor: '#163c5e',
+    floorBorder: '#38bdf8',
+    wall: '#334e68',
+    wallTop: '#627d98',
+    crystal: '#67e8f9',
+    crystalGlow: '#e0f2fe',
   },
 };
 

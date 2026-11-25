@@ -267,6 +267,35 @@ export const WORLD_STORIES = {
       { x: 685, y: 105 },
     ],
   },
+  7: {
+    world: 7,
+    galaxyPos: { x: 690, y: 245 },
+    sectorPt: 'Setor Polar · Planeta Congelado',
+    sectorEn: 'Polar Sector · Frozen Planet',
+    actPt: 'Ato Polar — Física de Gelo & Baterias',
+    actEn: 'Polar Act — Ice & Energy Crates',
+    planetColor: '#7dd3fc',
+    planetDark: '#0369a1',
+    ringColor: '#e0f2fe',
+    arrivalPt:
+      'Brrr!! Chegamos ao Planeta Congelado! No gelo 🧊 o AstroBit desliza sem parar até chão firme, e você pode empurrar Baterias 📦 para apertar botões de energia!',
+    arrivalEn:
+      'Brrr!! Welcome to the Frozen Planet! On ice 🧊 AstroBit glides smoothly until solid ground, and you can push Energy Crates 📦 onto power switches!',
+    completedPt:
+      'MESTRE GLACIAL!! Você dominou o gelo espacial e o curling de baterias como um verdadeiro engenheiro!',
+    completedEn:
+      'GLACIAL MASTER!! You conquered space ice and battery curling like a true engineer!',
+    upgradePt: '❄️ Patinador Polar & Mestre de Física',
+    upgradeEn: '❄️ Polar Skater & Physics Master',
+    baseCoords: [
+      { x: 85, y: 190 },
+      { x: 200, y: 110 },
+      { x: 325, y: 185 },
+      { x: 450, y: 105 },
+      { x: 575, y: 180 },
+      { x: 690, y: 100 },
+    ],
+  },
 };
 
 export const LEVEL_STORIES = {
@@ -495,6 +524,43 @@ export const LEVEL_STORIES = {
     briefEn: '🌀👑 PORTAL BOSS! All 4 portal pairs (1, 2, 3, 4), light bridge, and laser in the ultimate warp challenge!',
     winPt: '🌀🏆 LENDA QUÂNTICA!! VOCÊ DOMINOU O BURACO DE MINHOCA INTEIRO!!',
     winEn: '🌀🏆 QUANTUM LEGEND!! YOU CONQUERED THE ENTIRE WORMHOLE DIMENSION!!',
+  },
+  // WORLD 7 (BONUS): Frozen Planet
+  'w7-1': {
+    briefPt: 'Pista de Patinação: pise no gelo 🧊 e sinta o AstroBit deslizar sem parar até o cristal!',
+    briefEn: 'Ice Rink: step onto the ice 🧊 and watch AstroBit glide straight to the crystal!',
+    winPt: 'Weee!! Patinação espacial aprovada com nota 10!',
+    winEn: 'Wheee!! Space ice skating approved with a perfect 10!',
+  },
+  'w7-2': {
+    briefPt: 'Bateria Pesada: empurre a Bateria 📦 para cima do botão A para desligar o laser!',
+    briefEn: 'Heavy Battery: push the Energy Crate 📦 onto button A to power down the laser!',
+    winPt: 'Força e inteligência! A bateria segurou o botão certinho!',
+    winEn: 'Strength and smarts! The battery held the switch down cleanly!',
+  },
+  'w7-3': {
+    briefPt: 'Curling Espacial: dê 1 empurrão na Bateria 📦 sobre o gelo 🧊 para ela deslizar direto até o botão A!',
+    briefEn: 'Space Curling: give the Energy Crate 📦 1 push across the ice 🧊 straight onto button A!',
+    winPt: 'NA MOSCA!! Curling espacial de medalha de ouro!',
+    winEn: 'BULLSEYE!! Gold-medal space curling shot!',
+  },
+  'w7-4': {
+    briefPt: 'Zig-Zag Polar: cada patinada termina num cristal — use 🔁 Repetir 2× para gabaritar!',
+    briefEn: 'Polar Zig-Zag: every slide ends on a crystal — use 🔁 Repeat 2× for 3★!',
+    winPt: 'Que deslize sincronizado! Os cristais polares brilham demais!',
+    winEn: 'Such smooth gliding! Those polar crystals shine bright!',
+  },
+  'w7-5': {
+    briefPt: 'Ponte Glacial: deslize a Bateria 📦 no gelo para ligar a ponte 🌉 e atravesse patinando!',
+    briefEn: 'Glacial Bridge: slide the Energy Crate 📦 across the ice to power the bridge 🌉 and glide across!',
+    winPt: 'Ponte de luz ativada! Só falta o Coração de Gelo!',
+    winEn: 'Light bridge energized! Only the Heart of Ice remains!',
+  },
+  'w7-6': {
+    briefPt: '🧊👑 CHEFÃO POLAR! Combine Curling de Bateria, gelo escorregadio, portal quântico e laser!',
+    briefEn: '🧊👑 POLAR BOSS! Combine battery curling, slippery ice, quantum portal, and laser!',
+    winPt: '❄️🏆 MESTRE GLACIAL!! VOCÊ CONQUISTOU O PLANETA CONGELADO INTEIRO!!',
+    winEn: '❄️🏆 GLACIAL MASTER!! YOU CONQUERED THE ENTIRE FROZEN PLANET!!',
   },
 };
 

@@ -10,7 +10,7 @@ import { ParticleSystem } from '../src/renderer/particles.js';
 import { shortestAngleLerp } from '../src/renderer/canvas-renderer.js';
 
 test('robot skins unlock progressively by stars earned and fall back safely', () => {
-  assert.equal(ROBOT_SKINS.length, 7);
+  assert.equal(ROBOT_SKINS.length, 8);
   assert.equal(getSkinById('unknown').id, 'explorer');
   assert.equal(getSkinById('nova').accessory, 'cape');
 
@@ -18,7 +18,8 @@ test('robot skins unlock progressively by stars earned and fall back safely', ()
   assert.equal(getUnlockedSkins(12).length, 3);
   assert.equal(getUnlockedSkins(60).length, 6);
   assert.equal(getUnlockedSkins(80).length, 7);
-  assert.equal(getWorldPalette(6).nameEn, 'Wormhole Dimension');
+  assert.equal(getUnlockedSkins(100).length, 8);
+  assert.equal(getWorldPalette(7).nameEn, 'Frozen Planet');
   assert.equal(getWorldPalette(99).nameEn, 'Moon of Crystals');
 });
 

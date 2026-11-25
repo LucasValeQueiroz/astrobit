@@ -28,6 +28,8 @@ const BRUSHES = [
   { char: '2', icon: '🔷', pt: 'Portal 2', en: 'Portal 2' },
   { char: '3', icon: '🟠', pt: 'Portal 3', en: 'Portal 3' },
   { char: '4', icon: '💗', pt: 'Portal 4', en: 'Portal 4' },
+  { char: '~', icon: '🧊', pt: 'Gelo', en: 'Ice' },
+  { char: 'O', icon: '📦', pt: 'Bateria', en: 'Crate' },
 ];
 
 const WORLD_ICONS = [
@@ -37,6 +39,7 @@ const WORLD_ICONS = [
   { num: 4, icon: '🛰️' },
   { num: 5, icon: '🌌' },
   { num: 6, icon: '🌀' },
+  { num: 7, icon: '🧊' },
 ];
 
 const EXTRA_TOGGLES = [
@@ -93,6 +96,10 @@ function tileGlyph(ch) {
       return '🌀3';
     case '4':
       return '🌀4';
+    case '~':
+      return '🧊';
+    case 'O':
+      return '📦';
     default:
       return '';
   }
@@ -111,6 +118,8 @@ function tileClass(ch) {
   if (ch === '2') return 'wt-portal2';
   if (ch === '3') return 'wt-portal3';
   if (ch === '4') return 'wt-portal4';
+  if (ch === '~') return 'wt-ice';
+  if (ch === 'O') return 'wt-crate';
   return 'wt-floor';
 }
 

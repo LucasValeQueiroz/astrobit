@@ -110,6 +110,14 @@ export const SPACE_BADGES = [
     descPt: 'Domine todos os 7 segredos no Laboratório de Games AAA',
     descEn: 'Master all 7 secrets in the AAA Game Engineering Lab',
   },
+  {
+    id: 'frost-master',
+    icon: '❄️',
+    namePt: 'Mestre Glacial',
+    nameEn: 'Glacial Master',
+    descPt: 'Domine o Mundo 7: Planeta Congelado (Fase 7-6)',
+    descEn: 'Conquer World 7: Frozen Planet (Level 7-6)',
+  },
 ];
 
 function programHasType(blocks = [], targetType) {
@@ -158,6 +166,7 @@ export function evaluateBadges(progress, context = {}) {
   }
   if (Number(starsMap['w5-6'] || 0) > 0) grant('earth-savior');
   if (Number(starsMap['w6-6'] || 0) > 0) grant('wormhole-legend');
+  if (Number(starsMap['w7-6'] || 0) > 0) grant('frost-master');
   if (Array.isArray(progress?.labMasteredTopics) && progress.labMasteredTopics.length >= 7) {
     grant('aaa-engineer');
   }

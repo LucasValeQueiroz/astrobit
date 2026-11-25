@@ -47,6 +47,13 @@ export const WORLD_THEMES = {
     notes: [739.99, 880.0, 1108.73, 1479.98, 1108.73, 987.77, 880.0, 1108.73],
     bass: [185.0, 0, 146.83, 0, 164.81, 0, 185.0, 0],
   },
+  // World 7: Frozen Planet — crystalline polar bells (C# / E shimmer)
+  7: {
+    bpm: 120,
+    wave: 'sine',
+    notes: [659.25, 830.61, 987.77, 1318.51, 1174.66, 987.77, 830.61, 987.77],
+    bass: [164.81, 0, 207.65, 0, 146.83, 0, 196.0, 0],
+  },
 };
 
 export function getThemeForWorld(worldNumber = 1) {

@@ -12,6 +12,8 @@ import {
   createWorldState,
   getTile,
   classifyTileStep,
+  canPushCrateTo,
+  isIceTile,
   findPortalExit,
   evaluateSensor,
   isWinState,
@@ -108,6 +110,7 @@ export function executeProgram(level, program, options = {}) {
       dir: state.robot.dir,
       crystalsRemaining: state.crystals.size,
       channels: { ...state.channels },
+      crates: [...state.crates],
       ...extra,
     });
   };
@@ -155,7 +158,59 @@ export function executeProgram(level, program, options = {}) {
         const fromX = state.robot.x;
         const fromY = state.robot.y;
         const next = stepCoords(fromX, fromY, state.robot.dir);
-        const outcome = classifyTileStep(state, next.x, next.y);
+        let outcome = classifyTileStep(state, next.x, next.y);
+
+        // Pushable energy crate physics (supports ice curling + automatic button activation!)
+        if (outcome === 'crate') {
+          const pushTarget = stepCoords(next.x, next.y, state.robot.dir);
+          if (!canPushCrateTo(state, pushTarget.x, pushTarget.y)) {
+            status = 'failed';
+            failureReason = 'crate_blocked';
+            failedBlockId = blockId;
+            snapshot('bump', blockId, { reason: 'crate_blocked', targetX: next.x, targetY: next.y });
+            return;
+          }
+
+          state.crates.delete(coordKey(next.x, next.y));
+          const prevCrateTile = getTile(state, next.x, next.y);
+          if (prevCrateTile?.type === 'button' && prevCrateTile.channel) {
+            state.channels[prevCrateTile.channel] = !state.channels[prevCrateTile.channel];
+            snapshot('toggle_channel', blockId, {
+              channel: prevCrateTile.channel,
+              active: state.channels[prevCrateTile.channel],
+            });
+          }
+
+          let crateX = pushTarget.x;
+          let crateY = pushTarget.y;
+          let crateSlides = 0;
+          while (isIceTile(state, crateX, crateY) && crateSlides < 24) {
+            const slideTo = stepCoords(crateX, crateY, state.robot.dir);
+            if (!canPushCrateTo(state, slideTo.x, slideTo.y)) break;
+            crateX = slideTo.x;
+            crateY = slideTo.y;
+            crateSlides += 1;
+          }
+
+          state.crates.add(coordKey(crateX, crateY));
+          snapshot('push_crate', blockId, {
+            fromX: next.x,
+            fromY: next.y,
+            toX: crateX,
+            toY: crateY,
+            slid: crateSlides > 0,
+          });
+
+          const landedTile = getTile(state, crateX, crateY);
+          if (landedTile?.type === 'button' && landedTile.channel) {
+            state.channels[landedTile.channel] = !state.channels[landedTile.channel];
+            snapshot('toggle_channel', blockId, {
+              channel: landedTile.channel,
+              active: state.channels[landedTile.channel],
+            });
+          }
+          outcome = 'ok';
+        }
 
         if (outcome !== 'ok') {
           status = 'failed';
@@ -170,8 +225,9 @@ export function executeProgram(level, program, options = {}) {
         snapshot('move', blockId, { fromX, fromY });
         tryAutoCollect(blockId);
 
-        const portalExit = findPortalExit(state, state.robot.x, state.robot.y);
-        if (portalExit) {
+        const tryPortalAtRobot = () => {
+          const portalExit = findPortalExit(state, state.robot.x, state.robot.y);
+          if (!portalExit) return false;
           const pFromX = state.robot.x;
           const pFromY = state.robot.y;
           state.robot.x = portalExit.x;
@@ -182,9 +238,32 @@ export function executeProgram(level, program, options = {}) {
             portalId: portalExit.portalId,
           });
           tryAutoCollect(blockId);
-        }
+          return true;
+        };
 
+        let teleported = tryPortalAtRobot();
         if (checkWin(blockId)) return;
+
+        // Slippery ice sliding physics: robot glides until solid ground or safe stop before obstacle
+        if (!teleported) {
+          let slideCount = 0;
+          while (isIceTile(state, state.robot.x, state.robot.y) && slideCount < 24) {
+            const slideNext = stepCoords(state.robot.x, state.robot.y, state.robot.dir);
+            if (classifyTileStep(state, slideNext.x, slideNext.y) !== 'ok') {
+              break;
+            }
+            const sFromX = state.robot.x;
+            const sFromY = state.robot.y;
+            state.robot.x = slideNext.x;
+            state.robot.y = slideNext.y;
+            slideCount += 1;
+            snapshot('slide', blockId, { fromX: sFromX, fromY: sFromY });
+            tryAutoCollect(blockId);
+            const warped = tryPortalAtRobot();
+            if (checkWin(blockId)) return;
+            if (warped) break;
+          }
+        }
       } else if (block.type === 'left' || block.type === 'right') {
         if (!consumeStep(blockId)) return;
         const fromDir = state.robot.dir;

@@ -50,6 +50,8 @@ export function stepCoords(x, y, dir) {
  *  'A'..'D' laser on channel A..D (active by default)
  *  '=' retractable bridge (inactive by default, channel 'A' unless overridden)
  *  '1'..'4' paired portals
+ *  '~' slippery ice tile (robot & pushed crates slide until solid ground or obstacle)
+ *  'O' pushable energy crate (can be pushed onto buttons to hold channels)
  *
  * @param {string[]} rows
  * @param {{ bridges?: Record<string, string>, tileOverrides?: Record<string, object> }} [extras]
@@ -98,6 +100,10 @@ export function parseAsciiGrid(rows, extras = {}) {
         tile = { type: 'bridge', channel, activeByDefault: false };
       } else if (ch >= '1' && ch <= '4') {
         tile = { type: 'portal', portalId: ch };
+      } else if (ch === '~') {
+        tile = { type: 'ice' };
+      } else if (ch === 'O') {
+        tile = { type: 'floor', hasCrate: true };
       } else {
         throw new Error(`Unsupported ASCII tile "${ch}" at (${x}, ${y}).`);
       }
@@ -142,6 +148,7 @@ export function createWorldState(level) {
   }
 
   const crystals = new Set();
+  const crates = new Set();
   const channels = {};
   const portals = new Map();
   let goal = null;
@@ -151,6 +158,9 @@ export function createWorldState(level) {
       const tile = parsed.grid[y][x];
       if (tile.hasCrystal) {
         crystals.add(coordKey(x, y));
+      }
+      if (tile.hasCrate) {
+        crates.add(coordKey(x, y));
       }
       if (tile.type === 'goal') {
         goal = { x, y };
@@ -172,6 +182,7 @@ export function createWorldState(level) {
     grid: parsed.grid,
     robot: { x: start.x, y: start.y, dir: start.dir },
     crystals,
+    crates,
     totalCrystals: crystals.size,
     hasGoal: Boolean(goal),
     goal,
@@ -201,9 +212,17 @@ export function isBridgeActive(tile, channels) {
   return defaultActive ? !toggled : toggled;
 }
 
+export function hasCrateAt(state, x, y) {
+  return Boolean(state?.crates?.has(coordKey(x, y)));
+}
+
+export function isIceTile(state, x, y) {
+  return getTile(state, x, y)?.type === 'ice';
+}
+
 /**
  * Classifies what happens if the robot attempts to step into (x, y).
- * @returns {'ok' | 'hit_wall' | 'fell_off' | 'hit_laser'}
+ * @returns {'ok' | 'hit_wall' | 'fell_off' | 'hit_laser' | 'crate'}
  */
 export function classifyTileStep(state, x, y) {
   const tile = getTile(state, x, y);
@@ -219,7 +238,33 @@ export function classifyTileStep(state, x, y) {
   if (tile.type === 'bridge') {
     return isBridgeActive(tile, state.channels) ? 'ok' : 'fell_off';
   }
+  if (hasCrateAt(state, x, y)) {
+    return 'crate';
+  }
   return 'ok';
+}
+
+/**
+ * Returns true if a pushable energy crate can enter tile (x, y).
+ */
+export function canPushCrateTo(state, x, y) {
+  const tile = getTile(state, x, y);
+  if (!tile || tile.type === 'void' || tile.type === 'wall' || tile.type === 'portal') {
+    return false;
+  }
+  if (tile.type === 'laser' && isLaserActive(tile, state.channels)) {
+    return false;
+  }
+  if (tile.type === 'bridge' && !isBridgeActive(tile, state.channels)) {
+    return false;
+  }
+  if (hasCrateAt(state, x, y)) {
+    return false;
+  }
+  if (state.crystals?.has(coordKey(x, y))) {
+    return false;
+  }
+  return true;
 }
 
 /**

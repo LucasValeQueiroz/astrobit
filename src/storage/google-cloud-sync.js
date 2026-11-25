@@ -75,6 +75,35 @@ export async function saveCloudProgress(uid, progress) {
   return true;
 }
 
+export async function publishLeaderboardEntry(uid, entry) {
+  const sdk = await loadFirebaseSdk();
+  if (!sdk || !uid || !entry) return false;
+  try {
+    const ref = sdk.fsMod.doc(sdk.db, 'leaderboard', uid);
+    await sdk.fsMod.setDoc(ref, entry, { merge: true });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export async function fetchGlobalLeaderboard(limitCount = 20) {
+  const sdk = await loadFirebaseSdk();
+  if (!sdk) return [];
+  try {
+    const colRef = sdk.fsMod.collection(sdk.db, 'leaderboard');
+    const q = sdk.fsMod.query(
+      colRef,
+      sdk.fsMod.orderBy('xp', 'desc'),
+      sdk.fsMod.limit(limitCount)
+    );
+    const snap = await sdk.fsMod.getDocs(q);
+    return snap.docs.map((d) => ({ uid: d.id, ...d.data() }));
+  } catch {
+    return [];
+  }
+}
+
 /**
  * Restores an existing Google session silently on page load if the user already signed in.
  */

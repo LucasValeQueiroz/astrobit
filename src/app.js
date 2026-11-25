@@ -56,8 +56,11 @@ import {
   signOutGoogle,
   loadCloudProgress,
   saveCloudProgress,
+  publishLeaderboardEntry,
+  fetchGlobalLeaderboard,
   watchGoogleAuthSession,
-} from './storage/google-cloud-sync.js?v=6.9';
+} from './storage/google-cloud-sync.js?v=7.0';
+import { buildLeaderboardEntry } from './engine/leaderboard.js?v=7.0';
 import { SPACE_BADGES, evaluateBadges } from './storage/achievements.js?v=5.7';
 import {
   createBlock,
@@ -72,7 +75,7 @@ import {
   renderPalette,
   renderWorkspace,
 } from './ui/workspace.js?v=4.0';
-import { renderGarageModal, renderBadgesModal, renderQuestsModal } from './ui/modals.js?v=6.8';
+import { renderGarageModal, renderBadgesModal, renderQuestsModal } from './ui/modals.js?v=7.0';
 import { renderPassportModal } from './ui/passport-modal.js?v=6.0';
 import { renderEngineLabModal } from './ui/engine-lab.js?v=5.6';
 import { installTactilePointerDnD } from './ui/touch-dnd.js?v=5.0';
@@ -819,8 +822,9 @@ function showBadgeToast(badge) {
 
 function updateXpHud() {
   const info = computeXpLevel(state.progress?.xp || 0);
+  const gUser = getCurrentGoogleUser();
   if (els.xpLevelLabel) {
-    els.xpLevelLabel.textContent = `⚡ Lv.${info.level}`;
+    els.xpLevelLabel.textContent = `${gUser ? '🔵' : '⚡'} Lv.${info.level}`;
   }
   if (els.xpMiniFill) {
     els.xpMiniFill.style.width = `${info.pct}%`;
@@ -936,6 +940,7 @@ function showWinOverlay(run) {
   const gUser = getCurrentGoogleUser();
   if (gUser?.uid) {
     saveCloudProgress(gUser.uid, state.progress).catch(() => {});
+    publishLeaderboardEntry(gUser.uid, buildLeaderboardEntry(gUser.uid, state.progress, lang())).catch(() => {});
   }
   updateTopbar();
 
@@ -1273,13 +1278,7 @@ els.btnXray?.addEventListener('click', () => {
   renderer.setXrayEnabled(state.xrayEnabled);
   els.btnXray.classList.toggle('active', state.xrayEnabled);
   if (els.xrayBtnLabel) {
-    els.xrayBtnLabel.textContent = state.xrayEnabled
-      ? lang() === 'en'
-        ? 'X-Ray ON'
-        : 'Raio-X ON'
-      : lang() === 'en'
-      ? 'X-Ray'
-      : 'Raio-X';
+    els.xrayBtnLabel.textContent = lang() === 'en' ? 'X-Ray' : 'Raio-X';
   }
   if (state.xrayEnabled) {
     awardXpAndQuests({ type: 'xray_toggle' });
@@ -1305,6 +1304,10 @@ els.btnXpQuests?.addEventListener('click', () => {
         }
         saveProgress(state.progress);
         await saveCloudProgress(res.user.uid, state.progress);
+        await publishLeaderboardEntry(
+          res.user.uid,
+          buildLeaderboardEntry(res.user.uid, state.progress, lang())
+        );
         updateTopbar();
         updateXpHud();
         synth.playNewRecord();
@@ -1315,8 +1318,10 @@ els.btnXpQuests?.addEventListener('click', () => {
     },
     onGoogleSignOut: async () => {
       await signOutGoogle();
+      updateXpHud();
       synth.playClick();
     },
+    onFetchLeaderboard: () => fetchGlobalLeaderboard(20),
     onImportBackup: (rawText) => {
       const imported = parseProgressBackup(rawText);
       if (!imported) return null;

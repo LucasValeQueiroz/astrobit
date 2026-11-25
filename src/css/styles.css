@@ -3407,3 +3407,20 @@ button {
 .backup-import-label {
   cursor: pointer;
 }
+
+/* Global Galaxy Leaderboard & History Polish */
+.history-empty {
+  padding: 14px 12px;
+  text-align: center;
+}
+
+.history-row.leaderboard-self {
+  border-color: rgba(250, 204, 21, 0.72);
+  background: linear-gradient(135deg, rgba(250, 204, 21, 0.14), rgba(56, 189, 248, 0.16));
+}
+
+.lb-medal {
+  display: inline-block;
+  min-width: 26px;
+  color: #facc15;
+}

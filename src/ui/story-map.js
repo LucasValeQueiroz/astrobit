@@ -15,6 +15,8 @@ import {
 } from '../story/campaign-story.js?v=5.0';
 import { getTotalStars } from '../storage/progress.js?v=5.0';
 import { FlightCinemaController } from './flight-cinema.js?v=4.2';
+import { getPlanetBiome, getRegionForLevel } from '../story/planet-biomes.js?v=6.1';
+import { PlanetBiomeRenderer } from './planet-biome-canvas.js?v=6.1';
 
 function escapeHtml(text) {
   return String(text ?? '')
@@ -427,6 +429,7 @@ export function renderGalaxyJourneyMap(
   let shipLevelId = flyFromLevelId || selectedLevelId;
   let shipAngle = 0;
   let cinema = null;
+  let biomeRenderer = null;
   let statusTimer = null;
 
   const showFlightPill = (text, tone = '') => {
@@ -514,6 +517,8 @@ export function renderGalaxyJourneyMap(
         const isCurrent = lvl.id === currentLevelId;
         const isBoss = idx === worldObj.levels.length - 1;
         const shortTitle = lang === 'en' ? lvl.titleEn : lvl.titlePt;
+        const region = getRegionForLevel(worldObj.world, lvl.id, idx);
+        const regionLabel = `${region.flag} ${lang === 'en' ? region.shortEn : region.shortPt}`;
         const starsStr = [1, 2, 3].map((n) => (n <= earned ? '★' : '☆')).join('');
         const iconText = lvl.isBugHunt ? '🐛' : isBoss ? '👑' : String(lvl.index);
 
@@ -542,8 +547,8 @@ export function renderGalaxyJourneyMap(
             <circle cx="0" cy="0" r="15" fill="${earned > 0 ? '#10b981' : '#0f172a'}" opacity="0.88"/>
             <text x="0" y="5" text-anchor="middle" fill="#ffffff" font-size="${lvl.isBugHunt || isBoss ? '15' : '14'}" font-weight="800">${iconText}</text>
             <text x="0" y="-28" text-anchor="middle" fill="${earned > 0 ? '#facc15' : '#475569'}" font-size="13" font-weight="800">${starsStr}</text>
-            <text x="0" y="37" text-anchor="middle" fill="#e2e8f0" font-size="11" font-weight="700">${lvl.world}-${lvl.index}</text>
-            <title>${escapeHtml(shortTitle)}</title>
+            <text x="0" y="38" text-anchor="middle" fill="#f8fafc" font-size="11.5" font-weight="800">${escapeHtml(regionLabel)}</text>
+            <title>${escapeHtml(shortTitle)} — ${escapeHtml(lang === 'en' ? region.hubEn : region.hubPt)}</title>
           </g>
         `;
       })
@@ -595,6 +600,9 @@ export function renderGalaxyJourneyMap(
           </div>
 
           <div class="flight-svg-wrap">
+            <!-- 60fps UNIQUE PLANET BIOME LANDSCAPE + ORBITAL ENTRY/EXIT FX -->
+            <canvas id="planet-biome-canvas" class="planet-biome-canvas" aria-hidden="true"></canvas>
+
             <svg class="planet-route-svg" viewBox="0 0 760 270" preserveAspectRatio="xMidYMid meet">
               <!-- Twinkling Starfield -->
               <circle cx="52" cy="36" r="1.8" fill="#ffffff" opacity="0.65"/>
@@ -604,10 +612,8 @@ export function renderGalaxyJourneyMap(
               <circle cx="510" cy="36" r="2.2" fill="#e9d5ff" opacity="0.75"/>
               <circle cx="645" cy="44" r="1.6" fill="#ffffff" opacity="0.7"/>
               <circle cx="718" cy="68" r="1.8" fill="#fde047" opacity="0.7"/>
-              <!-- Scenic Curved Planet Horizon -->
-              <ellipse cx="380" cy="330" rx="460" ry="118" fill="${wStory.planetDark}" opacity="0.32" stroke="${wStory.planetColor}" stroke-opacity="0.35" stroke-width="2"/>
               <!-- Glowing Constellation Flight Path -->
-              <path d="${routePath}" fill="none" stroke="${wStory.planetColor}" stroke-width="8" stroke-opacity="0.16" stroke-linecap="round"/>
+              <path d="${routePath}" fill="none" stroke="${wStory.planetColor}" stroke-width="8" stroke-opacity="0.18" stroke-linecap="round"/>
               <path class="flight-route-dash" d="${routePath}" fill="none" stroke="${wStory.ringColor}" stroke-width="3.2" stroke-dasharray="9 7" stroke-linecap="round"/>
               <!-- 6 Planetary Base Nodes -->
               ${baseNodesHtml}
@@ -618,6 +624,9 @@ export function renderGalaxyJourneyMap(
 
             <!-- LIVE FLIGHT STATUS / TURBO BOOST BANNER -->
             <div id="flight-status-pill" class="flight-status-pill hidden" aria-live="polite"></div>
+
+            <!-- AAA ENGINE LIVE LOD & STREAMING TELEMETRY BAR -->
+            <div id="planet-aaa-telemetry" class="planet-aaa-telemetry" aria-live="polite"></div>
 
             <!-- FLYING STARSHIP ESTRELA-1 OVERLAY (CURVED 60FPS BEZIER FLIGHT!) -->
             <div
@@ -635,6 +644,13 @@ export function renderGalaxyJourneyMap(
           <div class="mission-deck-info">
             <div class="mission-deck-top">
               <span class="level-pill">${escapeHtml(t(lang, 'levelLabel', { world: selLevel.world, index: selLevel.index }))}</span>
+              <span class="region-hub-pill">${escapeHtml(
+                `${getRegionForLevel(selLevel.world, selLevel.id, selLevel.index - 1).flag} ${
+                  lang === 'en'
+                    ? getRegionForLevel(selLevel.world, selLevel.id, selLevel.index - 1).hubEn
+                    : getRegionForLevel(selLevel.world, selLevel.id, selLevel.index - 1).hubPt
+                }`
+              )}</span>
               <strong>${selLevel.isBugHunt ? '🐛 ' : ''}${escapeHtml(selTitle)}</strong>
             </div>
             <p class="mission-deck-story">🤖 ${escapeHtml(selBrief)}</p>
@@ -648,6 +664,12 @@ export function renderGalaxyJourneyMap(
     container.classList.remove('hidden');
 
     cinema?.destroy();
+    biomeRenderer?.destroy();
+    const biomeCanvas = container.querySelector('#planet-biome-canvas');
+    const telemetryEl = container.querySelector('#planet-aaa-telemetry');
+    biomeRenderer = new PlanetBiomeRenderer(biomeCanvas, activeWorldNum, { telemetryEl, lang });
+    biomeRenderer.start();
+
     const fxCanvas = container.querySelector('#flight-fx-canvas');
     const shipEl = container.querySelector('#flying-starship');
     cinema = new FlightCinemaController(fxCanvas, shipEl);
@@ -657,14 +679,20 @@ export function renderGalaxyJourneyMap(
   const flyShipTo = (targetLevelId) => {
     const worldObj = CAMPAIGN_WORLDS.find((w) => w.world === activeWorldNum) || CAMPAIGN_WORLDS[0];
     const wStory = getWorldStory(worldObj.world);
+    const fromRegion = getRegionForLevel(worldObj.world, shipLevelId, 0);
+    const toRegion = getRegionForLevel(worldObj.world, targetLevelId, 0);
     const fromCoord = getCoordForLevel(worldObj, shipLevelId);
     const toCoord = getCoordForLevel(worldObj, targetLevelId);
     const toIdx = Math.max(1, worldObj.levels.findIndex((l) => l.id === targetLevelId));
     shipLevelId = targetLevelId;
 
     if (cinema && Math.hypot(toCoord.x - fromCoord.x, toCoord.y - fromCoord.y) > 4) {
+      const fromName = `${fromRegion.flag} ${lang === 'en' ? fromRegion.shortEn : fromRegion.shortPt}`;
+      const toName = `${toRegion.flag} ${lang === 'en' ? toRegion.shortEn : toRegion.shortPt}`;
       showFlightPill(
-        lang === 'en' ? '🚀 Flying! Tap sky for ⚡ Turbo!' : '🚀 Voando! Toque no céu para ⚡ Turbo!'
+        lang === 'en'
+          ? `🚀 ${fromName} → ${toName} · Tap sky for ⚡ Turbo!`
+          : `🚀 ${fromName} → ${toName} · Toque no céu p/ ⚡ Turbo!`
       );
       cinema.flyBetweenBases({
         from: fromCoord,
@@ -674,7 +702,7 @@ export function renderGalaxyJourneyMap(
         onArrive: () => {
           synth?.playSnap?.();
           showFlightPill(
-            lang === 'en' ? '✨ Arrived! Ready to land!' : '✨ Chegamos! Pronto para pousar!',
+            lang === 'en' ? `✨ Landed at ${toName}!` : `✨ Pousou em ${toName}!`,
             'good'
           );
         },
@@ -688,26 +716,38 @@ export function renderGalaxyJourneyMap(
     const wName = lang === 'en' ? targetWorldObj.nameEn : targetWorldObj.namePt;
     synth?.playRocketLaunch?.();
     showFlightPill(
-      `${targetWorldObj.icon} ${lang === 'en' ? 'HYPERSPACE JUMP' : 'SALTO NO HIPERESPAÇO'} → ${wName}!`,
+      lang === 'en'
+        ? `🚀 ORBITAL LIFTOFF → ${targetWorldObj.icon} ${wName}!`
+        : `🚀 DECOLAGEM ORBITAL → ${targetWorldObj.icon} ${wName}!`,
       'warp'
     );
-    if (cinema) {
-      cinema.playHyperspaceWarp({
-        accentColor: wStory.planetColor,
-        onDone: () => {
-          activeWorldNum = nextWorldNum;
-          shipAngle = 0;
-          renderFullMap();
-          const newWorld = CAMPAIGN_WORLDS.find((w) => w.world === activeWorldNum) || CAMPAIGN_WORLDS[0];
-          const destCoord = getCoordForLevel(newWorld, selectedLevelId);
-          cinema?.emitRing(destCoord, wStory.planetColor);
-          cinema?.emitBurst(destCoord, ['#facc15', wStory.planetColor, '#ffffff'], 20);
-        },
-      });
-    } else {
+
+    const enterNewPlanet = () => {
       activeWorldNum = nextWorldNum;
       shipAngle = 0;
       renderFullMap();
+      biomeRenderer?.playOrbitalTransition('descent', 0.8);
+      const newWorld = CAMPAIGN_WORLDS.find((w) => w.world === activeWorldNum) || CAMPAIGN_WORLDS[0];
+      const destCoord = getCoordForLevel(newWorld, selectedLevelId);
+      cinema?.emitRing(destCoord, wStory.planetColor);
+      cinema?.emitBurst(destCoord, ['#facc15', wStory.planetColor, '#ffffff'], 22);
+    };
+
+    const runHyperspace = () => {
+      if (cinema) {
+        cinema.playHyperspaceWarp({
+          accentColor: wStory.planetColor,
+          onDone: enterNewPlanet,
+        });
+      } else {
+        enterNewPlanet();
+      }
+    };
+
+    if (biomeRenderer) {
+      biomeRenderer.playOrbitalTransition('liftoff', 0.45, runHyperspace);
+    } else {
+      runHyperspace();
     }
   };
 
@@ -743,6 +783,7 @@ export function renderGalaxyJourneyMap(
   container.onclick = (event) => {
     if (event.target === container || event.target.closest('[data-close-modal]')) {
       cinema?.destroy();
+      biomeRenderer?.destroy();
       container.classList.add('hidden');
       onClose?.();
       return;
@@ -751,6 +792,7 @@ export function renderGalaxyJourneyMap(
     const replayBtn = event.target.closest('[data-replay-story]');
     if (replayBtn) {
       cinema?.destroy();
+      biomeRenderer?.destroy();
       synth?.playClick?.();
       onReplayStory?.(replayBtn.dataset.replayStory);
       return;

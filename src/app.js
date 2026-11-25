@@ -27,6 +27,10 @@ import {
   encodeGhostReplay,
   decodeGhostReplay,
 } from './engine/ghost-replay.js?v=5.8';
+import {
+  computeProgressiveHint,
+  shouldOfferSmartHint,
+} from './engine/companions-and-hints.js?v=5.9';
 import { ALL_LEVELS, CAMPAIGN_WORLDS, getLevelById, getNextLevel } from './levels/index.js?v=5.7';
 import { SpaceCanvasRenderer } from './renderer/canvas-renderer.js?v=5.7';
 import { SpaceSoundSynth } from './audio/sound-synth.js?v=4.2';
@@ -159,6 +163,8 @@ const state = {
   arcadeRun: null,
   ghostEnabled: false,
   ghostStep: 0,
+  levelFailCount: 0,
+  hintTier: 0,
 };
 
 function lang() {
@@ -626,8 +632,12 @@ function loadCustomLevel(customLevel) {
 
   const fresh = createWorldState(state.level);
   renderer.setSkin(state.progress.skinId);
+  renderer.setDrone(state.progress.droneId);
   renderer.setWorld(fresh, state.level.world);
   state.ghostStep = 0;
+  state.levelFailCount = 0;
+  state.hintTier = 0;
+  els.btnHint?.classList.remove('hint-nudge');
   updateGhostUi();
   updateCrystalsHud(fresh.crystals.size, fresh.totalCrystals);
   updateTopbar();
@@ -659,7 +669,11 @@ function loadLevel(levelId, { showArrivalIfNew = false } = {}) {
 
   const fresh = createWorldState(state.level);
   renderer.setSkin(state.progress.skinId);
+  renderer.setDrone(state.progress.droneId);
   renderer.setWorld(fresh, state.level.world);
+  state.levelFailCount = 0;
+  state.hintTier = 0;
+  els.btnHint?.classList.remove('hint-nudge');
   updateGhostUi();
   updateCrystalsHud(fresh.crystals.size, fresh.totalCrystals);
   updateTopbar();
@@ -932,6 +946,11 @@ function finishTrace(run) {
       }
     }
 
+    state.levelFailCount += 1;
+    if (shouldOfferSmartHint(state.levelFailCount)) {
+      els.btnHint?.classList.add('hint-nudge');
+    }
+
     if (state.level?.isArcade && state.arcadeRun?.active) {
       state.arcadeRun = applyArcadeOutcome(state.arcadeRun, { won: false });
       renderArcadeHud();
@@ -1066,18 +1085,12 @@ els.mascotAvatarBtn.addEventListener('click', () => {
 
 els.btnHint.addEventListener('click', () => {
   if (!state.level) return;
-  const normRef = normalizeProgram(state.level.referenceSolution);
-  const nextRef = normRef.main[Math.min(state.program.main.length, Math.max(0, normRef.main.length - 1))];
-  let hintType = state.level.firstBlockHint || 'move_right';
-  if (nextRef) {
-    hintType = nextRef.type === 'call' ? (nextRef.fn === 'F2' ? 'call_f2' : 'call_f1') : nextRef.type;
-  }
-  state.hintBlockType = hintType;
+  state.hintTier = state.hintTier >= 2 ? 2 : state.hintTier + 1;
+  els.btnHint?.classList.remove('hint-nudge');
+  const hint = computeProgressiveHint(state.level, state.program, state.hintTier, lang());
+  state.hintBlockType = hint.highlightBlockType;
   synth.playClick();
-  setMascotSay(
-    lang() === 'en' ? state.level.hintEn : state.level.hintPt,
-    'good'
-  );
+  setMascotSay(hint.message, 'good');
   renderEditor();
 });
 
@@ -1189,6 +1202,12 @@ els.btnGarage.addEventListener('click', () => {
       state.progress.skinId = skinId;
       saveProgress(state.progress);
       renderer.setSkin(skinId);
+      synth.playCollect();
+    },
+    onSelectDrone: (droneId) => {
+      state.progress.droneId = droneId;
+      saveProgress(state.progress);
+      renderer.setDrone(droneId);
       synth.playCollect();
     },
   });

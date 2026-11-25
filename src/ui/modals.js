@@ -8,6 +8,7 @@ import { getTotalStars } from '../storage/progress.js?v=5.8';
 import { COMPANION_DRONES } from '../engine/companions-and-hints.js?v=5.9';
 import { SPACE_QUESTS, computeXpLevel } from '../engine/xp-and-quests.js?v=6.7';
 import { exportProgressBackup } from '../storage/cloud-profile.js?v=6.8';
+import { buildLeaderboardEntry, rankLeaderboardEntries } from '../engine/leaderboard.js?v=7.0';
 
 function escapeHtml(text) {
   return String(text ?? '')
@@ -306,12 +307,35 @@ export function renderQuestsModal(
     onGoogleSignIn,
     onGoogleSignOut,
     onImportBackup,
+    onFetchLeaderboard,
     onClose,
   } = {}
 ) {
   if (!container) return;
   const isEn = lang === 'en';
   let activeTab = initialTab;
+  let leaderboardRows = null;
+  let leaderboardLoading = false;
+
+  const ensureLeaderboardLoaded = async () => {
+    if (leaderboardRows !== null || leaderboardLoading) return;
+    leaderboardLoading = true;
+    paint();
+    try {
+      const remote = (await onFetchLeaderboard?.()) || [];
+      const selfUid = googleUser?.uid || 'local-pilot';
+      const selfEntry = buildLeaderboardEntry(selfUid, progress, lang);
+      const hasSelf = remote.some((r) => r.uid === selfUid);
+      const combined = hasSelf ? remote : [...remote, selfEntry];
+      leaderboardRows = rankLeaderboardEntries(combined, selfUid);
+    } catch {
+      const selfEntry = buildLeaderboardEntry('local-pilot', progress, lang);
+      leaderboardRows = rankLeaderboardEntries([selfEntry], 'local-pilot');
+    } finally {
+      leaderboardLoading = false;
+      if (activeTab === 'ranking') paint();
+    }
+  };
 
   const paint = () => {
     const lvl = computeXpLevel(progress?.xp || 0);
@@ -340,7 +364,7 @@ export function renderQuestsModal(
 
     const historyHtml =
       history.length === 0
-        ? `<p class="muted small" style="padding:14px 0;">${
+        ? `<p class="muted small history-empty">${
             isEn
               ? 'No completed missions recorded yet — beat any level to start your Flight Logbook!'
               : 'Nenhuma missão registrada ainda — vença qualquer fase para começar seu Diário de Bordo!'
@@ -426,9 +450,28 @@ export function renderQuestsModal(
       </div>
     `;
 
+    const rankingHtml = leaderboardLoading
+      ? `<p class="muted small history-empty">🌌 ${isEn ? 'Loading Galaxy Hall of Fame...' : 'Carregando Hall da Fama da Galáxia...'}</p>`
+      : `<div class="history-list">${(leaderboardRows || [])
+          .map(
+            (r) => `
+              <div class="history-row ${r.isSelf ? 'leaderboard-self' : ''}">
+                <span class="history-title">
+                  <strong class="lb-medal">${escapeHtml(r.medal)}</strong>
+                  ${r.droneIcon || '✨'} ${escapeHtml(r.pilotName)}${r.isSelf ? (isEn ? ' (You)' : ' (Você)') : ''}
+                </span>
+                <span class="history-stars">Lv.${r.level} · ⭐ ${r.stars}</span>
+                <span class="history-meta">${r.xp} XP · 🕹️ ${r.arcadeBestScore}</span>
+              </div>
+            `
+          )
+          .join('')}</div>`;
+
     const bodyHtml =
       activeTab === 'quests'
         ? `<div class="quests-list">${questsHtml}</div>`
+        : activeTab === 'ranking'
+        ? rankingHtml
         : activeTab === 'history'
         ? historyHtml
         : profileTabHtml;
@@ -459,7 +502,10 @@ export function renderQuestsModal(
         </div>
         <div class="pilot-tabs" role="tablist">
           <button type="button" class="pilot-tab ${activeTab === 'quests' ? 'active' : ''}" data-pilot-tab="quests">
-            📋 ${isEn ? 'Space Quests' : 'Missões'}
+            📋 ${isEn ? 'Quests' : 'Missões'}
+          </button>
+          <button type="button" class="pilot-tab ${activeTab === 'ranking' ? 'active' : ''}" data-pilot-tab="ranking">
+            🏆 ${isEn ? 'Ranking' : 'Ranking'}
           </button>
           <button type="button" class="pilot-tab ${activeTab === 'history' ? 'active' : ''}" data-pilot-tab="history">
             📜 ${isEn ? `History (${history.length})` : `Histórico (${history.length})`}
@@ -492,7 +538,11 @@ export function renderQuestsModal(
     const tabBtn = event.target.closest('[data-pilot-tab]');
     if (tabBtn) {
       activeTab = tabBtn.dataset.pilotTab;
-      paint();
+      if (activeTab === 'ranking') {
+        ensureLeaderboardLoaded();
+      } else {
+        paint();
+      }
       return;
     }
     if (event.target.closest('[data-export-backup]')) {

@@ -7,7 +7,7 @@
 import { createWorldState } from './engine/grid.js?v=4.0';
 import { executeProgram, countProgramBlocks, normalizeProgram } from './engine/interpreter.js?v=4.0';
 import { transpileProgram } from './engine/transpiler.js?v=4.0';
-import { decodeCustomLevel } from './engine/custom-level.js?v=4.0';
+import { decodeCustomLevel, encodeCustomLevel } from './engine/custom-level.js?v=5.8';
 import {
   generateDailyLevel,
   getTodayDateKey,
@@ -33,7 +33,7 @@ import {
 } from './engine/companions-and-hints.js?v=5.9';
 import { ALL_LEVELS, CAMPAIGN_WORLDS, getLevelById, getNextLevel } from './levels/index.js?v=5.7';
 import { SpaceCanvasRenderer } from './renderer/canvas-renderer.js?v=5.7';
-import { SpaceSoundSynth } from './audio/sound-synth.js?v=4.2';
+import { SpaceSoundSynth } from './audio/sound-synth.js?v=6.4';
 import { SpaceMusicEngine } from './audio/music-engine.js?v=5.7';
 import {
   loadProgress,
@@ -90,6 +90,7 @@ const els = {
   winStoryNote: document.getElementById('win-story-note'),
   winSub: document.getElementById('win-sub'),
   winReplayBtn: document.getElementById('win-replay-btn'),
+  winChallengeBtn: document.getElementById('win-challenge-btn'),
   winNextBtn: document.getElementById('win-next-btn'),
   btnRun: document.getElementById('btn-run'),
   btnStep: document.getElementById('btn-step'),
@@ -164,6 +165,7 @@ const state = {
   arcadeRun: null,
   ghostEnabled: false,
   ghostStep: 0,
+  lastWinningGhost: null,
   levelFailCount: 0,
   hintTier: 0,
 };
@@ -709,6 +711,8 @@ function loadLevel(levelId, { showArrivalIfNew = false } = {}) {
 
 function playEventSound(ev) {
   if (ev.type === 'move') synth.playStep();
+  else if (ev.type === 'slide') synth.playIceSlide();
+  else if (ev.type === 'push_crate') synth.playCratePush(Boolean(ev.slid));
   else if (ev.type === 'turn') synth.playTurn();
   else if (ev.type === 'collect') synth.playCollect(state.crystalStreak);
   else if (ev.type === 'toggle_channel') synth.playToggle();
@@ -757,13 +761,23 @@ function showWinOverlay(run) {
   } else if (!state.level.isCustom) {
     state.progress = recordLevelCompletion(state.progress, state.level.id, run.stars);
     const ghost = extractGhostReplay(state.level, run);
+    state.lastWinningGhost = ghost;
     if (ghost) {
       const updated = recordBestGhost(state.progress, state.level.id, ghost);
       state.progress = updated.progress;
+      if (updated.beatRecord) synth.playNewRecord();
     }
     saveProgress(state.progress);
+  } else {
+    state.lastWinningGhost = extractGhostReplay(state.level, run);
   }
   updateGhostUi();
+  if (els.winChallengeBtn) {
+    const canShareGhost = Boolean(state.level?.isCustom && state.level?.workshopDraft && state.lastWinningGhost);
+    els.winChallengeBtn.classList.toggle('hidden', !canShareGhost);
+    els.winChallengeBtn.textContent =
+      lang() === 'en' ? '👻 Challenge Friend' : '👻 Desafiar Amigo';
+  }
   checkAndAwardBadges({
     won: true,
     level: state.level,
@@ -1270,6 +1284,25 @@ els.btnBadges?.addEventListener('click', () => {
       });
     },
   });
+});
+
+els.winChallengeBtn?.addEventListener('click', async () => {
+  if (!state.level?.workshopDraft || !state.lastWinningGhost) return;
+  const customToken = encodeCustomLevel(state.level.workshopDraft);
+  const ghostToken = encodeGhostReplay(state.lastWinningGhost);
+  const baseUrl = `${globalThis.location.origin}${globalThis.location.pathname}`;
+  const url = `${baseUrl}?custom=${customToken}&ghost=${ghostToken}`;
+  synth.playNewRecord();
+  try {
+    await navigator.clipboard?.writeText?.(url);
+    els.winChallengeBtn.textContent =
+      lang() === 'en'
+        ? `✅ Link Copied (${state.lastWinningGhost.blocks}p)!`
+        : `✅ Link Copiado (${state.lastWinningGhost.blocks}p)!`;
+  } catch {
+    els.winChallengeBtn.textContent =
+      lang() === 'en' ? '🔗 Ready!' : '🔗 Pronto!';
+  }
 });
 
 els.winReplayBtn.addEventListener('click', () => {

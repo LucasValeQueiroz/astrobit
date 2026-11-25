@@ -69,3 +69,15 @@ test('SpaceSoundSynth synthesizes tones when unmuted and suppresses when muted',
   assert.equal(synth.playBump(), false);
   assert.equal(FakeAudio.getOscCount(), countBeforeMute);
 });
+
+test('SpaceSoundSynth exposes cinematic SFX (ice slide, crate curling, re-entry, new record)', () => {
+  const storage = createMemoryStorage();
+  const FakeAudio = createFakeAudioContext();
+  const synth = new SpaceSoundSynth({ storage, AudioContextCtor: FakeAudio });
+
+  assert.equal(synth.playIceSlide(), true);
+  assert.equal(synth.playCratePush(true), true);
+  assert.equal(synth.playReentry(), true);
+  assert.equal(synth.playNewRecord(), true);
+  assert.ok(FakeAudio.getOscCount() >= 10);
+});

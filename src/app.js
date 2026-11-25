@@ -31,6 +31,7 @@ import {
   computeProgressiveHint,
   shouldOfferSmartHint,
 } from './engine/companions-and-hints.js?v=5.9';
+import { computeGuidedTutorialStep } from './engine/guided-tutorial.js?v=6.5';
 import { ALL_LEVELS, CAMPAIGN_WORLDS, getLevelById, getNextLevel } from './levels/index.js?v=5.7';
 import { SpaceCanvasRenderer } from './renderer/canvas-renderer.js?v=5.7';
 import { SpaceSoundSynth } from './audio/sound-synth.js?v=6.4';
@@ -95,6 +96,11 @@ const els = {
   btnRun: document.getElementById('btn-run'),
   btnStep: document.getElementById('btn-step'),
   btnHint: document.getElementById('btn-hint'),
+  guidedTutorialBar: document.getElementById('guided-tutorial-bar'),
+  tutorialIcon: document.getElementById('tutorial-icon'),
+  tutorialDots: document.getElementById('tutorial-dots'),
+  tutorialMsg: document.getElementById('tutorial-msg'),
+  btnTutorialDismiss: document.getElementById('btn-tutorial-dismiss'),
   btnGhost: document.getElementById('btn-ghost'),
   ghostBtnLabel: document.getElementById('ghost-btn-label'),
   btnReset: document.getElementById('btn-reset'),
@@ -168,6 +174,7 @@ const state = {
   lastWinningGhost: null,
   levelFailCount: 0,
   hintTier: 0,
+  tutorialDismissed: false,
 };
 
 function lang() {
@@ -373,8 +380,39 @@ function handleDropExisting(existing, dropMeta) {
   afterProgramMutated(dragged.id, null);
 }
 
+function renderGuidedTutorial() {
+  if (!els.guidedTutorialBar || !state.level) return null;
+  const alreadyCompleted = Number(state.progress?.starsByLevel?.[state.level.id] || 0) > 0;
+  const step = computeGuidedTutorialStep(state.level, state.program, {
+    lang: lang(),
+    isRunning: state.isRunning,
+    dismissed: state.tutorialDismissed,
+    alreadyCompleted,
+  });
+
+  if (!step) {
+    els.guidedTutorialBar.classList.add('hidden');
+    els.btnRun?.classList.remove('tutorial-pulse-run');
+    return null;
+  }
+
+  els.guidedTutorialBar.classList.remove('hidden');
+  if (els.tutorialIcon) els.tutorialIcon.textContent = step.icon;
+  if (els.tutorialMsg) els.tutorialMsg.textContent = step.message;
+  if (els.tutorialDots) {
+    els.tutorialDots.innerHTML = Array.from({ length: step.totalSteps }, (_, idx) => {
+      const n = idx + 1;
+      const cls = n < step.step ? 'done' : n === step.step ? 'active' : '';
+      return `<span class="tut-dot ${cls}"></span>`;
+    }).join('');
+  }
+  els.btnRun?.classList.toggle('tutorial-pulse-run', step.target === 'run');
+  return step;
+}
+
 function renderEditor() {
   if (!state.level) return;
+  const tutorialStep = renderGuidedTutorial();
   const visibleFns = getVisibleFunctions(state.level);
   if (state.activeScope !== 'main' && !visibleFns.includes(state.activeScope)) {
     state.activeScope = 'main';
@@ -395,7 +433,7 @@ function renderEditor() {
   renderPalette(els.palette, state.level.allowedBlocks, {
     lang: lang(),
     t,
-    hintBlockType: state.hintBlockType,
+    hintBlockType: state.hintBlockType || tutorialStep?.highlightBlockType || null,
     onAddBlock: (type) => {
       if (state.isRunning) stopExecution(true);
       pushUndo();
@@ -1106,6 +1144,12 @@ els.btnHint.addEventListener('click', () => {
   state.hintBlockType = hint.highlightBlockType;
   synth.playClick();
   setMascotSay(hint.message, 'good');
+  renderEditor();
+});
+
+els.btnTutorialDismiss?.addEventListener('click', () => {
+  state.tutorialDismissed = true;
+  synth.playClick();
   renderEditor();
 });
 

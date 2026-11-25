@@ -3091,3 +3091,86 @@ button {
   opacity: 0;
   animation: baseNodePop 0.42s ease-out var(--node-delay, 0ms) forwards;
 }
+
+/* Interactive Step-by-Step Kids Guided Tutorial Bar */
+.guided-tutorial-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.24), rgba(168, 85, 247, 0.26));
+  border: 1.5px solid rgba(250, 204, 21, 0.65);
+  box-shadow: 0 4px 16px rgba(14, 165, 233, 0.2);
+}
+
+.guided-tutorial-bar.hidden {
+  display: none;
+}
+
+.tutorial-icon {
+  font-size: 1.45rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.tutorial-copy {
+  flex: 1;
+  min-width: 0;
+}
+
+.tutorial-dots {
+  display: flex;
+  gap: 5px;
+  margin-bottom: 3px;
+}
+
+.tut-dot {
+  width: 18px;
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.35);
+}
+
+.tut-dot.done {
+  background: #34d399;
+}
+
+.tut-dot.active {
+  background: #facc15;
+}
+
+.tutorial-msg {
+  margin: 0;
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: #f8fafc;
+  line-height: 1.3;
+}
+
+.tutorial-dismiss-btn {
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: rgba(15, 23, 42, 0.5);
+  color: #cbd5e1;
+  border-radius: 8px;
+  width: 26px;
+  height: 26px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+@keyframes runPulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.8), 0 0 18px rgba(250, 204, 21, 0.55);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(52, 211, 153, 0), 0 0 26px rgba(250, 204, 21, 0.85);
+    transform: scale(1.06);
+  }
+}
+
+.btn-run.tutorial-pulse-run {
+  animation: runPulseGlow 1.15s ease-in-out infinite;
+  border: 2px solid #fde047;
+}

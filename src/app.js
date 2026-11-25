@@ -43,7 +43,20 @@ import {
   saveProgress,
   recordLevelCompletion,
   getTotalStars,
-} from './storage/progress.js?v=5.7';
+} from './storage/progress.js?v=6.8';
+import {
+  appendHistoryEntry,
+  mergeProgressSnapshots,
+  parseProgressBackup,
+} from './storage/cloud-profile.js?v=6.8';
+import {
+  isGoogleCloudConfigured,
+  getCurrentGoogleUser,
+  signInWithGoogle,
+  signOutGoogle,
+  loadCloudProgress,
+  saveCloudProgress,
+} from './storage/google-cloud-sync.js?v=6.8';
 import { SPACE_BADGES, evaluateBadges } from './storage/achievements.js?v=5.7';
 import {
   createBlock,
@@ -58,7 +71,7 @@ import {
   renderPalette,
   renderWorkspace,
 } from './ui/workspace.js?v=4.0';
-import { renderGarageModal, renderBadgesModal, renderQuestsModal } from './ui/modals.js?v=6.7';
+import { renderGarageModal, renderBadgesModal, renderQuestsModal } from './ui/modals.js?v=6.8';
 import { renderPassportModal } from './ui/passport-modal.js?v=6.0';
 import { renderEngineLabModal } from './ui/engine-lab.js?v=5.6';
 import { installTactilePointerDnD } from './ui/touch-dnd.js?v=5.0';
@@ -895,7 +908,7 @@ function showWinOverlay(run) {
     isArcade: Boolean(state.level?.isArcade),
     arcadeMultiplier: state.arcadeRun?.multiplier || 1,
   });
-  awardXpAndQuests({
+  const rewardRes = awardXpAndQuests({
     type: 'level_win',
     baseXp,
     stars: run.stars,
@@ -903,6 +916,26 @@ function showWinOverlay(run) {
     program: state.program,
     events: run.events,
   });
+  state.progress = appendHistoryEntry(state.progress, {
+    levelId: state.level.id,
+    mode: state.level.isArcade
+      ? 'arcade'
+      : state.level.isDaily
+      ? 'daily'
+      : state.level.isCustom
+      ? 'custom'
+      : 'campaign',
+    title: lang() === 'en' ? state.level.titleEn : state.level.titlePt,
+    world: state.level.world || 1,
+    stars: run.stars,
+    blocks: run.blockCount,
+    xpGained: rewardRes.xpGained || baseXp,
+  });
+  saveProgress(state.progress);
+  const gUser = getCurrentGoogleUser();
+  if (gUser?.uid) {
+    saveCloudProgress(gUser.uid, state.progress).catch(() => {});
+  }
   updateTopbar();
 
   const starsHtml = [1, 2, 3]
@@ -1256,7 +1289,44 @@ els.btnXray?.addEventListener('click', () => {
 
 els.btnXpQuests?.addEventListener('click', () => {
   synth.playClick();
-  renderQuestsModal(els.modalBackdrop, state.progress, { lang: lang() });
+  renderQuestsModal(els.modalBackdrop, state.progress, {
+    lang: lang(),
+    googleConfigured: isGoogleCloudConfigured(),
+    googleUser: getCurrentGoogleUser(),
+    onGoogleSignIn: async () => {
+      try {
+        const res = await signInWithGoogle();
+        if (!res.ok || !res.user) return null;
+        const remote = await loadCloudProgress(res.user.uid);
+        state.progress = mergeProgressSnapshots(state.progress, remote);
+        if (!state.progress.pilotName && res.user.displayName) {
+          state.progress.pilotName = res.user.displayName;
+        }
+        saveProgress(state.progress);
+        await saveCloudProgress(res.user.uid, state.progress);
+        updateTopbar();
+        updateXpHud();
+        synth.playNewRecord();
+        return state.progress;
+      } catch {
+        return null;
+      }
+    },
+    onGoogleSignOut: async () => {
+      await signOutGoogle();
+      synth.playClick();
+    },
+    onImportBackup: (rawText) => {
+      const imported = parseProgressBackup(rawText);
+      if (!imported) return null;
+      state.progress = mergeProgressSnapshots(state.progress, imported);
+      saveProgress(state.progress);
+      updateTopbar();
+      updateXpHud();
+      synth.playNewRecord();
+      return state.progress;
+    },
+  });
 });
 
 els.btnGhost?.addEventListener('click', () => {

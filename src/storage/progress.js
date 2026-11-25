@@ -27,6 +27,7 @@ export function createDefaultProgress() {
     xp: 0,
     questProgress: {},
     completedQuests: [],
+    matchHistory: [],
     musicMuted: false,
   };
 }
@@ -69,6 +70,7 @@ export function loadProgress(storage = globalThis.localStorage) {
           ? { ...parsed.questProgress }
           : {},
       completedQuests: Array.isArray(parsed?.completedQuests) ? [...parsed.completedQuests] : [],
+      matchHistory: Array.isArray(parsed?.matchHistory) ? [...parsed.matchHistory] : [],
       musicMuted: Boolean(parsed?.musicMuted),
     };
   } catch {

@@ -7,6 +7,7 @@ import { ROBOT_SKINS } from '../renderer/robot-skins.js?v=5.8';
 import { getTotalStars } from '../storage/progress.js?v=5.8';
 import { COMPANION_DRONES } from '../engine/companions-and-hints.js?v=5.9';
 import { SPACE_QUESTS, computeXpLevel } from '../engine/xp-and-quests.js?v=6.7';
+import { exportProgressBackup } from '../storage/cloud-profile.js?v=6.8';
 
 function escapeHtml(text) {
   return String(text ?? '')
@@ -292,64 +293,232 @@ export function renderBadgesModal(
 }
 
 /**
- * Renders the Space Quests & Pilot XP Level Modal.
+ * Renders the 3-Tab Pilot Center Modal: Space Quests | Mission History | Profile & Cloud Sync.
  */
-export function renderQuestsModal(container, progress, { lang = 'pt', onClose }) {
+export function renderQuestsModal(
+  container,
+  progress,
+  {
+    lang = 'pt',
+    initialTab = 'quests',
+    googleConfigured = false,
+    googleUser = null,
+    onGoogleSignIn,
+    onGoogleSignOut,
+    onImportBackup,
+    onClose,
+  } = {}
+) {
   if (!container) return;
   const isEn = lang === 'en';
-  const lvl = computeXpLevel(progress?.xp || 0);
-  const completedSet = new Set(Array.isArray(progress?.completedQuests) ? progress.completedQuests : []);
-  const qProg = progress?.questProgress || {};
+  let activeTab = initialTab;
 
-  const questsHtml = SPACE_QUESTS.map((q) => {
-    const done = completedSet.has(q.id);
-    const cur = done ? q.target : Math.min(q.target, Number(qProg[q.id]) || 0);
-    const pct = Math.round((cur / q.target) * 100);
-    const title = isEn ? q.titleEn : q.titlePt;
-    return `
-      <div class="quest-card ${done ? 'done' : ''}">
-        <div class="quest-top">
-          <span class="quest-title">${q.icon} ${escapeHtml(title)}</span>
-          <span class="quest-reward">${done ? '✅' : `+${q.xpReward} XP`}</span>
+  const paint = () => {
+    const lvl = computeXpLevel(progress?.xp || 0);
+    const completedSet = new Set(Array.isArray(progress?.completedQuests) ? progress.completedQuests : []);
+    const qProg = progress?.questProgress || {};
+    const history = Array.isArray(progress?.matchHistory) ? progress.matchHistory : [];
+
+    const questsHtml = SPACE_QUESTS.map((q) => {
+      const done = completedSet.has(q.id);
+      const cur = done ? q.target : Math.min(q.target, Number(qProg[q.id]) || 0);
+      const pct = Math.round((cur / q.target) * 100);
+      const title = isEn ? q.titleEn : q.titlePt;
+      return `
+        <div class="quest-card ${done ? 'done' : ''}">
+          <div class="quest-top">
+            <span class="quest-title">${q.icon} ${escapeHtml(title)}</span>
+            <span class="quest-reward">${done ? '✅' : `+${q.xpReward} XP`}</span>
+          </div>
+          <div class="quest-bar-row">
+            <div class="garage-bar-track"><div class="garage-bar-fill" style="width:${pct}%"></div></div>
+            <span class="quest-count">${cur}/${q.target}</span>
+          </div>
         </div>
-        <div class="quest-bar-row">
-          <div class="garage-bar-track"><div class="garage-bar-fill" style="width:${pct}%"></div></div>
-          <span class="quest-count">${cur}/${q.target}</span>
+      `;
+    }).join('');
+
+    const historyHtml =
+      history.length === 0
+        ? `<p class="muted small" style="padding:14px 0;">${
+            isEn
+              ? 'No completed missions recorded yet — beat any level to start your Flight Logbook!'
+              : 'Nenhuma missão registrada ainda — vença qualquer fase para começar seu Diário de Bordo!'
+          }</p>`
+        : `<div class="history-list">${history
+            .slice(0, 20)
+            .map((h) => {
+              const stars = '★'.repeat(h.stars) + '☆'.repeat(Math.max(0, 3 - h.stars));
+              const modeIcon =
+                h.mode === 'arcade' ? '🕹️' : h.mode === 'daily' ? '🔥' : h.mode === 'custom' ? '🛠️' : '🚀';
+              const dateLabel = String(h.timestamp || '').slice(0, 10);
+              return `
+                <div class="history-row">
+                  <span class="history-title">${modeIcon} ${escapeHtml(h.title)}</span>
+                  <span class="history-stars">${stars}</span>
+                  <span class="history-meta">${h.blocks}p · +${h.xpGained} XP · ${escapeHtml(dateLabel)}</span>
+                </div>
+              `;
+            })
+            .join('')}</div>`;
+
+    const cloudCardHtml = googleUser
+      ? `
+        <div class="cloud-status-card connected">
+          <div>
+            <strong>🔵 ${escapeHtml(googleUser.displayName || googleUser.email || 'Google Pilot')}</strong>
+            <p class="small muted">${isEn ? 'Cloud Sync Active (Google Firestore)' : 'Sincronização em Nuvem Ativa (Google Firestore)'}</p>
+          </div>
+          <button type="button" class="btn btn-secondary btn-sm" data-google-signout="true">
+            ${isEn ? 'Sign Out' : 'Sair'}
+          </button>
+        </div>
+      `
+      : `
+        <div class="cloud-status-card">
+          <div>
+            <strong>☁️ ${isEn ? 'Google Profile Cloud Sync (Firebase)' : 'Perfil Google na Nuvem (Firebase)'}</strong>
+            <p class="small muted">
+              ${
+                googleConfigured
+                  ? isEn
+                    ? 'Sign in with Google to sync your stars, XP, medals, and match history across devices!'
+                    : 'Entre com sua conta Google para sincronizar estrelas, XP, medalhas e histórico entre dispositivos!'
+                  : isEn
+                  ? 'Local cache active (localStorage). Add your Firebase Web Config in src/storage/firebase-config.js to activate 1-click Google Sign-In!'
+                  : 'Cache local ativo (localStorage). Cole seu Firebase Web Config em src/storage/firebase-config.js para ativar o Login com Google em 1 clique!'
+              }
+            </p>
+          </div>
+          <button
+            type="button"
+            class="btn btn-run btn-sm"
+            data-google-signin="true"
+            ${googleConfigured ? '' : 'disabled'}
+          >
+            🔵 ${isEn ? 'Sign in with Google' : 'Entrar com Google'}
+          </button>
+        </div>
+      `;
+
+    const profileTabHtml = `
+      <div class="profile-cloud-panel">
+        ${cloudCardHtml}
+        <div class="backup-card">
+          <div>
+            <strong>💾 ${isEn ? 'Portable Backup (.json)' : 'Backup Portátil (.json)'}</strong>
+            <p class="small muted">${
+              isEn
+                ? 'Export your stars, XP, quests, and history to transfer between PC, tablet, or school!'
+                : 'Exporte suas estrelas, XP, quests e histórico para transferir entre PC, tablet ou escola!'
+            }</p>
+          </div>
+          <div class="backup-actions">
+            <button type="button" class="btn btn-secondary btn-sm" data-export-backup="true">
+              ⬇️ ${isEn ? 'Export JSON' : 'Baixar Backup'}
+            </button>
+            <label class="btn btn-secondary btn-sm backup-import-label">
+              ⬆️ ${isEn ? 'Restore JSON' : 'Restaurar'}
+              <input type="file" accept="application/json,.json" data-import-backup="true" hidden />
+            </label>
+          </div>
         </div>
       </div>
     `;
-  }).join('');
 
-  container.innerHTML = `
-    <div class="modal-card modal-wide quests-modal">
-      <div class="modal-head">
-        <div>
-          <h2>⚡ ${isEn ? `Pilot Level ${lvl.level} & Space Quests` : `Piloto Nível ${lvl.level} & Missões Relâmpago`}</h2>
-          <p class="modal-sub">
-            ${
-              lvl.isMax
-                ? isEn
-                  ? `MAX LEVEL REACHED! (${lvl.totalXp} Total XP)`
-                  : `NÍVEL MÁXIMO ALCANÇADO! (${lvl.totalXp} XP Total)`
-                : isEn
-                ? `${lvl.currentLevelXp} / ${lvl.nextLevelXp} XP to Level ${lvl.level + 1} (${lvl.totalXp} Total XP)`
-                : `${lvl.currentLevelXp} / ${lvl.nextLevelXp} XP para o Nível ${lvl.level + 1} (${lvl.totalXp} XP Total)`
-            }
-          </p>
-        </div>
-        <button type="button" class="icon-btn" data-close="true" aria-label="Close">✕</button>
-      </div>
-      <div class="garage-progress">
-        <div class="garage-bar-track">
-          <div class="garage-bar-fill" style="width:${lvl.pct}%"></div>
-        </div>
-      </div>
-      <div class="quests-list">${questsHtml}</div>
-    </div>
-  `;
+    const bodyHtml =
+      activeTab === 'quests'
+        ? `<div class="quests-list">${questsHtml}</div>`
+        : activeTab === 'history'
+        ? historyHtml
+        : profileTabHtml;
 
+    container.innerHTML = `
+      <div class="modal-card modal-wide quests-modal">
+        <div class="modal-head">
+          <div>
+            <h2>⚡ ${isEn ? `Pilot Level ${lvl.level} · Command Logbook` : `Piloto Nível ${lvl.level} · Central do Piloto`}</h2>
+            <p class="modal-sub">
+              ${
+                lvl.isMax
+                  ? isEn
+                    ? `MAX LEVEL REACHED! (${lvl.totalXp} Total XP)`
+                    : `NÍVEL MÁXIMO ALCANÇADO! (${lvl.totalXp} XP Total)`
+                  : isEn
+                  ? `${lvl.currentLevelXp} / ${lvl.nextLevelXp} XP to Level ${lvl.level + 1} (${lvl.totalXp} Total XP)`
+                  : `${lvl.currentLevelXp} / ${lvl.nextLevelXp} XP para o Nível ${lvl.level + 1} (${lvl.totalXp} XP Total)`
+              }
+            </p>
+          </div>
+          <button type="button" class="icon-btn" data-close="true" aria-label="Close">✕</button>
+        </div>
+        <div class="garage-progress">
+          <div class="garage-bar-track">
+            <div class="garage-bar-fill" style="width:${lvl.pct}%"></div>
+          </div>
+        </div>
+        <div class="pilot-tabs" role="tablist">
+          <button type="button" class="pilot-tab ${activeTab === 'quests' ? 'active' : ''}" data-pilot-tab="quests">
+            📋 ${isEn ? 'Space Quests' : 'Missões'}
+          </button>
+          <button type="button" class="pilot-tab ${activeTab === 'history' ? 'active' : ''}" data-pilot-tab="history">
+            📜 ${isEn ? `History (${history.length})` : `Histórico (${history.length})`}
+          </button>
+          <button type="button" class="pilot-tab ${activeTab === 'profile' ? 'active' : ''}" data-pilot-tab="profile">
+            ☁️ ${isEn ? 'Google & Backup' : 'Google & Backup'}
+          </button>
+        </div>
+        ${bodyHtml}
+      </div>
+    `;
+
+    const fileInput = container.querySelector('[data-import-backup]');
+    fileInput?.addEventListener('change', async () => {
+      const file = fileInput.files?.[0];
+      if (!file) return;
+      const text = await file.text();
+      const updated = await onImportBackup?.(text);
+      if (updated) {
+        progress = updated;
+        paint();
+      }
+    });
+  };
+
+  paint();
   container.classList.remove('hidden');
-  container.onclick = (event) => {
+
+  container.onclick = async (event) => {
+    const tabBtn = event.target.closest('[data-pilot-tab]');
+    if (tabBtn) {
+      activeTab = tabBtn.dataset.pilotTab;
+      paint();
+      return;
+    }
+    if (event.target.closest('[data-export-backup]')) {
+      const blob = new Blob([exportProgressBackup(progress)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'astrobit-pilot-backup.json';
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      return;
+    }
+    if (event.target.closest('[data-google-signin]')) {
+      const updated = await onGoogleSignIn?.();
+      if (updated) {
+        progress = updated;
+        paint();
+      }
+      return;
+    }
+    if (event.target.closest('[data-google-signout]')) {
+      await onGoogleSignOut?.();
+      googleUser = null;
+      paint();
+      return;
+    }
     if (event.target === container || event.target.closest('[data-close]')) {
       container.classList.add('hidden');
       onClose?.();

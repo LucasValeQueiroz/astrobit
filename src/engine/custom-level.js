@@ -15,7 +15,7 @@ export const BASE_CUSTOM_BLOCKS = ['up', 'down', 'move_left', 'move_right', 'col
 
 const ALLOWED_TILE_CHARS = new Set([
   '.', '#', ' ', '*', 'G', '^', '>', 'v', '<',
-  'a', 'b', 'c', 'd', 'A', 'B', 'C', 'D', '=', '1', '2', '3', '4',
+  'a', 'b', 'c', 'd', 'A', 'B', 'C', 'D', '=', '1', '2', '3', '4', '~', 'O',
 ]);
 
 export const WORKSHOP_TEMPLATES = [
@@ -75,6 +75,21 @@ export const WORKSHOP_TEMPLATES = [
       '         ',
       '>*1  1*2 ',
       '     2*G ',
+    ],
+  },
+  {
+    id: 'frozen-rink',
+    namePt: 'Pista Polar',
+    nameEn: 'Polar Rink',
+    world: 7,
+    parBlocks: 8,
+    extras: ['repeat'],
+    rows: [
+      '#########',
+      '#>O~~~~a#',
+      '#..###..#',
+      '#..A.*G.#',
+      '#########',
     ],
   },
 ];

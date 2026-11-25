@@ -8,6 +8,7 @@ import { WORLD_3_LEVELS } from './world3-sensores.js?v=4.0';
 import { WORLD_4_LEVELS } from './world4-funcoes.js?v=4.0';
 import { WORLD_5_LEVELS } from './world5-desafios.js?v=4.0';
 import { WORLD_6_LEVELS } from './world6-portais.js?v=5.0';
+import { WORLD_7_LEVELS } from './world7-gelo.js?v=5.5';
 
 export const CAMPAIGN_WORLDS = [
   {
@@ -63,6 +64,15 @@ export const CAMPAIGN_WORLDS = [
     conceptPt: 'Mundo Bônus · Cadeias de Portais',
     conceptEn: 'Bonus World · Portal Chains',
     levels: WORLD_6_LEVELS,
+  },
+  {
+    world: 7,
+    icon: '🧊',
+    namePt: 'Planeta Congelado',
+    nameEn: 'Frozen Planet',
+    conceptPt: 'Física Polar · Gelo & Baterias',
+    conceptEn: 'Polar Physics · Ice & Energy Crates',
+    levels: WORLD_7_LEVELS,
   },
 ];
 

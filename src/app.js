@@ -248,7 +248,7 @@ function refreshPreviewPath() {
   let hoveredTile = null;
 
   for (const ev of sim.events) {
-    if (ev.type === 'move' || ev.type === 'teleport') {
+    if (ev.type === 'move' || ev.type === 'slide' || ev.type === 'teleport') {
       points.push({ x: ev.x, y: ev.y, blockId: ev.blockId, teleported: ev.type === 'teleport' });
     } else if (ev.type === 'bump') {
       points.push({ x: ev.x, y: ev.y, blockId: ev.blockId, bumped: true });

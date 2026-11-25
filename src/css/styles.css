@@ -2237,6 +2237,16 @@ button {
   font-size: 0.78rem;
 }
 
+.ws-cell.wt-ice {
+  background: linear-gradient(135deg, rgba(125, 211, 252, 0.45), rgba(2, 132, 199, 0.45));
+  border-color: #7dd3fc;
+}
+
+.ws-cell.wt-crate {
+  background: rgba(245, 158, 11, 0.32);
+  border-color: #fbbf24;
+}
+
 .ws-options-row {
   display: flex;
   align-items: center;

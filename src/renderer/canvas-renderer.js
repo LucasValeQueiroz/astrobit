@@ -130,6 +130,9 @@ export class SpaceCanvasRenderer {
     this.worldState.robot.y = event.y;
     this.worldState.robot.dir = event.dir;
     this.worldState.channels = { ...event.channels };
+    if (Array.isArray(event.crates)) {
+      this.worldState.crates = new Set(event.crates);
+    }
 
     this.targetX = event.x;
     this.targetY = event.y;
@@ -143,6 +146,14 @@ export class SpaceCanvasRenderer {
       const pal = getWorldPalette(this.worldNumber);
       this.particles.emitSparkles(px, py, pal.crystalGlow, 22);
       this.mood = 'happy';
+    } else if (event.type === 'slide') {
+      this.particles.emitSparkles(px, py, '#bae6fd', 8);
+      this.mood = 'excited';
+    } else if (event.type === 'push_crate') {
+      const cx = this.tileCenterX(event.toX);
+      const cy = this.tileCenterY(event.toY);
+      this.particles.emitSparkles(cx, cy, event.slid ? '#7dd3fc' : '#fbbf24', 16);
+      this.mood = 'excited';
     } else if (event.type === 'toggle_channel') {
       const col = CHANNEL_COLORS[event.channel] || '#22d3ee';
       this.particles.emitSparkles(px, py, col, 18);
@@ -424,12 +435,35 @@ export class SpaceCanvasRenderer {
       return;
     }
 
-    ctx.fillStyle = pal.floor;
-    ctx.fill();
-    ctx.strokeStyle = pal.floorBorder;
-    ctx.lineWidth = 2;
-    ctx.stroke();
-    ctx.restore();
+    if (tile.type === 'ice') {
+      const iceGrad = ctx.createLinearGradient(rx, ry, rx + size, ry + size);
+      iceGrad.addColorStop(0, '#7dd3fc');
+      iceGrad.addColorStop(0.5, '#38bdf8');
+      iceGrad.addColorStop(1, '#0284c7');
+      ctx.fillStyle = iceGrad;
+      ctx.fill();
+      ctx.strokeStyle = '#e0f2fe';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      // Diagonal crystalline specular streaks
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.55)';
+      ctx.lineWidth = 2.2;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(rx + size * 0.2, ry + size * 0.42);
+      ctx.lineTo(rx + size * 0.44, ry + size * 0.18);
+      ctx.moveTo(rx + size * 0.46, ry + size * 0.78);
+      ctx.lineTo(rx + size * 0.78, ry + size * 0.46);
+      ctx.stroke();
+      ctx.restore();
+    } else {
+      ctx.fillStyle = pal.floor;
+      ctx.fill();
+      ctx.strokeStyle = pal.floorBorder;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.restore();
+    }
 
     // Goal teleporter pad
     if (tile.type === 'goal') {
@@ -542,6 +576,36 @@ export class SpaceCanvasRenderer {
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(String(tile.portalId), 0, 1);
+      ctx.restore();
+    }
+
+    // Pushable energy crate ('O')
+    if (this.worldState.crates?.has(coordKey(gx, gy))) {
+      const padC = Math.max(4, Math.floor(size * 0.12));
+      const cSize = size - padC * 2;
+      const cx0 = rx + padC;
+      const cy0 = ry + padC;
+      const pulse = 0.7 + 0.3 * Math.sin(this._elapsed * 4.2 + gx + gy);
+      ctx.save();
+      roundRectPath(ctx, cx0, cy0, cSize, cSize, 7);
+      ctx.fillStyle = '#f59e0b';
+      ctx.fill();
+      ctx.strokeStyle = '#fef3c7';
+      ctx.lineWidth = 2.4;
+      ctx.stroke();
+      // Inner metallic frame
+      roundRectPath(ctx, cx0 + 4, cy0 + 4, cSize - 8, cSize - 8, 4);
+      ctx.fillStyle = '#1e293b';
+      ctx.fill();
+      // Glowing power core
+      ctx.fillStyle = `rgba(56, 189, 248, ${pulse})`;
+      ctx.beginPath();
+      ctx.arc(cx, cy, cSize * 0.22, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#e0f2fe';
+      ctx.beginPath();
+      ctx.arc(cx, cy, cSize * 0.1, 0, Math.PI * 2);
+      ctx.fill();
       ctx.restore();
     }
 

@@ -57,6 +57,12 @@ export class SpaceCanvasRenderer {
     this.targetY = 0;
     this.targetAngle = 0;
 
+    // Holographic Ghost Replay visual state
+    this.ghostPose = null;
+    this.ghostRenderX = 0;
+    this.ghostRenderY = 0;
+    this.ghostRenderAngle = 0;
+
     // Layout metrics
     this.cssWidth = 560;
     this.cssHeight = 420;
@@ -80,6 +86,20 @@ export class SpaceCanvasRenderer {
   setPreviewPath(points = [], hoveredTile = null) {
     this.previewPath = Array.isArray(points) ? points : [];
     this.hoveredTile = hoveredTile;
+  }
+
+  setGhostPose(pose = null, snap = false) {
+    if (!pose) {
+      this.ghostPose = null;
+      return;
+    }
+    const ang = DIR_ANGLES[pose.dir] ?? 0;
+    if (!this.ghostPose || snap) {
+      this.ghostRenderX = pose.x;
+      this.ghostRenderY = pose.y;
+      this.ghostRenderAngle = ang;
+    }
+    this.ghostPose = { x: pose.x, y: pose.y, dir: pose.dir, angle: ang };
   }
 
   /**
@@ -250,6 +270,11 @@ export class SpaceCanvasRenderer {
     this.renderX += (this.targetX - this.renderX) * smooth;
     this.renderY += (this.targetY - this.renderY) * smooth;
     this.renderAngle = shortestAngleLerp(this.renderAngle, this.targetAngle, smooth);
+    if (this.ghostPose) {
+      this.ghostRenderX += (this.ghostPose.x - this.ghostRenderX) * smooth;
+      this.ghostRenderY += (this.ghostPose.y - this.ghostRenderY) * smooth;
+      this.ghostRenderAngle = shortestAngleLerp(this.ghostRenderAngle, this.ghostPose.angle, smooth);
+    }
     if (this.bumpTimer > 0) {
       this.bumpTimer = Math.max(0, this.bumpTimer - dt);
     }
@@ -292,6 +317,11 @@ export class SpaceCanvasRenderer {
 
     // 2.5 Interactive dashed path preview (while building puzzle)
     this._drawPreviewPath(ctx, ts);
+
+    // 2.75 Holographic Ghost Replay Robot (if active)
+    if (this.ghostPose) {
+      this._drawGhostRobot(ctx, ts);
+    }
 
     // 3. Expressive AstroBit Robot
     this._drawRobot(ctx, ts);
@@ -365,6 +395,49 @@ export class SpaceCanvasRenderer {
     if (this.hoveredTile) {
       this._drawHoveredHighlight(ctx, this.hoveredTile.x, this.hoveredTile.y, ts);
     }
+  }
+
+  _drawGhostRobot(ctx, ts) {
+    const cx = this.tileCenterX(this.ghostRenderX);
+    const cy = this.tileCenterY(this.ghostRenderY);
+    const bob = Math.sin(this._elapsed * 5.2) * 2.5;
+    const r = ts * 0.31;
+
+    ctx.save();
+    ctx.translate(cx, cy + bob);
+    ctx.globalAlpha = 0.52 + 0.12 * Math.sin(this._elapsed * 6);
+
+    // Hologram dashed aura
+    ctx.strokeStyle = '#67e8f9';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.arc(0, 0, r * 1.18, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Translucent cyan chassis
+    roundRectPath(ctx, -r * 0.85, -r * 0.85, r * 1.7, r * 1.7, r * 0.45);
+    ctx.fillStyle = 'rgba(34, 211, 238, 0.38)';
+    ctx.fill();
+    ctx.strokeStyle = '#a5f3fc';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Glowing ghost eyes
+    ctx.fillStyle = '#ecfeff';
+    ctx.beginPath();
+    ctx.arc(-r * 0.28, -r * 0.1, Math.max(2, r * 0.14), 0, Math.PI * 2);
+    ctx.arc(r * 0.28, -r * 0.1, Math.max(2, r * 0.14), 0, Math.PI * 2);
+    ctx.fill();
+
+    // Tiny ghost crown tag
+    ctx.globalAlpha = 0.9;
+    ctx.font = `${Math.max(10, Math.round(ts * 0.2))}px system-ui, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('👻', 0, -r * 1.25);
+    ctx.restore();
   }
 
   _drawHoveredHighlight(ctx, gx, gy, ts) {

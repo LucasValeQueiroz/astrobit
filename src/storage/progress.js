@@ -21,6 +21,7 @@ export function createDefaultProgress() {
     labMasteredTopics: [],
     arcadeBestScore: 0,
     arcadeBestRound: 0,
+    ghostsByLevel: {},
     musicMuted: false,
   };
 }
@@ -53,6 +54,10 @@ export function loadProgress(storage = globalThis.localStorage) {
         : [],
       arcadeBestScore: Math.max(0, Math.floor(Number(parsed?.arcadeBestScore) || 0)),
       arcadeBestRound: Math.max(0, Math.floor(Number(parsed?.arcadeBestRound) || 0)),
+      ghostsByLevel:
+        parsed?.ghostsByLevel && typeof parsed.ghostsByLevel === 'object'
+          ? { ...parsed.ghostsByLevel }
+          : {},
       musicMuted: Boolean(parsed?.musicMuted),
     };
   } catch {

@@ -20,6 +20,13 @@ import {
   generateArcadeLevel,
   ARCADE_MAX_SHIELDS,
 } from './engine/arcade-mode.js?v=5.7';
+import {
+  extractGhostReplay,
+  getGhostFrameAt,
+  recordBestGhost,
+  encodeGhostReplay,
+  decodeGhostReplay,
+} from './engine/ghost-replay.js?v=5.8';
 import { ALL_LEVELS, CAMPAIGN_WORLDS, getLevelById, getNextLevel } from './levels/index.js?v=5.7';
 import { SpaceCanvasRenderer } from './renderer/canvas-renderer.js?v=5.7';
 import { SpaceSoundSynth } from './audio/sound-synth.js?v=4.2';
@@ -82,6 +89,8 @@ const els = {
   btnRun: document.getElementById('btn-run'),
   btnStep: document.getElementById('btn-step'),
   btnHint: document.getElementById('btn-hint'),
+  btnGhost: document.getElementById('btn-ghost'),
+  ghostBtnLabel: document.getElementById('ghost-btn-label'),
   btnReset: document.getElementById('btn-reset'),
   btnSpeed: document.getElementById('btn-speed'),
   btnUndo: document.getElementById('btn-undo'),
@@ -148,6 +157,8 @@ const state = {
   runningBlockId: null,
   failedBlockId: null,
   arcadeRun: null,
+  ghostEnabled: false,
+  ghostStep: 0,
 };
 
 function lang() {
@@ -478,14 +489,48 @@ function stopExecution(clearHighlight = false) {
   updateRunButton();
 }
 
+function getActiveGhost() {
+  if (!state.level) return null;
+  return state.level.challengeGhost || state.progress.ghostsByLevel?.[state.level.id] || null;
+}
+
+function updateGhostUi() {
+  const ghost = getActiveGhost();
+  if (!els.btnGhost) return;
+  if (!ghost) {
+    els.btnGhost.classList.add('hidden');
+    renderer.setGhostPose(null);
+    return;
+  }
+  els.btnGhost.classList.remove('hidden');
+  els.btnGhost.classList.toggle('active', Boolean(state.ghostEnabled));
+  const isEn = lang() === 'en';
+  if (els.ghostBtnLabel) {
+    els.ghostBtnLabel.textContent = state.ghostEnabled
+      ? isEn
+        ? `Ghost ON (${ghost.blocks}p)`
+        : `Fantasma ON (${ghost.blocks}p)`
+      : isEn
+        ? `Ghost (${ghost.blocks}p)`
+        : `Fantasma (${ghost.blocks}p)`;
+  }
+  if (state.ghostEnabled) {
+    renderer.setGhostPose(getGhostFrameAt(ghost, state.ghostStep), state.ghostStep === 0);
+  } else {
+    renderer.setGhostPose(null);
+  }
+}
+
 function resetBoardOnly(resetMessage = true) {
   stopExecution(true);
   state.traceRun = null;
   state.traceIndex = 0;
+  state.ghostStep = 0;
   els.winOverlay.classList.add('hidden');
   if (state.level) {
     const fresh = createWorldState(state.level);
     renderer.setWorld(fresh, state.level.world);
+    updateGhostUi();
     updateCrystalsHud(fresh.crystals.size, fresh.totalCrystals);
     if (resetMessage) {
       setMascotSay(
@@ -582,6 +627,8 @@ function loadCustomLevel(customLevel) {
   const fresh = createWorldState(state.level);
   renderer.setSkin(state.progress.skinId);
   renderer.setWorld(fresh, state.level.world);
+  state.ghostStep = 0;
+  updateGhostUi();
   updateCrystalsHud(fresh.crystals.size, fresh.totalCrystals);
   updateTopbar();
   setMascotSay(lang() === 'en' ? state.level.hintEn : state.level.hintPt, 'good');
@@ -591,6 +638,8 @@ function loadCustomLevel(customLevel) {
 
 function loadLevel(levelId, { showArrivalIfNew = false } = {}) {
   stopExecution(true);
+  state.arcadeRun = null;
+  renderArcadeHud();
   state.level = getLevelById(levelId);
   state.progress.currentLevelId = state.level.id;
   saveProgress(state.progress);
@@ -605,11 +654,13 @@ function loadLevel(levelId, { showArrivalIfNew = false } = {}) {
   state.hoveredBlockId = null;
   state.traceRun = null;
   state.traceIndex = 0;
+  state.ghostStep = 0;
   els.winOverlay.classList.add('hidden');
 
   const fresh = createWorldState(state.level);
   renderer.setSkin(state.progress.skinId);
   renderer.setWorld(fresh, state.level.world);
+  updateGhostUi();
   updateCrystalsHud(fresh.crystals.size, fresh.totalCrystals);
   updateTopbar();
   setMascotSay(
@@ -690,8 +741,14 @@ function showWinOverlay(run) {
     // Arcade progress is saved inside the arcade branch below
   } else if (!state.level.isCustom) {
     state.progress = recordLevelCompletion(state.progress, state.level.id, run.stars);
+    const ghost = extractGhostReplay(state.level, run);
+    if (ghost) {
+      const updated = recordBestGhost(state.progress, state.level.id, ghost);
+      state.progress = updated.progress;
+    }
     saveProgress(state.progress);
   }
+  updateGhostUi();
   checkAndAwardBadges({
     won: true,
     level: state.level,
@@ -898,6 +955,16 @@ function applyNextTraceEvent() {
   state.runningBlockId = ev.blockId;
   state.failedBlockId = ev.type === 'bump' ? ev.blockId : null;
   renderer.applyTraceEvent(ev);
+  if (
+    state.ghostEnabled &&
+    (ev.type === 'move' || ev.type === 'slide' || ev.type === 'teleport' || ev.type === 'turn')
+  ) {
+    const ghost = getActiveGhost();
+    if (ghost) {
+      state.ghostStep += 1;
+      renderer.setGhostPose(getGhostFrameAt(ghost, state.ghostStep));
+    }
+  }
   if (ev.type === 'collect') {
     state.crystalStreak += 1;
   }
@@ -1012,6 +1079,14 @@ els.btnHint.addEventListener('click', () => {
     'good'
   );
   renderEditor();
+});
+
+els.btnGhost?.addEventListener('click', () => {
+  if (!getActiveGhost()) return;
+  state.ghostEnabled = !state.ghostEnabled;
+  state.ghostStep = 0;
+  synth.playClick();
+  updateGhostUi();
 });
 
 els.btnRun.addEventListener('click', startRun);
@@ -1280,11 +1355,18 @@ installTactilePointerDnD({
   onDropExisting: handleDropExisting,
 });
 
-// Support instant shared Creative Workshop links (`?custom=...`)!
-const sharedCustomParam = new URLSearchParams(globalThis.location?.search || '').get('custom');
+// Support instant shared Creative Workshop links (`?custom=...` + optional `&ghost=...`)!
+const urlParams = new URLSearchParams(globalThis.location?.search || '');
+const sharedCustomParam = urlParams.get('custom');
+const sharedGhostParam = urlParams.get('ghost');
 const sharedCustomLevel = sharedCustomParam ? decodeCustomLevel(sharedCustomParam) : null;
 
 if (sharedCustomLevel) {
+  const challengeGhost = sharedGhostParam ? decodeGhostReplay(sharedGhostParam) : null;
+  if (challengeGhost) {
+    sharedCustomLevel.challengeGhost = challengeGhost;
+    state.ghostEnabled = true;
+  }
   loadCustomLevel(sharedCustomLevel);
 } else {
   loadLevel(state.progress.currentLevelId || 'w1-1', { showArrivalIfNew: false });

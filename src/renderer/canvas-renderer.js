@@ -6,6 +6,7 @@
 
 import { coordKey, isLaserActive, isBridgeActive } from '../engine/grid.js';
 import { getSkinById, getWorldPalette, CHANNEL_COLORS, PORTAL_COLORS } from './robot-skins.js';
+import { getDroneById } from '../engine/companions-and-hints.js';
 import { ParticleSystem } from './particles.js';
 
 const DIR_ANGLES = {
@@ -42,6 +43,7 @@ export class SpaceCanvasRenderer {
     this.worldState = null;
     this.worldNumber = 1;
     this.skin = getSkinById('explorer');
+    this.drone = getDroneById('spark');
     this.mood = 'happy'; // 'happy' | 'excited' | 'oops' | 'thinking' | 'giggle'
     this.bumpTimer = 0;
     this.hopTimer = 0;
@@ -77,6 +79,10 @@ export class SpaceCanvasRenderer {
 
   setSkin(skinId) {
     this.skin = getSkinById(skinId);
+  }
+
+  setDrone(droneId) {
+    this.drone = getDroneById(droneId);
   }
 
   setMood(mood) {
@@ -323,8 +329,9 @@ export class SpaceCanvasRenderer {
       this._drawGhostRobot(ctx, ts);
     }
 
-    // 3. Expressive AstroBit Robot
+    // 3. Expressive AstroBit Robot + Floating Companion Drone
     this._drawRobot(ctx, ts);
+    this._drawCompanionDrone(ctx, ts);
 
     // 3.5 Quantum warp beam flash when teleporting through portals
     if (this._warpBeam && this._warpBeam.ttl > 0) {
@@ -395,6 +402,43 @@ export class SpaceCanvasRenderer {
     if (this.hoveredTile) {
       this._drawHoveredHighlight(ctx, this.hoveredTile.x, this.hoveredTile.y, ts);
     }
+  }
+
+  _drawCompanionDrone(ctx, ts) {
+    if (!this.drone) return;
+    const rx = this.tileCenterX(this.renderX);
+    const ry = this.tileCenterY(this.renderY);
+    const orbitAngle = this._elapsed * 2.1;
+    const orbitR = ts * 0.44;
+    const dx = rx + Math.cos(orbitAngle) * orbitR;
+    const dy = ry - ts * 0.28 + Math.sin(orbitAngle * 1.4) * (ts * 0.14);
+    const r = Math.max(7, ts * 0.16);
+
+    ctx.save();
+    // Soft glowing aura
+    const aura = ctx.createRadialGradient(dx, dy, 1, dx, dy, r * 1.8);
+    aura.addColorStop(0, `${this.drone.glow}cc`);
+    aura.addColorStop(1, `${this.drone.color}00`);
+    ctx.fillStyle = aura;
+    ctx.beginPath();
+    ctx.arc(dx, dy, r * 1.8, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Drone pod
+    ctx.fillStyle = this.drone.color;
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.arc(dx, dy, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // Pet icon inside pod
+    ctx.font = `${Math.max(10, Math.round(r * 1.25))}px system-ui, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(this.drone.icon, dx, dy + 0.5);
+    ctx.restore();
   }
 
   _drawGhostRobot(ctx, ts) {

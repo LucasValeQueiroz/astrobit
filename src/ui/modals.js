@@ -2,9 +2,10 @@
  * AstroBit Modals — Planet Star Map, Robot Garage, and Victory Celebration Overlay.
  */
 
-import { CAMPAIGN_WORLDS } from '../levels/index.js?v=4.0';
-import { ROBOT_SKINS } from '../renderer/robot-skins.js?v=4.0';
-import { getTotalStars } from '../storage/progress.js?v=4.0';
+import { CAMPAIGN_WORLDS } from '../levels/index.js?v=5.8';
+import { ROBOT_SKINS } from '../renderer/robot-skins.js?v=5.8';
+import { getTotalStars } from '../storage/progress.js?v=5.8';
+import { COMPANION_DRONES } from '../engine/companions-and-hints.js?v=5.9';
 
 function escapeHtml(text) {
   return String(text ?? '')
@@ -76,9 +77,10 @@ export function renderLevelsModal(container, progress, currentLevelId, { lang, t
   };
 }
 
-export function renderGarageModal(container, progress, { lang, t, onSelectSkin, onClose }) {
+export function renderGarageModal(container, progress, { lang, t, onSelectSkin, onSelectDrone, onClose }) {
   if (!container) return;
   const totalStars = getTotalStars(progress);
+  const badgeCount = Array.isArray(progress?.unlockedBadges) ? progress.unlockedBadges.length : 0;
 
   const accessoryEmoji = (acc) =>
     acc === 'crown' ? '👑' : acc === 'cape' ? '🦸' : acc === 'dual-antenna' ? '📡' : '🤖';
@@ -133,6 +135,35 @@ export function renderGarageModal(container, progress, { lang, t, onSelectSkin, 
       })()
     : `<div class="garage-progress all-unlocked">🏆 ${escapeHtml(t(lang, 'garageAllUnlocked'))}</div>`;
 
+  const droneCards = COMPANION_DRONES.map((drone) => {
+    const unlocked = badgeCount >= drone.badgesRequired;
+    const equipped = (progress.droneId || 'spark') === drone.id;
+    const name = lang === 'en' ? drone.nameEn : drone.namePt;
+    const need = Math.max(0, drone.badgesRequired - badgeCount);
+    return `
+      <div class="skin-card drone-card ${equipped ? 'equipped' : ''} ${unlocked ? '' : 'locked'}">
+        <div class="drone-avatar" style="background:${drone.color}33; border-color:${drone.color}">
+          <span>${drone.icon}</span>
+        </div>
+        <strong>${escapeHtml(name)}</strong>
+        <button
+          type="button"
+          class="btn btn-sm ${equipped ? 'btn-success' : unlocked ? 'btn-primary' : ''}"
+          data-drone-id="${drone.id}"
+          ${unlocked ? '' : 'disabled'}
+        >
+          ${
+            equipped
+              ? escapeHtml(t(lang, 'garageEquipped'))
+              : unlocked
+              ? escapeHtml(lang === 'en' ? 'Equip Drone' : 'Usar Drone')
+              : `🔒 ${need} 🏆`
+          }
+        </button>
+      </div>
+    `;
+  }).join('');
+
   container.innerHTML = `
     <div class="modal-card">
       <div class="modal-head">
@@ -145,6 +176,11 @@ export function renderGarageModal(container, progress, { lang, t, onSelectSkin, 
       <div class="modal-body">
         ${progressHtml}
         <div class="skin-grid">${cards}</div>
+        <div class="drone-section-head">
+          <h4>🐾 ${escapeHtml(lang === 'en' ? 'Companion Drones (Unlocked by Space Medals)' : 'Drones Companheiros (Desbloqueados por Medalhas)')}</h4>
+          <span class="concept-pill">🏆 ${badgeCount}</span>
+        </div>
+        <div class="skin-grid drone-grid">${droneCards}</div>
       </div>
     </div>
   `;
@@ -156,10 +192,24 @@ export function renderGarageModal(container, progress, { lang, t, onSelectSkin, 
       onClose?.();
       return;
     }
-    const btn = event.target.closest('[data-skin-id]');
-    if (btn && !btn.disabled) {
-      onSelectSkin(btn.dataset.skinId);
-      renderGarageModal(container, { ...progress, skinId: btn.dataset.skinId }, { lang, t, onSelectSkin, onClose });
+    const skinBtn = event.target.closest('[data-skin-id]');
+    if (skinBtn && !skinBtn.disabled) {
+      onSelectSkin(skinBtn.dataset.skinId);
+      renderGarageModal(
+        container,
+        { ...progress, skinId: skinBtn.dataset.skinId },
+        { lang, t, onSelectSkin, onSelectDrone, onClose }
+      );
+      return;
+    }
+    const droneBtn = event.target.closest('[data-drone-id]');
+    if (droneBtn && !droneBtn.disabled) {
+      onSelectDrone?.(droneBtn.dataset.droneId);
+      renderGarageModal(
+        container,
+        { ...progress, droneId: droneBtn.dataset.droneId },
+        { lang, t, onSelectSkin, onSelectDrone, onClose }
+      );
     }
   };
 }

@@ -9,6 +9,7 @@ export function createDefaultProgress() {
     starsByLevel: {},
     currentLevelId: 'w1-1',
     skinId: 'explorer',
+    droneId: 'spark',
     lang: 'pt',
     speed: 'normal', // 'slow' | 'normal' | 'fast'
     codeLang: 'js',  // 'js' | 'python'

@@ -2887,3 +2887,47 @@ button {
   color: #cffafe;
   box-shadow: 0 0 12px rgba(34, 211, 238, 0.35);
 }
+
+/* Companion Drones & Smart Progressive Hint Nudge */
+.drone-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 18px 0 10px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.drone-section-head h4 {
+  margin: 0;
+  font-size: 0.98rem;
+  color: #e2e8f0;
+}
+
+.drone-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 2.5px solid #38bdf8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.65rem;
+  margin: 0 auto 8px;
+}
+
+@keyframes hintNudgePulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(250, 204, 21, 0.65);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(250, 204, 21, 0);
+    transform: scale(1.05);
+  }
+}
+
+.btn-hint.hint-nudge {
+  animation: hintNudgePulse 1.3s ease-in-out infinite;
+  border-color: #facc15;
+}

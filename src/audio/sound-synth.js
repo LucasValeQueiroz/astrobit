@@ -170,6 +170,38 @@ export class SpaceSoundSynth {
     return !this.muted && Boolean(this.AudioContextCtor);
   }
 
+  playIceSlide() {
+    // Shimmering crystalline glide tone when skating on frozen planet ice
+    this._tone({ freq: 740, endFreq: 1180, duration: 0.14, type: 'sine', gain: 0.09 });
+    this._tone({ freq: 1120, endFreq: 1480, duration: 0.1, delay: 0.04, type: 'triangle', gain: 0.06 });
+    return !this.muted && Boolean(this.AudioContextCtor);
+  }
+
+  playCratePush(slid = false) {
+    // Tactile metallic push thud + ice curling shimmer when sliding
+    this._tone({ freq: 185, endFreq: 120, duration: 0.11, type: 'triangle', gain: 0.14 });
+    if (slid) {
+      this._tone({ freq: 520, endFreq: 980, duration: 0.18, delay: 0.05, type: 'sine', gain: 0.08 });
+    }
+    return !this.muted && Boolean(this.AudioContextCtor);
+  }
+
+  playReentry() {
+    // Atmospheric plasma descent swoosh when diving into a planet
+    this._tone({ freq: 620, endFreq: 190, duration: 0.42, type: 'sawtooth', gain: 0.05 });
+    this._tone({ freq: 440, endFreq: 220, duration: 0.36, delay: 0.06, type: 'sine', gain: 0.09 });
+    return !this.muted && Boolean(this.AudioContextCtor);
+  }
+
+  playNewRecord() {
+    // Bright arcade/ghost personal-best arpeggio
+    const notes = [587.33, 739.99, 880.0, 1174.66];
+    notes.forEach((freq, idx) => {
+      this._tone({ freq, duration: 0.12, delay: idx * 0.065, type: 'triangle', gain: 0.13 });
+    });
+    return !this.muted && Boolean(this.AudioContextCtor);
+  }
+
   playFanfare() {
     // Heroic space-saving celebration chord progression (world completion / ending)
     const notes = [

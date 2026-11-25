@@ -116,8 +116,15 @@ export class PlanetBiomeRenderer {
       duration,
       onDone,
       trail: [],
+      turboBoost: 0,
     };
     this._updateGalaxyTelemetry(sampleGalaxyFlight(fromWorld, toWorld, 0));
+  }
+
+  triggerGalaxyTurbo() {
+    if (!this._galaxyFlight) return false;
+    this._galaxyFlight.turboBoost = Math.min(1, (this._galaxyFlight.turboBoost || 0) + 0.65);
+    return true;
   }
 
   _updateGalaxyTelemetry(sample) {
@@ -167,7 +174,9 @@ export class PlanetBiomeRenderer {
       this._elapsed += dt;
 
       if (this._galaxyFlight) {
-        this._galaxyFlight.elapsed += dt;
+        const speedMult = 1 + (this._galaxyFlight.turboBoost || 0) * 1.1;
+        this._galaxyFlight.elapsed += dt * speedMult;
+        this._galaxyFlight.turboBoost = Math.max(0, (this._galaxyFlight.turboBoost || 0) - dt * 1.4);
         const p = Math.min(1, this._galaxyFlight.elapsed / this._galaxyFlight.duration);
         const sample = sampleGalaxyFlight(this._galaxyFlight.fromWorld, this._galaxyFlight.toWorld, p);
         this._updateGalaxyTelemetry(sample);

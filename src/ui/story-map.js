@@ -751,6 +751,7 @@ export function renderGalaxyJourneyMap(
           : `☄️ ENTRANDO EM ${targetWorldObj.icon} ${wName} · Abrindo 6 Fases!`,
         'good'
       );
+      synth?.playReentry?.();
       biomeRenderer?.playOrbitalTransition('descent', 0.95, () => {
         const destCoord = getCoordForLevel(newWorld, selectedLevelId);
         synth?.playSnap?.();
@@ -871,6 +872,7 @@ export function renderGalaxyJourneyMap(
       } else {
         // Clicking the already-selected base again launches straight in!
         cinema?.destroy();
+        biomeRenderer?.destroy();
         synth?.playRocketLaunch?.();
         container.classList.add('hidden');
         onLaunchLevel?.(lvlId);
@@ -878,9 +880,9 @@ export function renderGalaxyJourneyMap(
       return;
     }
 
-    // Interactive Turbo Boost when tapping the sky during flight!
+    // Interactive Turbo Boost when tapping the sky during planetary or galaxy flight!
     if (event.target.closest('.flight-svg-wrap')) {
-      if (cinema?.triggerTurboBoost()) {
+      if (cinema?.triggerTurboBoost() || biomeRenderer?.triggerGalaxyTurbo()) {
         synth?.playGiggle?.();
         showFlightPill(lang === 'en' ? '⚡ SPACE TURBO BOOST!!' : '⚡ TURBO ESPACIAL!!', 'turbo');
       }

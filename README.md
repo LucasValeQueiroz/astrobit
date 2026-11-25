@@ -2,14 +2,41 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-e3b341?style=for-the-badge)](LICENSE)
 [![Zero Dependencies](https://img.shields.io/badge/Dependencies-Zero-3fb950?style=for-the-badge)](#architecture)
-[![Tests](https://img.shields.io/badge/Node_Tests-42%2F42_Passing-2ea043?style=for-the-badge)](#local-development--tests)
+[![Tests](https://img.shields.io/badge/Node_Tests-60%2F60_Passing-2ea043?style=for-the-badge)](#local-development--tests)
 [![Live Demo](https://img.shields.io/badge/Play_Online-GitHub_Pages-2f81f7?style=for-the-badge&logo=github)](https://lucasvalequeiroz.github.io/astrobit/)
 
-An open-source **educational space coding puzzle game** built to teach young learners (ages 5–10+) computational thinking — from visual **interlocking SVG jigsaw blocks** all the way to **loops**, **conditional sensors**, **reusable functions (`F1`/`F2`)**, **multi-portal wormholes**, **"Bug Hunt!" debugging**, and live **JavaScript / Python** code previews.
+An open-source **educational space coding puzzle game** built to teach young learners (ages 5–10+) computational thinking — from visual **interlocking SVG jigsaw blocks** all the way to **loops**, **conditional sensors**, **reusable functions (`F1`/`F2`)**, **multi-portal wormholes**, **ice & energy-crate physics**, **"Bug Hunt!" debugging**, and live **JavaScript / Python** code previews.
 
 > Built with **zero runtime dependencies** (native ES Modules + HTML5 Canvas 2D + procedural Web Audio API soundtrack & SFX + `node --test`) so it loads instantly on any computer, tablet, or phone directly from GitHub Pages.
 
 ![AstroBit Social Preview](assets/og-preview.svg)
+
+---
+
+## 📸 Live Screenshots
+
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <img src="assets/previews/lab-dlss-upscaling.png" alt="AAA Lab — AI Temporal Upscaling (DLSS/FSR Split-Screen)" />
+      <br /><sub><strong>🧪 AAA Lab — AI Temporal Upscaling (DLSS / FSR Split-Screen + 60fps Profiler)</strong></sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="assets/previews/lab-raytracing-bvh.png" alt="AAA Lab — Ray Tracing & BVH Acceleration" />
+      <br /><sub><strong>✨ AAA Lab — Ray Tracing &amp; BVH Tree Acceleration</strong></sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%">
+      <img src="assets/previews/puzzle-editor-code.png" alt="AstroBit — Puzzle Editor, 2D Canvas & Live JS/Python Code" />
+      <br /><sub><strong>🧩 SVG Jigsaw Editor + 2D Canvas + Live JS / Python Code Peek</strong></sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="assets/previews/galaxy-map.png" alt="AstroBit — 60fps Animated Galaxy Map" />
+      <br /><sub><strong>🗺️ 60fps Animated Galaxy &amp; Planet Biome Map (7 Worlds · 42 Levels)</strong></sub>
+    </td>
+  </tr>
+</table>
 
 ---
 
@@ -21,13 +48,14 @@ An open-source **educational space coding puzzle game** built to teach young lea
   - Fly **Starship Estrela-1** across **6 worlds and 36 planetary bases** along curved Bezier star trails with **⚡ interactive Turbo Boost**, **🌌 Hyperspace Warp** jumps between planets, and plasma exhaust trails.
 - **🧩 Physical SVG Interlocking Jigsaw Puzzle Editor + Tactile Mouse & Touch DnD:**
   - Tactile 4-direction **Compass Palette** (`⬆️ ⬇️ ⬅️ ➡️`), true male/female SVG jigsaw connectors, C-shaped `🔁 Repeat` and `🔎 If (sensor)` clamps, reusable `⚡ F1` / `🌟 F2` stacks, magnetic mouse & touch drag-and-drop with floating ghost + glowing snap rails, live dotted path preview, and keyboard shortcuts (`Space`, `S`, `R`, `Ctrl+Z`).
-- **🌌 6 Progressive Worlds · 36 Mathematically Proven Levels (⭐ 108 Stars):**
+- **🌌 7 Progressive Worlds · 42 Mathematically Proven Levels (⭐ 126 Stars):**
   1. 🌙 **Moon of Crystals** — Sequences & 4-direction planning
   2. ⚙️ **Gear Planet** — Loops (`Repeat N×`) & nested loops
   3. ⚡ **Laser Belt** — Switches, retractable bridges, paired portals & conditional sensors (`If`)
   4. 🛰️ **Function Station** — Decomposition & reusable subroutines (`F1`, `F2`)
   5. 🌌 **Engineer Nebula** — 3 interactive **"🐛 Bug Hunt!"** debugging puzzles & Grand Finale
   6. 🌀 **Wormhole Dimension (Bonus)** — 6 multi-portal chain levels (`1`–`4` portal pairs) with rotating vortex & quantum warp beam FX!
+  7. ❄️ **Frozen Planet (Bonus)** — 6 slippery ice-slide & pushable energy-crate physics puzzles!
 - **🔥 Daily Space Mission & Streak + 🏆 13 Space Medals:**
   - Deterministic daily puzzle generator (100 consecutive days mathematically proven `3★`) with **Daily Streak 🔥** tracking, plus **13 unlockable Space Medals** (including **🧪 AAA Game Engineer**) with animated videogame unlock toasts and fanfare!
 - **🧪 AAA Game Engineering Lab (7 Interactive 60fps Simulators):**
@@ -58,7 +86,7 @@ Requires only **Node.js 20+** (zero `npm install` needed):
 git clone https://github.com/LucasValeQueiroz/astrobit.git
 cd astrobit
 
-# Run all 34 engine, interpreter, transpiler, daily challenge, badges, music, story, workshop, and 36-level solvability tests
+# Run all 60 engine, interpreter, transpiler, daily challenge, arcade, badges, music, biomes, workshop, AAA Lab, and 42-level solvability tests
 node --test tests/*.test.mjs
 
 # Preview locally
@@ -71,15 +99,16 @@ python -m http.server 8080
 
 ```text
 assets/
-└── og-preview.svg     # 1200×630 vector OpenGraph social preview
+├── og-preview.svg     # 1200×630 vector OpenGraph social preview
+└── previews/          # Real 1280×800 live screenshots (AAA Lab, Puzzle Editor, Galaxy Map)
 src/
-├── engine/            # Pure DOM-free grid, AST interpreter, JS/Python transpiler, validator, daily generator & custom-level codec
-├── levels/            # 6-world / 36-level campaign with mathematically verified 3★ reference solutions
-├── story/             # Bilingual narrative bible ("Operação: Luz da Terra!") & scenic flight coordinates
+├── engine/            # Pure DOM-free grid, AST interpreter, JS/Python transpiler, validator, daily/arcade generators & custom-level codec
+├── levels/            # 7-world / 42-level campaign with mathematically verified 3★ reference solutions
+├── story/             # Bilingual narrative bible ("Operação: Luz da Terra!"), 7 planet biomes & orbital LOD transitions
 ├── renderer/          # 60fps HTML5 Canvas 2D space renderer, wormhole vortex FX, 7 expressive robot skins & particles
 ├── audio/             # Zero-asset Web Audio API SFX synth + 6-theme interactive procedural soundtrack
-├── ui/                # SVG jigsaw workspace, magnetic touch/mouse DnD, 60fps flight cinema, workshop, medals & PT/EN i18n
-└── storage/           # Local progress, stars, 12 space medals, daily streak, skins & custom level library (localStorage)
+├── ui/                # SVG jigsaw workspace, magnetic touch/mouse DnD, 3-Act 3D orbital cinema, AAA Lab, workshop & PT/EN i18n
+└── storage/           # Local progress, stars, space medals, daily streak, skins, drones & custom level library (localStorage)
 ```
 
 ---

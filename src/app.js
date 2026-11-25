@@ -14,17 +14,23 @@ import {
   computeDailyStreak,
   recordDailyCompletion,
 } from './engine/daily-challenge.js?v=5.0';
-import { ALL_LEVELS, CAMPAIGN_WORLDS, getLevelById, getNextLevel } from './levels/index.js?v=5.0';
-import { SpaceCanvasRenderer } from './renderer/canvas-renderer.js?v=5.0';
+import {
+  createArcadeRun,
+  applyArcadeOutcome,
+  generateArcadeLevel,
+  ARCADE_MAX_SHIELDS,
+} from './engine/arcade-mode.js?v=5.7';
+import { ALL_LEVELS, CAMPAIGN_WORLDS, getLevelById, getNextLevel } from './levels/index.js?v=5.7';
+import { SpaceCanvasRenderer } from './renderer/canvas-renderer.js?v=5.7';
 import { SpaceSoundSynth } from './audio/sound-synth.js?v=4.2';
-import { SpaceMusicEngine } from './audio/music-engine.js?v=5.0';
+import { SpaceMusicEngine } from './audio/music-engine.js?v=5.7';
 import {
   loadProgress,
   saveProgress,
   recordLevelCompletion,
   getTotalStars,
-} from './storage/progress.js?v=5.5';
-import { SPACE_BADGES, evaluateBadges } from './storage/achievements.js?v=5.5';
+} from './storage/progress.js?v=5.7';
+import { SPACE_BADGES, evaluateBadges } from './storage/achievements.js?v=5.7';
 import {
   createBlock,
   cloneBlocks,
@@ -81,6 +87,13 @@ const els = {
   btnUndo: document.getElementById('btn-undo'),
   btnClear: document.getElementById('btn-clear'),
   btnStory: document.getElementById('btn-story'),
+  btnArcade: document.getElementById('btn-arcade'),
+  arcadeHudBar: document.getElementById('arcade-hud-bar'),
+  arcadeShields: document.getElementById('arcade-shields'),
+  arcadeRound: document.getElementById('arcade-round'),
+  arcadeCombo: document.getElementById('arcade-combo'),
+  arcadeScore: document.getElementById('arcade-score'),
+  btnArcadeExit: document.getElementById('btn-arcade-exit'),
   btnDaily: document.getElementById('btn-daily'),
   btnEngineLab: document.getElementById('btn-engine-lab'),
   dailyBtnLabel: document.getElementById('daily-btn-label'),
@@ -134,6 +147,7 @@ const state = {
   crystalStreak: 0,
   runningBlockId: null,
   failedBlockId: null,
+  arcadeRun: null,
 };
 
 function lang() {
@@ -672,6 +686,8 @@ function showWinOverlay(run) {
   if (state.level.isDaily) {
     state.progress = recordDailyCompletion(state.progress, state.level.dailyDateKey || getTodayDateKey());
     saveProgress(state.progress);
+  } else if (state.level.isArcade) {
+    // Arcade progress is saved inside the arcade branch below
   } else if (!state.level.isCustom) {
     state.progress = recordLevelCompletion(state.progress, state.level.id, run.stars);
     saveProgress(state.progress);
@@ -689,6 +705,38 @@ function showWinOverlay(run) {
     .join('');
   els.winStars.innerHTML = starsHtml;
   els.winTitle.textContent = t(lang(), `win.title${run.stars}`);
+
+  if (state.level.isArcade && state.arcadeRun?.active) {
+    const completedRound = state.arcadeRun.round;
+    state.arcadeRun = applyArcadeOutcome(state.arcadeRun, { won: true, stars: run.stars });
+    const isNewBest = state.arcadeRun.score > (state.progress.arcadeBestScore || 0);
+    if (isNewBest || completedRound > (state.progress.arcadeBestRound || 0)) {
+      state.progress = {
+        ...state.progress,
+        arcadeBestScore: Math.max(state.progress.arcadeBestScore || 0, state.arcadeRun.score),
+        arcadeBestRound: Math.max(state.progress.arcadeBestRound || 0, completedRound),
+      };
+      saveProgress(state.progress);
+      checkAndAwardBadges({ won: true, level: state.level, program: state.program, events: run.events });
+    }
+    renderArcadeHud();
+    const isEn = lang() === 'en';
+    const note = isEn
+      ? `⚡ Stage #${completedRound} cleared! +${state.arcadeRun.lastPoints} pts (Combo ×${state.arcadeRun.multiplier})${isNewBest ? ' · 🏆 NEW RECORD!' : ''}`
+      : `⚡ Fase #${completedRound} vencida! +${state.arcadeRun.lastPoints} pts (Combo ×${state.arcadeRun.multiplier})${isNewBest ? ' · 🏆 NOVO RECORDE!' : ''}`;
+    if (els.winStoryNote) els.winStoryNote.textContent = note;
+    els.winSub.textContent = isEn
+      ? `Score: ${state.arcadeRun.score} pts · Record: ${state.progress.arcadeBestScore} pts`
+      : `Pontuação: ${state.arcadeRun.score} pts · Recorde: ${state.progress.arcadeBestScore} pts`;
+    els.winReplayBtn.textContent = isEn ? '🚪 Exit Arcade' : '🚪 Sair do Arcade';
+    els.winNextBtn.classList.remove('hidden');
+    els.winNextBtn.textContent = isEn
+      ? `⚡ Next Stage (#${state.arcadeRun.round})`
+      : `⚡ Próxima Fase (#${state.arcadeRun.round})`;
+    setMascotSay(note, 'good');
+    els.winOverlay.classList.remove('hidden');
+    return;
+  }
 
   if (state.level.isDaily) {
     const streak = computeDailyStreak(state.progress.dailyCompletedDates);
@@ -751,23 +799,88 @@ function showWinOverlay(run) {
   els.winOverlay.classList.remove('hidden');
 }
 
+function renderArcadeHud() {
+  if (!els.arcadeHudBar) return;
+  const run = state.arcadeRun;
+  if (!run || !run.active || !state.level?.isArcade) {
+    els.arcadeHudBar.classList.add('hidden');
+    return;
+  }
+  els.arcadeHudBar.classList.remove('hidden');
+  const isEn = lang() === 'en';
+  const hearts = '❤️'.repeat(run.shields) + '🖤'.repeat(Math.max(0, ARCADE_MAX_SHIELDS - run.shields));
+  if (els.arcadeShields) els.arcadeShields.textContent = hearts;
+  if (els.arcadeRound) els.arcadeRound.textContent = isEn ? `⚡ Stage #${run.round}` : `⚡ Fase #${run.round}`;
+  if (els.arcadeCombo) els.arcadeCombo.textContent = `🔥 ×${run.multiplier}`;
+  if (els.arcadeScore) {
+    const best = Math.max(state.progress.arcadeBestScore || 0, run.score);
+    els.arcadeScore.textContent = isEn
+      ? `🏆 ${run.score} pts (Best: ${best})`
+      : `🏆 ${run.score} pts (Recorde: ${best})`;
+  }
+  if (els.btnArcadeExit) els.btnArcadeExit.textContent = isEn ? '✕ Exit' : '✕ Sair';
+}
+
+function startArcadeMode() {
+  state.arcadeRun = createArcadeRun(Date.now());
+  const lvl = generateArcadeLevel(state.arcadeRun.round, state.arcadeRun.seed);
+  loadCustomLevel(lvl);
+  renderArcadeHud();
+}
+
+function exitArcadeMode() {
+  state.arcadeRun = null;
+  renderArcadeHud();
+  els.winOverlay.classList.add('hidden');
+  loadLevel(state.progress.currentLevelId || 'w1-1');
+}
+
+function showArcadeGameOver() {
+  const run = state.arcadeRun;
+  const isEn = lang() === 'en';
+  els.winStars.innerHTML = '<span class="star-icon earned">🕹️</span>';
+  els.winTitle.textContent = isEn ? 'SHIELD DEPLETED! GAME OVER' : 'ESCUDOS ESGOTADOS! FIM DE CORRIDA';
+  if (els.winStoryNote) {
+    els.winStoryNote.textContent = isEn
+      ? `You reached Stage #${run.round} with ${run.score} pts! Personal Best: ${state.progress.arcadeBestScore} pts.`
+      : `Você chegou na Fase #${run.round} com ${run.score} pts! Recorde pessoal: ${state.progress.arcadeBestScore} pts.`;
+  }
+  els.winSub.textContent = isEn
+    ? 'Ready for another Endless Space Run?'
+    : 'Pronto para outra Corrida Espacial Infinita?';
+  els.winReplayBtn.textContent = isEn ? '🚪 Exit Arcade' : '🚪 Sair do Arcade';
+  els.winNextBtn.classList.remove('hidden');
+  els.winNextBtn.textContent = isEn ? '🔄 New Arcade Run' : '🔄 Nova Corrida Arcade';
+  els.winOverlay.classList.remove('hidden');
+}
+
 function finishTrace(run) {
   stopExecution(false);
   if (run.status === 'won') {
     showWinOverlay(run);
-  } else if (run.status === 'failed') {
-    state.failedBlockId = run.failedBlockId;
-    const key = `feedback.${run.failureReason || 'hit_wall'}`;
-    setMascotSay(t(lang(), key), 'warn');
-  } else if (run.status === 'infinite_loop') {
-    state.failedBlockId = run.failedBlockId;
-    setMascotSay(t(lang(), 'feedback.infinite_loop'), 'warn');
   } else {
-    const remaining = run.finalState.crystalsRemaining;
-    if (remaining > 0) {
-      setMascotSay(t(lang(), 'feedback.incomplete_crystals', { remaining }), 'warn');
+    if (run.status === 'failed') {
+      state.failedBlockId = run.failedBlockId;
+      const key = `feedback.${run.failureReason || 'hit_wall'}`;
+      setMascotSay(t(lang(), key), 'warn');
+    } else if (run.status === 'infinite_loop') {
+      state.failedBlockId = run.failedBlockId;
+      setMascotSay(t(lang(), 'feedback.infinite_loop'), 'warn');
     } else {
-      setMascotSay(t(lang(), 'feedback.incomplete_goal'), 'warn');
+      const remaining = run.finalState.crystalsRemaining;
+      if (remaining > 0) {
+        setMascotSay(t(lang(), 'feedback.incomplete_crystals', { remaining }), 'warn');
+      } else {
+        setMascotSay(t(lang(), 'feedback.incomplete_goal'), 'warn');
+      }
+    }
+
+    if (state.level?.isArcade && state.arcadeRun?.active) {
+      state.arcadeRun = applyArcadeOutcome(state.arcadeRun, { won: false });
+      renderArcadeHud();
+      if (state.arcadeRun.gameOver) {
+        showArcadeGameOver();
+      }
     }
   }
   renderEditor();
@@ -1006,7 +1119,19 @@ els.btnGarage.addEventListener('click', () => {
   });
 });
 
+els.btnArcade?.addEventListener('click', () => {
+  synth.playRocketLaunch();
+  startArcadeMode();
+});
+
+els.btnArcadeExit?.addEventListener('click', () => {
+  synth.playClick();
+  exitArcadeMode();
+});
+
 els.btnDaily?.addEventListener('click', () => {
+  state.arcadeRun = null;
+  renderArcadeHud();
   synth.playRocketLaunch();
   const dailyLvl = generateDailyLevel(getTodayDateKey());
   loadCustomLevel(dailyLvl);
@@ -1041,12 +1166,28 @@ els.btnBadges?.addEventListener('click', () => {
 
 els.winReplayBtn.addEventListener('click', () => {
   synth.playClick();
+  if (state.level?.isArcade) {
+    exitArcadeMode();
+    return;
+  }
   resetBoardOnly(true);
   renderEditor();
 });
 
 els.winNextBtn.addEventListener('click', () => {
   els.winOverlay.classList.add('hidden');
+  if (state.level?.isArcade && state.arcadeRun) {
+    synth.playRocketLaunch();
+    if (state.arcadeRun.gameOver) {
+      startArcadeMode();
+      return;
+    }
+    const nextArcade = generateArcadeLevel(state.arcadeRun.round, state.arcadeRun.seed);
+    loadCustomLevel(nextArcade);
+    renderArcadeHud();
+    return;
+  }
+
   if (state.level.isDaily) {
     synth.playClick();
     openJourneyMap();

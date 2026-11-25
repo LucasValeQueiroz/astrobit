@@ -16,7 +16,7 @@ import {
 import { getTotalStars } from '../storage/progress.js?v=5.0';
 import { FlightCinemaController } from './flight-cinema.js?v=4.2';
 import { getPlanetBiome, getRegionForLevel } from '../story/planet-biomes.js?v=6.2';
-import { PlanetBiomeRenderer } from './planet-biome-canvas.js?v=6.2';
+import { PlanetBiomeRenderer } from './planet-biome-canvas.js?v=6.3';
 
 function escapeHtml(text) {
   return String(text ?? '')
@@ -527,6 +527,7 @@ export function renderGalaxyJourneyMap(
             class="map-base-node ${isSel ? 'is-selected' : ''} ${earned > 0 ? 'is-cleared' : ''} ${isCurrent ? 'is-current' : ''}"
             data-map-level="${lvl.id}"
             transform="translate(${pt.x}, ${pt.y})"
+            style="--node-delay:${idx * 95}ms;"
             role="button"
             tabindex="0"
           >
@@ -721,39 +722,60 @@ export function renderGalaxyJourneyMap(
   };
 
   const triggerWorldWarp = (nextWorldNum) => {
+    const prevWorldNum = activeWorldNum;
     const targetWorldObj = CAMPAIGN_WORLDS.find((w) => w.world === nextWorldNum) || CAMPAIGN_WORLDS[0];
     const wStory = getWorldStory(targetWorldObj.world);
     const wName = lang === 'en' ? targetWorldObj.nameEn : targetWorldObj.namePt;
     synth?.playRocketLaunch?.();
     showFlightPill(
       lang === 'en'
-        ? `🚀 ORBITAL LIFTOFF → ${targetWorldObj.icon} ${wName}!`
-        : `🚀 DECOLAGEM ORBITAL → ${targetWorldObj.icon} ${wName}!`,
+        ? `🚀 LIFTOFF → 🌌 GALAXY FLIGHT → ${targetWorldObj.icon} ${wName}!`
+        : `🚀 DECOLAGEM → 🌌 VOO NA GALÁXIA → ${targetWorldObj.icon} ${wName}!`,
       'warp'
     );
 
+    // Act 3 & 4: Atmospheric Re-entry -> Touchdown -> Staggered Level Reveal (6/6 Chunks)!
     const enterNewPlanet = () => {
       activeWorldNum = nextWorldNum;
+      const newWorld = CAMPAIGN_WORLDS.find((w) => w.world === activeWorldNum) || CAMPAIGN_WORLDS[0];
+      selectedLevelId = newWorld.levels[0]?.id || selectedLevelId;
+      shipLevelId = selectedLevelId;
       shipAngle = 0;
       renderFullMap();
       const svgEl = container.querySelector('.planet-route-svg');
       svgEl?.classList.add('streaming-chunks');
-      setTimeout(() => svgEl?.classList.remove('streaming-chunks'), 950);
-      biomeRenderer?.playOrbitalTransition('descent', 1.05, () => {
-        const newWorld = CAMPAIGN_WORLDS.find((w) => w.world === activeWorldNum) || CAMPAIGN_WORLDS[0];
+      setTimeout(() => svgEl?.classList.remove('streaming-chunks'), 1100);
+      showFlightPill(
+        lang === 'en'
+          ? `☄️ ENTERING ${targetWorldObj.icon} ${wName} · Opening 6 Stages!`
+          : `☄️ ENTRANDO EM ${targetWorldObj.icon} ${wName} · Abrindo 6 Fases!`,
+        'good'
+      );
+      biomeRenderer?.playOrbitalTransition('descent', 0.95, () => {
         const destCoord = getCoordForLevel(newWorld, selectedLevelId);
+        synth?.playSnap?.();
         cinema?.emitRing(destCoord, wStory.planetColor);
         cinema?.emitBurst(destCoord, ['#facc15', wStory.planetColor, '#ffffff'], 24);
       });
     };
 
-    const runHyperspace = () => {
-      if (cinema) {
-        cinema.playHyperspaceWarp({
-          accentColor: wStory.planetColor,
-          onDone: enterNewPlanet,
+    // Act 2: Full 60fps Interplanetary Galaxy Flight + 4.4x Camera Zoom into Destination Planet!
+    const runGalaxyCruise = () => {
+      const wrapEl = container.querySelector('.flight-svg-wrap');
+      wrapEl?.classList.add('galaxy-transit');
+      showFlightPill(
+        lang === 'en'
+          ? `🌌 Flying across the Galaxy → ${targetWorldObj.icon} ${wName}!`
+          : `🌌 Voando pela Galáxia → ${targetWorldObj.icon} ${wName}!`,
+        'warp'
+      );
+      if (biomeRenderer) {
+        biomeRenderer.playGalaxyFlight(prevWorldNum, nextWorldNum, 1.65, () => {
+          wrapEl?.classList.remove('galaxy-transit');
+          enterNewPlanet();
         });
       } else {
+        wrapEl?.classList.remove('galaxy-transit');
         enterNewPlanet();
       }
     };
@@ -767,9 +789,9 @@ export function renderGalaxyJourneyMap(
     cinema?.emitBurst(getCoordForLevel(curWorld, shipLevelId), ['#facc15', '#f97316', '#ffffff'], 20);
 
     if (biomeRenderer) {
-      biomeRenderer.playOrbitalTransition('liftoff', 0.62, runHyperspace);
+      biomeRenderer.playOrbitalTransition('liftoff', 0.52, runGalaxyCruise);
     } else {
-      runHyperspace();
+      runGalaxyCruise();
     }
   };
 

@@ -11,6 +11,7 @@
  */
 
 import { getPlanetBiome, computeOrbitalTransitionState } from '../story/planet-biomes.js?v=6.2';
+import { GALAXY_PLANETS, sampleGalaxyFlight } from '../story/galaxy-flight.js?v=6.3';
 
 function drawGear(ctx, cx, cy, outerR, teeth, rot, fill, stroke) {
   const innerR = outerR * 0.78;
@@ -70,6 +71,7 @@ export class PlanetBiomeRenderer {
     this._cssW = 760;
     this._cssH = 270;
     this._transition = null; // { phase: 'descent' | 'liftoff', elapsed, duration, onDone }
+    this._galaxyFlight = null; // { fromWorld, toWorld, elapsed, duration, onDone, trail: [] }
 
     this._flakes = Array.from({ length: 48 }, (_, i) => ({
       x: (i * 73.1) % 1,
@@ -96,8 +98,42 @@ export class PlanetBiomeRenderer {
   }
 
   playOrbitalTransition(phase = 'descent', duration = 1.05, onDone = null) {
+    this._galaxyFlight = null;
     this._transition = { phase, elapsed: 0, duration, onDone };
     this._updateTelemetry(phase, 0);
+  }
+
+  /**
+   * Plays the full 60fps Interplanetary Galaxy Flight from `fromWorld` -> `toWorld`
+   * followed by a smooth camera zoom straight into the destination planet!
+   */
+  playGalaxyFlight(fromWorld, toWorld, duration = 1.65, onDone = null) {
+    this._transition = null;
+    this._galaxyFlight = {
+      fromWorld: Number(fromWorld) || 1,
+      toWorld: Number(toWorld) || 1,
+      elapsed: 0,
+      duration,
+      onDone,
+      trail: [],
+    };
+    this._updateGalaxyTelemetry(sampleGalaxyFlight(fromWorld, toWorld, 0));
+  }
+
+  _updateGalaxyTelemetry(sample) {
+    if (!this.telemetryEl || !sample) return;
+    const isEn = this.lang === 'en';
+    if (sample.stage === 'cruise') {
+      const distStr = sample.distanceKm.toLocaleString(isEn ? 'en-US' : 'pt-BR');
+      this.telemetryEl.textContent = isEn
+        ? `🌌 GALAXY CRUISE · ${sample.origin.icon} W${sample.origin.world} → ${sample.dest.icon} W${sample.dest.world} · Dist ${distStr} km · ${sample.lodTier}`
+        : `🌌 VOO NA GALÁXIA · ${sample.origin.icon} M${sample.origin.world} → ${sample.dest.icon} M${sample.dest.world} · Dist ${distStr} km · ${sample.lodTier}`;
+    } else {
+      const zoomStr = sample.cameraZoom.toFixed(1);
+      this.telemetryEl.textContent = isEn
+        ? `🪐 PLANET APPROACH · ${sample.dest.icon} W${sample.dest.world} · Zoom ${zoomStr}× · ${sample.lodTier} · Preparing Landing!`
+        : `🪐 APROXIMANDO DO PLANETA · ${sample.dest.icon} M${sample.dest.world} · Zoom ${zoomStr}× · ${sample.lodTier} · Preparando Pouso!`;
+    }
   }
 
   _updateTelemetry(phase, progress) {
@@ -130,7 +166,21 @@ export class PlanetBiomeRenderer {
       this._lastTs = now;
       this._elapsed += dt;
 
-      if (this._transition) {
+      if (this._galaxyFlight) {
+        this._galaxyFlight.elapsed += dt;
+        const p = Math.min(1, this._galaxyFlight.elapsed / this._galaxyFlight.duration);
+        const sample = sampleGalaxyFlight(this._galaxyFlight.fromWorld, this._galaxyFlight.toWorld, p);
+        this._updateGalaxyTelemetry(sample);
+        if (sample.stage === 'cruise') {
+          this._galaxyFlight.trail.push({ x: sample.shipX, y: sample.shipY });
+          if (this._galaxyFlight.trail.length > 36) this._galaxyFlight.trail.shift();
+        }
+        if (p >= 1) {
+          const doneCb = this._galaxyFlight.onDone;
+          this._galaxyFlight = null;
+          doneCb?.();
+        }
+      } else if (this._transition) {
         this._transition.elapsed += dt;
         const p = Math.min(1, this._transition.elapsed / this._transition.duration);
         this._updateTelemetry(this._transition.phase, p);
@@ -164,6 +214,12 @@ export class PlanetBiomeRenderer {
     const h = this._cssH;
     const t = this._elapsed;
     ctx.clearRect(0, 0, w, h);
+
+    // Act 2: Full 60fps Interplanetary Galaxy Flight + Destination Planet Camera Zoom!
+    if (this._galaxyFlight) {
+      this._drawGalaxyFlight(ctx, w, h, this._galaxyFlight, t);
+      return;
+    }
 
     // Draw full planet biome surface (fading in/out smoothly during 3D globe transition)
     let surfaceAlpha = 1;
@@ -473,6 +529,205 @@ export class PlanetBiomeRenderer {
       ctx.arc(f.x * w, f.y * h, f.r, 0, Math.PI * 2);
       ctx.fill();
     }
+    ctx.restore();
+  }
+
+  _drawGalaxyFlight(ctx, w, h, gf, t) {
+    const p = Math.min(1, gf.elapsed / gf.duration);
+    const s = sampleGalaxyFlight(gf.fromWorld, gf.toWorld, p);
+
+    // 1. Deep space galaxy backdrop
+    const bg = ctx.createLinearGradient(0, 0, w, h);
+    bg.addColorStop(0, '#040714');
+    bg.addColorStop(0.5, '#0b1029');
+    bg.addColorStop(1, '#140928');
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, w, h);
+
+    // Apply smooth camera zoom toward destination planet during approach!
+    ctx.save();
+    ctx.translate(w * 0.5, h * 0.5);
+    ctx.scale(s.cameraZoom, s.cameraZoom);
+    ctx.translate(-s.cameraFocusX * w, -s.cameraFocusY * h);
+
+    // Milky Way stardust band
+    const band = ctx.createLinearGradient(0, h * 0.85, w, h * 0.15);
+    band.addColorStop(0, 'rgba(56, 189, 248, 0.08)');
+    band.addColorStop(0.5, 'rgba(168, 85, 247, 0.12)');
+    band.addColorStop(1, 'rgba(250, 204, 21, 0.08)');
+    ctx.fillStyle = band;
+    ctx.fillRect(0, 0, w, h);
+
+    // Twinkling galaxy stars
+    for (let i = 0; i < 60; i++) {
+      const sx = ((i * 113.7) % 1) * w;
+      const sy = ((i * 67.3) % 1) * h;
+      const alpha = 0.35 + 0.5 * Math.sin(t * 3 + i);
+      ctx.fillStyle = `rgba(226, 232, 240, ${alpha})`;
+      ctx.beginPath();
+      ctx.arc(sx, sy, i % 4 === 0 ? 1.7 : 1.0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Dotted galaxy constellation spine connecting all 7 planets
+    ctx.save();
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.25)';
+    ctx.lineWidth = 1.6 / Math.sqrt(s.cameraZoom);
+    ctx.setLineDash([5, 6]);
+    ctx.beginPath();
+    GALAXY_PLANETS.forEach((pl, idx) => {
+      if (idx === 0) ctx.moveTo(pl.x * w, pl.y * h);
+      else ctx.lineTo(pl.x * w, pl.y * h);
+    });
+    ctx.stroke();
+    ctx.restore();
+
+    // Active curved flight trajectory from origin -> destination
+    if (s.origin.world !== s.dest.world) {
+      ctx.save();
+      ctx.strokeStyle = `${s.dest.color}88`;
+      ctx.lineWidth = 2.6 / Math.sqrt(s.cameraZoom);
+      ctx.setLineDash([6, 5]);
+      ctx.beginPath();
+      ctx.moveTo(s.origin.x * w, s.origin.y * h);
+      ctx.quadraticCurveTo(s.ctrl.x * w, s.ctrl.y * h, s.dest.x * w, s.dest.y * h);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // Draw all 7 planets as shaded 3D spheres
+    for (const pl of GALAXY_PLANETS) {
+      const px = pl.x * w;
+      const py = pl.y * h;
+      const isDest = pl.world === s.dest.world;
+      const isOrigin = pl.world === s.origin.world;
+      const r = pl.r * (isDest ? 1.15 : 1);
+
+      // Pulsing destination radar halo
+      if (isDest) {
+        const pulse = 1 + 0.14 * Math.sin(t * 7);
+        const halo = ctx.createRadialGradient(px, py, r * 0.7, px, py, r * 2.1 * pulse);
+        halo.addColorStop(0, `${pl.color}88`);
+        halo.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = halo;
+        ctx.beginPath();
+        ctx.arc(px, py, r * 2.1 * pulse, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = '#facc15';
+        ctx.lineWidth = 2 / Math.sqrt(s.cameraZoom);
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.arc(px, py, r * 1.45 * pulse, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+
+      // Shaded sphere
+      const grad = ctx.createRadialGradient(px - r * 0.35, py - r * 0.35, 2, px, py, r);
+      grad.addColorStop(0, pl.ring);
+      grad.addColorStop(0.55, pl.color);
+      grad.addColorStop(1, pl.dark);
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(px, py, r, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.strokeStyle = isDest ? '#ffffff' : isOrigin ? '#7dd3fc' : 'rgba(255,255,255,0.35)';
+      ctx.lineWidth = 1.5 / Math.sqrt(s.cameraZoom);
+      ctx.stroke();
+
+      // World icon & compact label
+      ctx.font = `${Math.round(r * 0.9)}px system-ui, sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(pl.icon, px, py + 0.5);
+
+      ctx.fillStyle = isDest ? '#fef08a' : '#cbd5e1';
+      ctx.font = `800 ${Math.max(8, Math.round(10 / Math.sqrt(s.cameraZoom)))}px system-ui, sans-serif`;
+      ctx.fillText(`M${pl.world}`, px, py + r + 11);
+    }
+
+    // Glowing plasma exhaust trail behind Starship Estrela-1
+    if (gf.trail.length > 1) {
+      ctx.save();
+      for (let i = 1; i < gf.trail.length; i++) {
+        const a = i / gf.trail.length;
+        ctx.strokeStyle = `rgba(250, 204, 21, ${a * 0.85})`;
+        ctx.lineWidth = (1.5 + a * 4.5) / Math.sqrt(s.cameraZoom);
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(gf.trail[i - 1].x * w, gf.trail[i - 1].y * h);
+        ctx.lineTo(gf.trail[i].x * w, gf.trail[i].y * h);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    // Starship Estrela-1 flying through the Galaxy!
+    const rx = s.shipX * w;
+    const ry = s.shipY * h;
+    const shipScale = 1 / Math.pow(s.cameraZoom, 0.35);
+    ctx.save();
+    ctx.translate(rx, ry);
+    ctx.rotate(s.angleRad);
+    ctx.scale(shipScale, shipScale);
+
+    // Flickering plasma flame
+    const flameLen = 14 + Math.sin(t * 40) * 4;
+    ctx.fillStyle = '#f97316';
+    ctx.beginPath();
+    ctx.moveTo(-10, -5);
+    ctx.lineTo(-10 - flameLen, 0);
+    ctx.lineTo(-10, 5);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = '#fef08a';
+    ctx.beginPath();
+    ctx.moveTo(-10, -2.5);
+    ctx.lineTo(-10 - flameLen * 0.55, 0);
+    ctx.lineTo(-10, 2.5);
+    ctx.closePath();
+    ctx.fill();
+
+    // Wings
+    ctx.fillStyle = '#f43f5e';
+    ctx.beginPath();
+    ctx.moveTo(-6, -5);
+    ctx.lineTo(-13, -12);
+    ctx.lineTo(1, -5);
+    ctx.closePath();
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(-6, 5);
+    ctx.lineTo(-13, 12);
+    ctx.lineTo(1, 5);
+    ctx.closePath();
+    ctx.fill();
+
+    // Sleek rocket fuselage
+    ctx.fillStyle = '#e0f2fe';
+    ctx.strokeStyle = '#38bdf8';
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.moveTo(-10, -6);
+    ctx.quadraticCurveTo(4, -9, 15, 0);
+    ctx.quadraticCurveTo(4, 9, -10, 6);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // Glowing cockpit window
+    ctx.fillStyle = '#0f172a';
+    ctx.beginPath();
+    ctx.arc(3, 0, 3.6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#38bdf8';
+    ctx.beginPath();
+    ctx.arc(3.5, 0, 1.8, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
     ctx.restore();
   }
 

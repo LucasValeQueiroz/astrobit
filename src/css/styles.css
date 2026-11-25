@@ -3069,3 +3069,25 @@ button {
 .planet-route-svg.streaming-chunks {
   animation: chunkStreamPop 0.9s ease-out both;
 }
+
+/* Act 2 Galaxy Transit Hide Surface + Act 4 Staggered Level Node Reveal */
+.flight-svg-wrap.galaxy-transit .planet-route-svg,
+.flight-svg-wrap.galaxy-transit .flying-starship {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.22s ease;
+}
+
+@keyframes baseNodePop {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.planet-route-svg.streaming-chunks .map-base-node {
+  opacity: 0;
+  animation: baseNodePop 0.42s ease-out var(--node-delay, 0ms) forwards;
+}

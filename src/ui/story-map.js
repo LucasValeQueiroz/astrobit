@@ -15,8 +15,8 @@ import {
 } from '../story/campaign-story.js?v=5.0';
 import { getTotalStars } from '../storage/progress.js?v=5.0';
 import { FlightCinemaController } from './flight-cinema.js?v=4.2';
-import { getPlanetBiome, getRegionForLevel } from '../story/planet-biomes.js?v=6.1';
-import { PlanetBiomeRenderer } from './planet-biome-canvas.js?v=6.1';
+import { getPlanetBiome, getRegionForLevel } from '../story/planet-biomes.js?v=6.2';
+import { PlanetBiomeRenderer } from './planet-biome-canvas.js?v=6.2';
 
 function escapeHtml(text) {
   return String(text ?? '')
@@ -596,7 +596,12 @@ export function renderGalaxyJourneyMap(
         >
           <div class="planet-stage-bar">
             <span class="act-pill">${worldObj.icon} ${escapeHtml(actTitle)} — ${escapeHtml(worldName)}</span>
-            <span class="upgrade-pill-sm">${escapeHtml(upgrade)}</span>
+            <div class="planet-stage-actions">
+              <button type="button" class="mini-text-btn replay-orbital-btn" data-replay-orbital="true">
+                🎬 ${escapeHtml(lang === 'en' ? 'Re-entry' : 'Reentrada')}
+              </button>
+              <span class="upgrade-pill-sm">${escapeHtml(upgrade)}</span>
+            </div>
           </div>
 
           <div class="flight-svg-wrap">
@@ -654,6 +659,11 @@ export function renderGalaxyJourneyMap(
               <strong>${selLevel.isBugHunt ? '🐛 ' : ''}${escapeHtml(selTitle)}</strong>
             </div>
             <p class="mission-deck-story">🤖 ${escapeHtml(selBrief)}</p>
+            <p class="mission-deck-fact">✨ ${escapeHtml(
+              lang === 'en'
+                ? getRegionForLevel(selLevel.world, selLevel.id, selLevel.index - 1).factEn
+                : getRegionForLevel(selLevel.world, selLevel.id, selLevel.index - 1).factPt
+            )}</p>
           </div>
           <button type="button" class="btn btn-run mission-launch-btn" data-launch-level="${selLevel.id}">
             🚀 ${escapeHtml(t(lang, 'story.btnLandBase', { world: selLevel.world, index: selLevel.index }))}
@@ -726,11 +736,15 @@ export function renderGalaxyJourneyMap(
       activeWorldNum = nextWorldNum;
       shipAngle = 0;
       renderFullMap();
-      biomeRenderer?.playOrbitalTransition('descent', 0.8);
-      const newWorld = CAMPAIGN_WORLDS.find((w) => w.world === activeWorldNum) || CAMPAIGN_WORLDS[0];
-      const destCoord = getCoordForLevel(newWorld, selectedLevelId);
-      cinema?.emitRing(destCoord, wStory.planetColor);
-      cinema?.emitBurst(destCoord, ['#facc15', wStory.planetColor, '#ffffff'], 22);
+      const svgEl = container.querySelector('.planet-route-svg');
+      svgEl?.classList.add('streaming-chunks');
+      setTimeout(() => svgEl?.classList.remove('streaming-chunks'), 950);
+      biomeRenderer?.playOrbitalTransition('descent', 1.05, () => {
+        const newWorld = CAMPAIGN_WORLDS.find((w) => w.world === activeWorldNum) || CAMPAIGN_WORLDS[0];
+        const destCoord = getCoordForLevel(newWorld, selectedLevelId);
+        cinema?.emitRing(destCoord, wStory.planetColor);
+        cinema?.emitBurst(destCoord, ['#facc15', wStory.planetColor, '#ffffff'], 24);
+      });
     };
 
     const runHyperspace = () => {
@@ -744,8 +758,16 @@ export function renderGalaxyJourneyMap(
       }
     };
 
+    // Act 1: Vertical rocket liftoff from current base with golden plasma burst!
+    const shipEl = container.querySelector('#flying-starship');
+    if (shipEl) {
+      shipEl.classList.add('ship-liftoff');
+    }
+    const curWorld = CAMPAIGN_WORLDS.find((w) => w.world === activeWorldNum) || CAMPAIGN_WORLDS[0];
+    cinema?.emitBurst(getCoordForLevel(curWorld, shipLevelId), ['#facc15', '#f97316', '#ffffff'], 20);
+
     if (biomeRenderer) {
-      biomeRenderer.playOrbitalTransition('liftoff', 0.45, runHyperspace);
+      biomeRenderer.playOrbitalTransition('liftoff', 0.62, runHyperspace);
     } else {
       runHyperspace();
     }
@@ -795,6 +817,12 @@ export function renderGalaxyJourneyMap(
       biomeRenderer?.destroy();
       synth?.playClick?.();
       onReplayStory?.(replayBtn.dataset.replayStory);
+      return;
+    }
+
+    const replayOrbitalBtn = event.target.closest('[data-replay-orbital]');
+    if (replayOrbitalBtn) {
+      triggerWorldWarp(activeWorldNum);
       return;
     }
 

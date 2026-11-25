@@ -31,9 +31,10 @@ import {
   computeProgressiveHint,
   shouldOfferSmartHint,
 } from './engine/companions-and-hints.js?v=5.9';
-import { computeGuidedTutorialStep } from './engine/guided-tutorial.js?v=6.5';
+import { computeGuidedTutorialStep } from './engine/guided-tutorial.js?v=6.6';
+import { computeLiveWayfinder } from './engine/pathfinder-coach.js?v=6.6';
 import { ALL_LEVELS, CAMPAIGN_WORLDS, getLevelById, getNextLevel } from './levels/index.js?v=5.7';
-import { SpaceCanvasRenderer } from './renderer/canvas-renderer.js?v=5.7';
+import { SpaceCanvasRenderer } from './renderer/canvas-renderer.js?v=6.6';
 import { SpaceSoundSynth } from './audio/sound-synth.js?v=6.4';
 import { SpaceMusicEngine } from './audio/music-engine.js?v=5.7';
 import {
@@ -103,6 +104,8 @@ const els = {
   btnTutorialDismiss: document.getElementById('btn-tutorial-dismiss'),
   btnGhost: document.getElementById('btn-ghost'),
   ghostBtnLabel: document.getElementById('ghost-btn-label'),
+  btnXray: document.getElementById('btn-xray'),
+  xrayBtnLabel: document.getElementById('xray-btn-label'),
   btnReset: document.getElementById('btn-reset'),
   btnSpeed: document.getElementById('btn-speed'),
   btnUndo: document.getElementById('btn-undo'),
@@ -175,6 +178,7 @@ const state = {
   levelFailCount: 0,
   hintTier: 0,
   tutorialDismissed: false,
+  xrayEnabled: false,
 };
 
 function lang() {
@@ -410,9 +414,24 @@ function renderGuidedTutorial() {
   return step;
 }
 
+function refreshAaaWayfinder(tutorialStep = null) {
+  if (!state.level) {
+    renderer.setWayfinder(null);
+    return;
+  }
+  const showBreadcrumbs = Boolean(tutorialStep && tutorialStep.mode === 'walkthrough' && tutorialStep.step < 3);
+  if (state.xrayEnabled || showBreadcrumbs) {
+    const wf = tutorialStep?.wayfinder || computeLiveWayfinder(state.level, state.program);
+    renderer.setWayfinder({ ...wf, showBreadcrumbs });
+  } else {
+    renderer.setWayfinder(null);
+  }
+}
+
 function renderEditor() {
   if (!state.level) return;
   const tutorialStep = renderGuidedTutorial();
+  refreshAaaWayfinder(tutorialStep);
   const visibleFns = getVisibleFunctions(state.level);
   if (state.activeScope !== 'main' && !visibleFns.includes(state.activeScope)) {
     state.activeScope = 'main';
@@ -1149,6 +1168,23 @@ els.btnHint.addEventListener('click', () => {
 
 els.btnTutorialDismiss?.addEventListener('click', () => {
   state.tutorialDismissed = true;
+  synth.playClick();
+  renderEditor();
+});
+
+els.btnXray?.addEventListener('click', () => {
+  state.xrayEnabled = !state.xrayEnabled;
+  renderer.setXrayEnabled(state.xrayEnabled);
+  els.btnXray.classList.toggle('active', state.xrayEnabled);
+  if (els.xrayBtnLabel) {
+    els.xrayBtnLabel.textContent = state.xrayEnabled
+      ? lang() === 'en'
+        ? 'X-Ray ON'
+        : 'Raio-X ON'
+      : lang() === 'en'
+      ? 'X-Ray'
+      : 'Raio-X';
+  }
   synth.playClick();
   renderEditor();
 });

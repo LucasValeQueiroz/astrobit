@@ -6,6 +6,7 @@
  */
 
 import { executeProgram, normalizeProgram } from './interpreter.js';
+import { computeLiveWayfinder } from './pathfinder-coach.js';
 
 const CONCEPT_INTRO_TIPS = {
   'w2-1': {
@@ -84,13 +85,14 @@ export function computeGuidedTutorialStep(
       };
     }
 
-    // Step 2: guide the next exact block from referenceSolution until the program wins!
+    // Step 2: run real-time AAA Pathfinder from wherever AstroBit currently stops!
+    const wf = computeLiveWayfinder(level, norm);
     const normRef = normalizeProgram(level.referenceSolution);
     const nextRef = normRef.main[Math.min(main.length, Math.max(0, normRef.main.length - 1))];
-    const nextType = nextRef?.type || 'collect';
+    const nextType = wf.nextBlockType || nextRef?.type || 'collect';
     const nextNamePt =
       nextType === 'collect'
-        ? '💎 Pegar'
+        ? '💎 Coletar'
         : nextType === 'move_right'
         ? '➡️ Direita'
         : nextType === 'up'
@@ -116,6 +118,7 @@ export function computeGuidedTutorialStep(
       icon: '🧩',
       target: 'palette',
       highlightBlockType: nextType,
+      wayfinder: wf,
       message: isEn
         ? `Step 2/3: Nice!! Now tap ${nextNameEn} (glowing gold) to keep building your path!`
         : `Passo 2/3: Boa!! Agora toque em ${nextNamePt} (brilhando em dourado) para continuar!`,

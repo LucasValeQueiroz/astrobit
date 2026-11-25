@@ -3174,3 +3174,35 @@ button {
   animation: runPulseGlow 1.15s ease-in-out infinite;
   border: 2px solid #fde047;
 }
+
+/* AAA Engine X-Ray Toggle & Bouncing Finger Pointer for Kids */
+.btn-xray-toggle.active {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.28), rgba(6, 182, 212, 0.34));
+  border-color: rgba(52, 211, 153, 0.8);
+  color: #a7f3d0;
+  box-shadow: 0 0 12px rgba(52, 211, 153, 0.35);
+}
+
+@keyframes fingerBounce {
+  0%, 100% {
+    transform: translate(-50%, 0);
+  }
+  50% {
+    transform: translate(-50%, -6px);
+  }
+}
+
+.palette-piece.hint-glow {
+  position: relative;
+}
+
+.palette-piece.hint-glow::after {
+  content: '👆';
+  position: absolute;
+  left: 50%;
+  top: -18px;
+  font-size: 1.05rem;
+  pointer-events: none;
+  animation: fingerBounce 0.9s ease-in-out infinite;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.7));
+}

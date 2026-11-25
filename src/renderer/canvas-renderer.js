@@ -48,6 +48,11 @@ export class SpaceCanvasRenderer {
     this.bumpTimer = 0;
     this.hopTimer = 0;
     this.winDanceTimer = 0;
+    this.trauma = 0; // AAA camera trauma screen-shake [0..1]
+    this.popups = []; // Floating world-space feedback labels (+💎, ❄️ SLIDE!, etc.)
+    this.xrayEnabled = false;
+    this.wayfinder = null; // Live BFS/A* wayfinder result { path, explored }
+    this._fpsEstimate = 60;
     this.previewPath = [];
     this.hoveredTile = null;
 
@@ -92,6 +97,25 @@ export class SpaceCanvasRenderer {
   setPreviewPath(points = [], hoveredTile = null) {
     this.previewPath = Array.isArray(points) ? points : [];
     this.hoveredTile = hoveredTile;
+  }
+
+  setXrayEnabled(enabled) {
+    this.xrayEnabled = Boolean(enabled);
+  }
+
+  setWayfinder(wayfinder = null) {
+    this.wayfinder = wayfinder;
+  }
+
+  spawnPopup(gx, gy, text, color = '#facc15') {
+    this.popups.push({
+      x: this.tileCenterX(gx),
+      y: this.tileCenterY(gy) - this.tileSize * 0.25,
+      text,
+      color,
+      life: 0.95,
+      maxLife: 0.95,
+    });
   }
 
   setGhostPose(pose = null, snap = false) {
@@ -171,18 +195,24 @@ export class SpaceCanvasRenderer {
       this.worldState.crystals.delete(coordKey(event.crystalX, event.crystalY));
       const pal = getWorldPalette(this.worldNumber);
       this.particles.emitSparkles(px, py, pal.crystalGlow, 22);
+      this.spawnPopup(event.x, event.y, '+💎', '#7dd3fc');
+      this.hopTimer = 0.25;
       this.mood = 'happy';
     } else if (event.type === 'slide') {
       this.particles.emitSparkles(px, py, '#bae6fd', 8);
+      this.spawnPopup(event.x, event.y, '❄️', '#bae6fd');
       this.mood = 'excited';
     } else if (event.type === 'push_crate') {
       const cx = this.tileCenterX(event.toX);
       const cy = this.tileCenterY(event.toY);
       this.particles.emitSparkles(cx, cy, event.slid ? '#7dd3fc' : '#fbbf24', 16);
+      this.trauma = Math.min(1, this.trauma + 0.32);
+      this.spawnPopup(event.toX, event.toY, event.slid ? '🥌 CURL!' : '📦 PUSH!', '#fbbf24');
       this.mood = 'excited';
     } else if (event.type === 'toggle_channel') {
       const col = CHANNEL_COLORS[event.channel] || '#22d3ee';
       this.particles.emitSparkles(px, py, col, 18);
+      this.spawnPopup(event.x, event.y, `🔓 ${event.channel}!`, col);
     } else if (event.type === 'teleport') {
       const col = PORTAL_COLORS[event.portalId] || '#c084fc';
       const fx = this.tileCenterX(event.fromX);
@@ -193,17 +223,22 @@ export class SpaceCanvasRenderer {
       this.renderY = event.y;
       this.particles.emitTeleport(px, py, col);
       this._warpBeam = { x1: fx, y1: fy, x2: px, y2: py, color: col, ttl: 0.42, maxTtl: 0.42 };
+      this.trauma = Math.min(1, this.trauma + 0.38);
+      this.spawnPopup(event.x, event.y, '🌀 WARP!', col);
       this.mood = 'excited';
     } else if (event.type === 'bump') {
       this.mood = 'oops';
       this.bumpTimer = 0.45;
+      this.trauma = Math.min(1, this.trauma + 0.65);
       this.particles.emitBump(px, py);
+      this.spawnPopup(event.x, event.y, 'BOING!', '#fb923c');
     } else if (event.type === 'sensor_check') {
       this.mood = 'thinking';
     } else if (event.type === 'win') {
       this.mood = 'excited';
       this.winDanceTimer = 2.0;
       this.particles.emitConfetti(this.cssWidth, this.cssHeight, 72);
+      this.spawnPopup(event.x, event.y, '🌟 3★!', '#facc15');
     } else {
       this.mood = 'happy';
     }
@@ -293,6 +328,18 @@ export class SpaceCanvasRenderer {
     if (this.winDanceTimer > 0) {
       this.winDanceTimer = Math.max(0, this.winDanceTimer - dt);
     }
+    if (this.trauma > 0) {
+      this.trauma = Math.max(0, this.trauma - dt * 1.9);
+    }
+    if (dt > 0.001) {
+      this._fpsEstimate = this._fpsEstimate * 0.9 + Math.min(60, 1 / dt) * 0.1;
+    }
+    for (let i = this.popups.length - 1; i >= 0; i--) {
+      const pop = this.popups[i];
+      pop.life -= dt;
+      pop.y -= 28 * dt;
+      if (pop.life <= 0) this.popups.splice(i, 1);
+    }
     this.particles.update(dt);
   }
 
@@ -311,6 +358,16 @@ export class SpaceCanvasRenderer {
 
     if (!this.worldState) return;
 
+    // AAA Camera Trauma Screen-Shake (quadratic trauma^2 curve!)
+    const shakeMag = this.trauma * this.trauma * 8;
+    const shakeX = shakeMag > 0.05 ? Math.sin(this._elapsed * 65) * shakeMag : 0;
+    const shakeY = shakeMag > 0.05 ? Math.cos(this._elapsed * 78) * shakeMag : 0;
+
+    ctx.save();
+    if (shakeMag > 0.05) {
+      ctx.translate(shakeX, shakeY);
+    }
+
     // 2. Grid tiles
     const ts = this.tileSize;
     for (let y = 0; y < this.worldState.height; y++) {
@@ -319,6 +376,11 @@ export class SpaceCanvasRenderer {
         if (!tile || tile.type === 'void') continue;
         this._drawTile(ctx, tile, x, y, ts, pal);
       }
+    }
+
+    // 2.25 AAA Live A* Wayfinder Breadcrumbs & X-Ray Debug Overlay
+    if (this.xrayEnabled || this.wayfinder?.showBreadcrumbs) {
+      this._drawAaaOverlay(ctx, ts);
     }
 
     // 2.5 Interactive dashed path preview (while building puzzle)
@@ -355,8 +417,102 @@ export class SpaceCanvasRenderer {
       if (b.ttl <= 0) this._warpBeam = null;
     }
 
-    // 4. Foreground particles & victory confetti
+    // 4. Foreground particles, floating popups & victory confetti
     this.particles.drawParticles(ctx);
+    this._drawPopups(ctx);
+    ctx.restore();
+  }
+
+  _drawPopups(ctx) {
+    if (!this.popups.length) return;
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.font = '800 14px system-ui, -apple-system, sans-serif';
+    for (const pop of this.popups) {
+      const alpha = Math.max(0, pop.life / pop.maxLife);
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = '#0f172a';
+      ctx.fillText(pop.text, pop.x + 1, pop.y + 1);
+      ctx.fillStyle = pop.color;
+      ctx.fillText(pop.text, pop.x, pop.y);
+    }
+    ctx.restore();
+  }
+
+  _drawAaaOverlay(ctx, ts) {
+    const wf = this.wayfinder;
+    ctx.save();
+
+    if (this.xrayEnabled) {
+      // 1. BFS/A* Explored Search Frontier Heatmap
+      if (wf?.explored?.length) {
+        ctx.fillStyle = 'rgba(56, 189, 248, 0.16)';
+        for (const cell of wf.explored) {
+          ctx.fillRect(
+            this.originX + cell.x * ts + 4,
+            this.originY + cell.y * ts + 4,
+            ts - 8,
+            ts - 8
+          );
+        }
+      }
+
+      // 2. AABB Physics Colliders (red = solid wall/laser, amber = dynamic crate)
+      ctx.lineWidth = 1.5;
+      for (let y = 0; y < this.worldState.height; y++) {
+        for (let x = 0; x < this.worldState.width; x++) {
+          const tile = this.worldState.grid[y][x];
+          const px = this.originX + x * ts + 2;
+          const py = this.originY + y * ts + 2;
+          if (tile?.type === 'wall' || (tile?.type === 'laser' && isLaserActive(tile, this.worldState.channels))) {
+            ctx.strokeStyle = 'rgba(244, 63, 94, 0.75)';
+            ctx.strokeRect(px, py, ts - 4, ts - 4);
+          } else if (this.worldState.crates?.has(coordKey(x, y))) {
+            ctx.strokeStyle = 'rgba(250, 204, 21, 0.85)';
+            ctx.strokeRect(px, py, ts - 4, ts - 4);
+          }
+        }
+      }
+    }
+
+    // 3. Holographic A* Wayfinder Path Breadcrumbs
+    if (wf?.path?.length >= 2) {
+      ctx.strokeStyle = 'rgba(52, 211, 153, 0.85)';
+      ctx.lineWidth = Math.max(2.5, ts * 0.055);
+      ctx.setLineDash([6, 6]);
+      ctx.lineDashOffset = -this._elapsed * 22;
+      ctx.beginPath();
+      wf.path.forEach((pt, idx) => {
+        const cx = this.tileCenterX(pt.x);
+        const cy = this.tileCenterY(pt.y);
+        if (idx === 0) ctx.moveTo(cx, cy);
+        else ctx.lineTo(cx, cy);
+      });
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    // 4. Live AAA Engine X-Ray Telemetry Pill
+    if (this.xrayEnabled) {
+      const fps = Math.round(this._fpsEstimate || 60);
+      const nodes = wf?.explored?.length || 0;
+      const label = `⚡ AAA X-RAY · ${fps} FPS · A* ${nodes} nodes · Colliders ON`;
+      ctx.font = '700 11px monospace';
+      const tw = ctx.measureText(label).width + 16;
+      roundRectPath(ctx, 10, 10, tw, 24, 12);
+      ctx.fillStyle = 'rgba(7, 11, 30, 0.82)';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(52, 211, 153, 0.65)';
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+      ctx.fillStyle = '#a7f3d0';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(label, 18, 22);
+    }
+
+    ctx.restore();
   }
 
   _drawPreviewPath(ctx, ts) {

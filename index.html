@@ -12,7 +12,7 @@
   <meta property="og:image" content="https://lucasvalequeiroz.github.io/astrobit/assets/og-preview.svg" />
   <meta name="twitter:card" content="summary_large_image" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🤖</text></svg>" />
-  <link rel="stylesheet" href="src/css/styles.css?v=6.3" />
+  <link rel="stylesheet" href="src/css/styles.css?v=6.5" />
 </head>
 <body>
   <header class="topbar">
@@ -96,6 +96,15 @@
 
     <!-- RIGHT: 4-Direction Jigsaw Palette, Interlocking Puzzle Board & Live Code Peek -->
     <section class="editor-column">
+      <div id="guided-tutorial-bar" class="guided-tutorial-bar hidden" role="status" aria-live="polite">
+        <span id="tutorial-icon" class="tutorial-icon" aria-hidden="true">👆</span>
+        <div class="tutorial-copy">
+          <div id="tutorial-dots" class="tutorial-dots" aria-hidden="true"></div>
+          <p id="tutorial-msg" class="tutorial-msg"></p>
+        </div>
+        <button id="btn-tutorial-dismiss" class="tutorial-dismiss-btn" type="button" title="Fechar guia">✕</button>
+      </div>
+
       <div class="panel palette-panel">
         <div class="panel-head">
           <h2 data-i18n="paletteTitle">🧩 Peças do Quebra-Cabeça</h2>

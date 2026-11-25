@@ -19,6 +19,8 @@ export function createDefaultProgress() {
     unlockedBadges: [],
     dailyCompletedDates: [],
     labMasteredTopics: [],
+    arcadeBestScore: 0,
+    arcadeBestRound: 0,
     musicMuted: false,
   };
 }
@@ -49,6 +51,8 @@ export function loadProgress(storage = globalThis.localStorage) {
       labMasteredTopics: Array.isArray(parsed?.labMasteredTopics)
         ? [...parsed.labMasteredTopics]
         : [],
+      arcadeBestScore: Math.max(0, Math.floor(Number(parsed?.arcadeBestScore) || 0)),
+      arcadeBestRound: Math.max(0, Math.floor(Number(parsed?.arcadeBestRound) || 0)),
       musicMuted: Boolean(parsed?.musicMuted),
     };
   } catch {

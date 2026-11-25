@@ -2821,3 +2821,61 @@ button {
 .engine-lab-modal .lab-quiz-opt {
   padding: 5px 8px;
 }
+
+/* Endless Arcade Mode ("Corrida Espacial") */
+.nav-btn-arcade {
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.28), rgba(236, 72, 153, 0.32));
+  border-color: rgba(216, 180, 254, 0.6);
+  color: #f5d0fe;
+}
+
+.nav-btn-arcade:hover {
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.45), rgba(236, 72, 153, 0.48));
+}
+
+.arcade-hud-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 7px 12px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(88, 28, 135, 0.65), rgba(157, 23, 77, 0.48));
+  border: 1px solid rgba(216, 180, 254, 0.48);
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.arcade-hud-bar.hidden {
+  display: none;
+}
+
+.arcade-chip {
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.55);
+  color: #f8fafc;
+}
+
+.arcade-combo {
+  color: #fde047;
+}
+
+.arcade-score {
+  color: #7dd3fc;
+}
+
+.arcade-exit-btn {
+  margin-left: auto;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(248, 113, 113, 0.55);
+  background: rgba(239, 68, 68, 0.22);
+  color: #fecaca;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.arcade-exit-btn:hover {
+  background: rgba(239, 68, 68, 0.4);
+}

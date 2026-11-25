@@ -118,6 +118,14 @@ export const SPACE_BADGES = [
     descPt: 'Domine o Mundo 7: Planeta Congelado (Fase 7-6)',
     descEn: 'Conquer World 7: Frozen Planet (Level 7-6)',
   },
+  {
+    id: 'arcade-ace',
+    icon: '🕹️',
+    namePt: 'Ás do Arcade',
+    nameEn: 'Arcade Ace',
+    descPt: 'Alcance a Fase 3+ ou 1.000 pontos no Modo Arcade Infinito',
+    descEn: 'Reach Stage 3+ or 1,000 points in Endless Arcade Mode',
+  },
 ];
 
 function programHasType(blocks = [], targetType) {
@@ -167,6 +175,9 @@ export function evaluateBadges(progress, context = {}) {
   if (Number(starsMap['w5-6'] || 0) > 0) grant('earth-savior');
   if (Number(starsMap['w6-6'] || 0) > 0) grant('wormhole-legend');
   if (Number(starsMap['w7-6'] || 0) > 0) grant('frost-master');
+  if (Number(progress?.arcadeBestRound || 0) >= 3 || Number(progress?.arcadeBestScore || 0) >= 1000) {
+    grant('arcade-ace');
+  }
   if (Array.isArray(progress?.labMasteredTopics) && progress.labMasteredTopics.length >= 7) {
     grant('aaa-engineer');
   }

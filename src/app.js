@@ -75,7 +75,7 @@ import {
   renderPalette,
   renderWorkspace,
 } from './ui/workspace.js?v=4.0';
-import { renderGarageModal, renderBadgesModal, renderQuestsModal } from './ui/modals.js?v=7.0';
+import { renderGarageModal, renderBadgesModal, renderQuestsModal } from './ui/modals.js?v=7.3';
 import { renderPassportModal } from './ui/passport-modal.js?v=6.0';
 import { renderEngineLabModal } from './ui/engine-lab.js?v=5.6';
 import { installTactilePointerDnD } from './ui/touch-dnd.js?v=5.0';
@@ -264,6 +264,11 @@ function updateTopbar() {
     els.btnMusic.textContent = music.isMuted() ? '🔕' : '🎵';
     els.btnMusic.classList.toggle('active', !music.isMuted());
   }
+  if (els.xrayBtnLabel) {
+    els.xrayBtnLabel.textContent = lang() === 'en' ? 'X-Ray' : 'Raio-X';
+  }
+  updateGhostUi();
+  updateXpHud();
   els.btnLang.textContent = lang().toUpperCase();
   els.btnCodeToggle.classList.toggle('active', state.codePeekOpen);
 

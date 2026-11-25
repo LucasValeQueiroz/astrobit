@@ -317,8 +317,12 @@ export function renderQuestsModal(
   let leaderboardRows = null;
   let leaderboardLoading = false;
 
-  const ensureLeaderboardLoaded = async () => {
-    if (leaderboardRows !== null || leaderboardLoading) return;
+  const ensureLeaderboardLoaded = async (forceRefresh = false) => {
+    if (!forceRefresh && leaderboardRows !== null) {
+      paint();
+      return;
+    }
+    if (leaderboardLoading) return;
     leaderboardLoading = true;
     paint();
     try {
@@ -452,7 +456,11 @@ export function renderQuestsModal(
 
     const rankingHtml = leaderboardLoading
       ? `<p class="muted small history-empty">🌌 ${isEn ? 'Loading Galaxy Hall of Fame...' : 'Carregando Hall da Fama da Galáxia...'}</p>`
-      : `<div class="history-list">${(leaderboardRows || [])
+      : `<div class="ranking-toolbar">
+           <span class="small muted">${isEn ? 'Top 20 Galaxy Pilots (XP → Stars → Arcade)' : 'Top 20 Pilotos da Galáxia (XP → Estrelas → Arcade)'}</span>
+           <button type="button" class="mini-text-btn" data-refresh-ranking="true">🔄 ${isEn ? 'Refresh' : 'Atualizar'}</button>
+         </div>
+         <div class="history-list">${(leaderboardRows || [])
           .map(
             (r) => `
               <div class="history-row ${r.isSelf ? 'leaderboard-self' : ''}">
@@ -535,6 +543,10 @@ export function renderQuestsModal(
   container.classList.remove('hidden');
 
   container.onclick = async (event) => {
+    if (event.target.closest('[data-refresh-ranking]')) {
+      ensureLeaderboardLoaded(true);
+      return;
+    }
     const tabBtn = event.target.closest('[data-pilot-tab]');
     if (tabBtn) {
       activeTab = tabBtn.dataset.pilotTab;

@@ -2,7 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-e3b341?style=for-the-badge)](LICENSE)
 [![Zero Dependencies](https://img.shields.io/badge/Dependencies-Zero-3fb950?style=for-the-badge)](#architecture)
-[![Tests](https://img.shields.io/badge/Node_Tests-60%2F60_Passing-2ea043?style=for-the-badge)](#local-development--tests)
+[![Tests](https://img.shields.io/badge/Node_Tests-73%2F73_Passing-2ea043?style=for-the-badge)](#local-development--tests)
 [![Live Demo](https://img.shields.io/badge/Play_Online-GitHub_Pages-2f81f7?style=for-the-badge&logo=github)](https://lucasvalequeiroz.github.io/astrobit/)
 
 An open-source **educational space coding puzzle game** built to teach young learners (ages 5–10+) computational thinking — from visual **interlocking SVG jigsaw blocks** all the way to **loops**, **conditional sensors**, **reusable functions (`F1`/`F2`)**, **multi-portal wormholes**, **ice & energy-crate physics**, **"Bug Hunt!" debugging**, and live **JavaScript / Python** code previews.
@@ -44,8 +44,10 @@ An open-source **educational space coding puzzle game** built to teach young lea
 
 - **📖 Story Campaign — *"Operação: Luz da Terra!"* (PT-BR & EN):**
   - 3-scene animated **Intro Cinematic**, per-world **Planet Arrival Briefings**, custom story hooks and triumph lines for all **36 bases**, and a **Grand Finale Ending Cinematic** with an Official Space Engineer Medal!
-- **🗺️ 60fps Animated Galaxy & Planet Journey Map:**
-  - Fly **Starship Estrela-1** across **6 worlds and 36 planetary bases** along curved Bezier star trails with **⚡ interactive Turbo Boost**, **🌌 Hyperspace Warp** jumps between planets, and plasma exhaust trails.
+- **🗺️ 4-Act 60fps Interplanetary Galaxy Flight & 7 Unique Planet Biomes:**
+  - Fly **Starship Estrela-1** across **7 worlds and 42 planetary hubs** (including the global Earth → Moon route: `🇧🇷 Brazil → 🇺🇸 USA → 🇪🇺 Europe → 🌍 Africa → 🇨🇳 China → 🇯🇵 Japan` with 42 real space/CS fun facts!), featuring **Vertical Orbital Liftoff → Milky Way Galaxy Cruise → 4.4× Destination Planet Zoom → 1,650 °C Thermal Re-entry** with live AAA LOD telemetry and **⚡ interactive Turbo Boost**!
+- **👆 Interactive Step-by-Step Kids Guided Tutorial + Live A\* Pathfinder & `⚡ Raio-X` AAA Overlay:**
+  - Guides kids (6–12 yrs) step-by-step on Level 1-1 (`Step 1/3 → 2/3 → 3/3` with bouncing `👆` pointer & pulsing green `▶️ Run`), powered by a real-time **BFS/A\* Pathfinder Coach**, plus a 1-click **`⚡ Raio-X`** overlay showing live AABB colliders, A\* search frontier, Wayfinder breadcrumbs, FPS, quadratic camera trauma screen-shake, and floating action popups!
 - **🧩 Physical SVG Interlocking Jigsaw Puzzle Editor + Tactile Mouse & Touch DnD:**
   - Tactile 4-direction **Compass Palette** (`⬆️ ⬇️ ⬅️ ➡️`), true male/female SVG jigsaw connectors, C-shaped `🔁 Repeat` and `🔎 If (sensor)` clamps, reusable `⚡ F1` / `🌟 F2` stacks, magnetic mouse & touch drag-and-drop with floating ghost + glowing snap rails, live dotted path preview, and keyboard shortcuts (`Space`, `S`, `R`, `Ctrl+Z`).
 - **🌌 7 Progressive Worlds · 42 Mathematically Proven Levels (⭐ 126 Stars):**
@@ -56,8 +58,12 @@ An open-source **educational space coding puzzle game** built to teach young lea
   5. 🌌 **Engineer Nebula** — 3 interactive **"🐛 Bug Hunt!"** debugging puzzles & Grand Finale
   6. 🌀 **Wormhole Dimension (Bonus)** — 6 multi-portal chain levels (`1`–`4` portal pairs) with rotating vortex & quantum warp beam FX!
   7. ❄️ **Frozen Planet (Bonus)** — 6 slippery ice-slide & pushable energy-crate physics puzzles!
-- **🔥 Daily Space Mission & Streak + 🏆 13 Space Medals:**
-  - Deterministic daily puzzle generator (100 consecutive days mathematically proven `3★`) with **Daily Streak 🔥** tracking, plus **13 unlockable Space Medals** (including **🧪 AAA Game Engineer**) with animated videogame unlock toasts and fanfare!
+- **🕹️ Endless Arcade Mode + 👻 Holographic Ghost Replay (`?ghost=`) + 🪪 Exportable PNG Passport:**
+  - Infinite 3★-guaranteed escalating puzzles with **3 Shields ❤️❤️❤️** and **×1→×5 Combos**; race your own translucent cyan **Ghost Replay** (or share `?custom=...&ghost=...` block-count challenges in 1 click); and export a **900×520 Space Engineer Passport PNG** client-side!
+- **☁️ Pilot Center (XP `Lv.1–25` · 6 Space Quests · 🏆 Global Top 20 Ranking · History · Google Cloud Sync):**
+  - Earn Space XP & Level-Up toasts across 6 live quests, track your last 50 wins in the Flight Logbook, export/restore portable `.json` backups, or sign in with **Google (Firebase Auth + Firestore)** for conflict-free cross-device cloud sync and the kid-safe **Global Galaxy Hall of Fame**!
+- **🔥 Daily Space Mission & Streak + 🏆 15 Space Medals:**
+  - Deterministic daily puzzle generator (100 consecutive days mathematically proven `3★`) with **Daily Streak 🔥** tracking, plus **15 unlockable Space Medals** (including **❄️ Glacial Master**, **🕹️ Arcade Ace**, and **🧪 AAA Game Engineer**) with animated videogame unlock toasts and fanfare!
 - **🧪 AAA Game Engineering Lab (7 Interactive 60fps Simulators):**
   - Hands-on visual playground teaching how blockbuster games run inside strict **Memory, CPU/GPU, and Energy** budgets — with a live **FPS Profiler Sparkline**, **ON/OFF optimization toggle**, and **Quick-Challenge Quizzes**:
     1. 🔦 **Frustum & Occlusion Culling**
@@ -68,13 +74,13 @@ An open-source **educational space coding puzzle game** built to teach young lea
     6. ✨ **Ray Tracing & BVH Acceleration**
     7. 🤖 **AI Temporal Upscaling (DLSS / FSR / PSSR Split-Screen)**
 - **🎵 Interactive Procedural Space Soundtrack (Web Audio API):**
-  - 6 unique planet themes synthesized in real time (zero audio files!) that dynamically accelerate BPM in **Turbo** mode and pulse during execution, with independent **🎵 Music** and **🔊 SFX** toggles.
+  - 7 unique planet themes synthesized in real time (zero audio files!) plus cinematic SFX (ice glide, battery curling, thermal re-entry, new record) that dynamically accelerate BPM in **Turbo** mode.
 - **👀 Visual Step-by-Step Debugger & Live JS / Python Code Peek:**
   - Step one piece at a time (`⏭️`), see the exact piece causing a bump, and watch your puzzle transpile line-by-line into real **JavaScript** or **Python**.
 - **🛠️ Creative Level Workshop (`?custom=...`):**
-  - Paint custom space puzzles with click or touch-drag (including all 4 portal pairs and 4 starter templates), test immediately, save a local family library, and share playable links via compact URL-safe Base64 — **zero backend required**!
-- **🎨 Robot Garage:**
-  - Unlock **7 animated robot skins** (from *Explorador Azul* to *Engenheiro Estelar* at `45★` and *🌀 AstroQuântico* at `75★`) with a live star progress bar.
+  - Paint custom space puzzles with click or touch-drag (including all 4 portal pairs, ice, energy crates, and 5 starter templates), test immediately, save a local family library, and share playable links via compact URL-safe Base64!
+- **🎨 Robot Garage (8 Skins + 5 Collectible Companion Drones):**
+  - Unlock **8 animated robot skins** (up to *🌀 AstroQuântico* `75★` and *❄️ AstroGlacial* `95★`) plus **5 floating Companion Drones** (`✨ Spark`, `🐱 Nebula Cat`, `🛸 Mini Probe`, `🦉 Comet Owl`, `🦊 Quantum Fox`) unlocked via Space Medals!
 
 ---
 

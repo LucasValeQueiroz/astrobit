@@ -3588,3 +3588,26 @@ button {
     gap: 4px;
   }
 }
+
+/* Ranking Toolbar & Mobile Modal Grid Refinements */
+.ranking-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+@media (max-width: 600px) {
+  .modal-head {
+    gap: 8px;
+  }
+
+  .badges-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .skin-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

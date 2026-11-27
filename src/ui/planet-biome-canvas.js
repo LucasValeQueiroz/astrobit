@@ -275,6 +275,9 @@ export class PlanetBiomeRenderer {
         case 'frozen-aurora':
           this._drawFrozenAurora(ctx, w, h, t, dt);
           break;
+        case 'cosmic-twins':
+          this._drawCosmicTwins(ctx, w, h, t);
+          break;
         default:
           this._drawEarthOrbit(ctx, w, h, t);
       }
@@ -536,6 +539,44 @@ export class PlanetBiomeRenderer {
       f.x = (f.x + f.vx * dt + 1) % 1;
       ctx.beginPath();
       ctx.arc(f.x * w, f.y * h, f.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  _drawCosmicTwins(ctx, w, h, t) {
+    // Binary twin stars orbiting each other with interlocking cyan/magenta signal rings
+    const cx = w * 0.5;
+    const cy = h * 0.52;
+    const orbitRx = w * 0.24;
+    const orbitRy = h * 0.24;
+    const a1 = t * 0.75;
+    const a2 = a1 + Math.PI;
+
+    ctx.save();
+    ctx.strokeStyle = 'rgba(244, 114, 182, 0.24)';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([8, 6]);
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, orbitRx, orbitRy, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    const stars = [
+      { x: cx + Math.cos(a1) * orbitRx, y: cy + Math.sin(a1) * orbitRy, col: '#38bdf8', glow: 'rgba(56,189,248,0.4)' },
+      { x: cx + Math.cos(a2) * orbitRx, y: cy + Math.sin(a2) * orbitRy, col: '#f472b6', glow: 'rgba(244,114,182,0.4)' },
+    ];
+    for (const s of stars) {
+      const g = ctx.createRadialGradient(s.x, s.y, 4, s.x, s.y, 58);
+      g.addColorStop(0, s.glow);
+      g.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, 58, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = s.col;
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, 12, 0, Math.PI * 2);
       ctx.fill();
     }
     ctx.restore();

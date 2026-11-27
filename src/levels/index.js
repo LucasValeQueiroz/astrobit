@@ -9,6 +9,7 @@ import { WORLD_4_LEVELS } from './world4-funcoes.js?v=4.0';
 import { WORLD_5_LEVELS } from './world5-desafios.js?v=4.0';
 import { WORLD_6_LEVELS } from './world6-portais.js?v=5.0';
 import { WORLD_7_LEVELS } from './world7-gelo.js?v=5.5';
+import { WORLD_8_LEVELS } from './world8-gemeos.js?v=7.6';
 
 export const CAMPAIGN_WORLDS = [
   {
@@ -73,6 +74,15 @@ export const CAMPAIGN_WORLDS = [
     conceptPt: 'Física Polar · Gelo & Baterias',
     conceptEn: 'Polar Physics · Ice & Energy Crates',
     levels: WORLD_7_LEVELS,
+  },
+  {
+    world: 8,
+    icon: '🤝',
+    namePt: 'Gêmeos Cósmicos',
+    nameEn: 'Cosmic Twins',
+    conceptPt: 'Paralelismo · 2 Robôs & Sinais',
+    conceptEn: 'Parallelism · 2 Robots & Signals',
+    levels: WORLD_8_LEVELS,
   },
 ];
 

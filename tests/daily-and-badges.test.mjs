@@ -35,7 +35,7 @@ test('computeDailyStreak tracks consecutive days and resets on gaps', () => {
 });
 
 test('evaluateBadges unlocks space medals accurately and avoids duplicates', () => {
-  assert.equal(SPACE_BADGES.length, 15);
+  assert.equal(SPACE_BADGES.length, 16);
   let progress = createDefaultProgress();
   progress.starsByLevel = { 'w1-1': 3, 'w5-6': 3 };
   progress.dailyCompletedDates = ['2026-11-20'];

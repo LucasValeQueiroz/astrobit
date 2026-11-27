@@ -8,8 +8,8 @@ import {
   computeOrbitalTransitionState,
 } from '../src/story/planet-biomes.js';
 
-test('all 7 planets have unique biome kinds and 6 named bilingual regions (42 total hubs)', () => {
-  const worlds = [1, 2, 3, 4, 5, 6, 7];
+test('all 8 planets have unique biome kinds and 6 named bilingual regions (48 total hubs)', () => {
+  const worlds = [1, 2, 3, 4, 5, 6, 7, 8];
   const kinds = new Set();
   let totalRegions = 0;
 
@@ -24,7 +24,7 @@ test('all 7 planets have unique biome kinds and 6 named bilingual regions (42 to
       totalRegions += 1;
     }
   }
-  assert.equal(totalRegions, 42);
+  assert.equal(totalRegions, 48);
   assert.equal(PLANET_BIOMES[1].regions[0].shortPt, 'Brasil');
   assert.equal(PLANET_BIOMES[1].regions[1].shortPt, 'EUA');
   assert.equal(PLANET_BIOMES[1].regions[2].shortPt, 'Europa');

@@ -5,13 +5,14 @@
  */
 
 export const GALAXY_PLANETS = [
-  { world: 1, x: 0.12, y: 0.62, r: 16, icon: '🌙', color: '#38bdf8', dark: '#1d4ed8', ring: '#7dd3fc' },
-  { world: 2, x: 0.25, y: 0.36, r: 17, icon: '⚙️', color: '#fbbf24', dark: '#92400e', ring: '#fde047' },
-  { world: 3, x: 0.39, y: 0.66, r: 16, icon: '⚡', color: '#f472b6', dark: '#831843', ring: '#fbcfe8' },
-  { world: 4, x: 0.53, y: 0.34, r: 17, icon: '🛰️', color: '#34d399', dark: '#065f46', ring: '#a7f3d0' },
-  { world: 5, x: 0.67, y: 0.64, r: 19, icon: '🌌', color: '#c084fc', dark: '#4c1d95', ring: '#facc15' },
-  { world: 6, x: 0.79, y: 0.32, r: 17, icon: '🌀', color: '#e879f9', dark: '#581c87', ring: '#38bdf8' },
-  { world: 7, x: 0.90, y: 0.60, r: 18, icon: '🧊', color: '#7dd3fc', dark: '#0369a1', ring: '#e0f2fe' },
+  { world: 1, x: 0.09, y: 0.62, r: 15, icon: '🌙', color: '#38bdf8', dark: '#1d4ed8', ring: '#7dd3fc' },
+  { world: 2, x: 0.21, y: 0.36, r: 16, icon: '⚙️', color: '#fbbf24', dark: '#92400e', ring: '#fde047' },
+  { world: 3, x: 0.33, y: 0.66, r: 15, icon: '⚡', color: '#f472b6', dark: '#831843', ring: '#fbcfe8' },
+  { world: 4, x: 0.45, y: 0.34, r: 16, icon: '🛰️', color: '#34d399', dark: '#065f46', ring: '#a7f3d0' },
+  { world: 5, x: 0.57, y: 0.64, r: 18, icon: '🌌', color: '#c084fc', dark: '#4c1d95', ring: '#facc15' },
+  { world: 6, x: 0.69, y: 0.32, r: 16, icon: '🌀', color: '#e879f9', dark: '#581c87', ring: '#38bdf8' },
+  { world: 7, x: 0.81, y: 0.62, r: 17, icon: '🧊', color: '#7dd3fc', dark: '#0369a1', ring: '#e0f2fe' },
+  { world: 8, x: 0.92, y: 0.36, r: 17, icon: '🤝', color: '#f472b6', dark: '#701a75', ring: '#38bdf8' },
 ];
 
 export function getGalaxyPlanet(worldNumber = 1) {

@@ -77,6 +77,16 @@ export function transpileProgram(program, { lang = 'js' } = {}) {
 
       if (JS_SIMPLE[block.type]) {
         pushLine(`${pad}${isPy ? PY_SIMPLE[block.type] : JS_SIMPLE[block.type]}`, id);
+      } else if (block.type === 'wait') {
+        const ch = block.channel ? String(block.channel) : '';
+        const stmt = isPy
+          ? ch
+            ? `robot.wait_for_signal('${ch}')`
+            : 'robot.wait()'
+          : ch
+            ? `await robot.waitForSignal('${ch}');`
+            : 'await robot.wait();';
+        pushLine(`${pad}${stmt}`, id);
       } else if (block.type === 'repeat') {
         const times = Math.max(0, Math.min(99, Math.floor(Number(block.times) || 0)));
         if (isPy) {

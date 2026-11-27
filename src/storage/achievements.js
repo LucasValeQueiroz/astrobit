@@ -126,6 +126,14 @@ export const SPACE_BADGES = [
     descPt: 'Alcance a Fase 3+ ou 1.000 pontos no Modo Arcade Infinito',
     descEn: 'Reach Stage 3+ or 1,000 points in Endless Arcade Mode',
   },
+  {
+    id: 'twin-sync',
+    icon: '🤝',
+    namePt: 'Sincronia Perfeita',
+    nameEn: 'Perfect Sync',
+    descPt: 'Domine o Mundo 8: Gêmeos Cósmicos (Fase 8-6)',
+    descEn: 'Conquer World 8: Cosmic Twins (Level 8-6)',
+  },
 ];
 
 function programHasType(blocks = [], targetType) {
@@ -175,6 +183,7 @@ export function evaluateBadges(progress, context = {}) {
   if (Number(starsMap['w5-6'] || 0) > 0) grant('earth-savior');
   if (Number(starsMap['w6-6'] || 0) > 0) grant('wormhole-legend');
   if (Number(starsMap['w7-6'] || 0) > 0) grant('frost-master');
+  if (Number(starsMap['w8-6'] || 0) > 0) grant('twin-sync');
   if (Number(progress?.arcadeBestRound || 0) >= 3 || Number(progress?.arcadeBestScore || 0) >= 1000) {
     grant('arcade-ace');
   }

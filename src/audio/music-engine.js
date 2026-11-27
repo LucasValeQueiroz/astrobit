@@ -54,6 +54,13 @@ export const WORLD_THEMES = {
     notes: [659.25, 830.61, 987.77, 1318.51, 1174.66, 987.77, 830.61, 987.77],
     bass: [164.81, 0, 207.65, 0, 146.83, 0, 196.0, 0],
   },
+  // World 8: Cosmic Twins — twin-star harmonic duet (B major / F# pulse)
+  8: {
+    bpm: 128,
+    wave: 'triangle',
+    notes: [493.88, 739.99, 987.77, 739.99, 659.25, 987.77, 1174.66, 987.77],
+    bass: [123.47, 185.0, 0, 185.0, 164.81, 185.0, 0, 123.47],
+  },
 };
 
 export function getThemeForWorld(worldNumber = 1) {

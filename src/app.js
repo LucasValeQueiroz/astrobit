@@ -6,6 +6,7 @@
 
 import { createWorldState } from './engine/grid.js?v=4.0';
 import { executeProgram, countProgramBlocks, normalizeProgram } from './engine/interpreter.js?v=4.0';
+import { createTwinWorld, executeTwinProgram } from './engine/twin-engine.js?v=7.6';
 import { transpileProgram } from './engine/transpiler.js?v=4.0';
 import { decodeCustomLevel, encodeCustomLevel } from './engine/custom-level.js?v=5.8';
 import {
@@ -43,10 +44,10 @@ import {
   findTimelineDivergence,
   describeFrame,
 } from './engine/time-machine.js?v=7.4';
-import { ALL_LEVELS, CAMPAIGN_WORLDS, getLevelById, getNextLevel } from './levels/index.js?v=5.7';
-import { SpaceCanvasRenderer } from './renderer/canvas-renderer.js?v=7.4';
+import { ALL_LEVELS, CAMPAIGN_WORLDS, getLevelById, getNextLevel } from './levels/index.js?v=7.6';
+import { SpaceCanvasRenderer } from './renderer/canvas-renderer.js?v=7.6';
 import { SpaceSoundSynth } from './audio/sound-synth.js?v=7.4';
-import { SpaceMusicEngine } from './audio/music-engine.js?v=5.7';
+import { SpaceMusicEngine } from './audio/music-engine.js?v=7.6';
 import {
   loadProgress,
   saveProgress,
@@ -70,7 +71,7 @@ import {
   watchGoogleAuthSession,
 } from './storage/google-cloud-sync.js?v=7.0';
 import { buildLeaderboardEntry } from './engine/leaderboard.js?v=7.0';
-import { SPACE_BADGES, evaluateBadges } from './storage/achievements.js?v=5.7';
+import { SPACE_BADGES, evaluateBadges } from './storage/achievements.js?v=7.6';
 import {
   createBlock,
   cloneBlocks,
@@ -79,19 +80,20 @@ import {
   removeBlockById,
   updateRepeatTimes,
   updateIfSensor,
+  updateWaitChannel,
   findBlockById,
   findContainerExists,
   renderPalette,
   renderWorkspace,
-} from './ui/workspace.js?v=4.0';
+} from './ui/workspace.js?v=7.6';
 import { renderGarageModal, renderBadgesModal, renderQuestsModal } from './ui/modals.js?v=7.4';
 import { renderPassportModal } from './ui/passport-modal.js?v=6.0';
 import { renderEngineLabModal } from './ui/engine-lab.js?v=5.6';
 import { installTactilePointerDnD } from './ui/touch-dnd.js?v=5.0';
-import { renderStoryCinematic, renderWorldArrivalModal, renderGalaxyJourneyMap } from './ui/story-map.js?v=6.3';
+import { renderStoryCinematic, renderWorldArrivalModal, renderGalaxyJourneyMap } from './ui/story-map.js?v=7.6';
 import { renderWorkshopModal } from './ui/workshop.js?v=5.0';
-import { getLevelStory } from './story/campaign-story.js?v=5.0';
-import { t } from './ui/i18n.js?v=7.4';
+import { getLevelStory } from './story/campaign-story.js?v=7.6';
+import { t } from './ui/i18n.js?v=7.6';
 
 const SPEED_CONFIG = {
   slow: { ms: 540, next: 'normal', labelKey: 'speedSlow' },
@@ -113,6 +115,9 @@ const els = {
   xpMiniFill: document.getElementById('xp-mini-fill'),
   blocksCounter: document.getElementById('blocks-counter'),
   palette: document.getElementById('block-palette'),
+  twinTabsBar: document.getElementById('twin-tabs-bar'),
+  twinCountAstro: document.getElementById('twin-count-astro'),
+  twinCountByte: document.getElementById('twin-count-byte'),
   workspace: document.getElementById('block-workspace'),
   codePeekPanel: document.getElementById('code-peek-panel'),
   codePeekLines: document.getElementById('code-peek-lines'),
@@ -192,6 +197,8 @@ const state = {
   progress: loadProgress(),
   level: null,
   program: createEmptyProgram(),
+  twinPrograms: { astro: createEmptyProgram(), byte: createEmptyProgram() },
+  activeTwin: 'astro',
   undoStack: [],
   activeScope: 'main',
   activeContainerId: null,
@@ -220,6 +227,33 @@ const state = {
   timelineDivergence: -1,
   timeTraveled: false,
 };
+
+function createFreshWorld(level) {
+  return level?.isTwin ? createTwinWorld(level) : createWorldState(level);
+}
+
+function countActiveLevelBlocks() {
+  if (state.level?.isTwin) {
+    return (
+      countProgramBlocks(state.twinPrograms.astro) +
+      countProgramBlocks(state.twinPrograms.byte)
+    );
+  }
+  return countProgramBlocks(state.program);
+}
+
+function switchActiveTwin(twinId) {
+  if (!state.level?.isTwin) return;
+  const target = twinId === 'byte' ? 'byte' : 'astro';
+  if (state.activeTwin === target) return;
+  state.activeTwin = target;
+  state.program = state.twinPrograms[target];
+  state.activeScope = 'main';
+  state.activeContainerId = null;
+  state.hoveredBlockId = null;
+  synth.playClick();
+  renderEditor();
+}
 
 function lang() {
   return state.progress.lang || 'pt';
@@ -323,7 +357,7 @@ function updateTopbar() {
 }
 
 function refreshPreviewPath() {
-  if (!state.level || state.isRunning || state.traceRun) {
+  if (!state.level || state.level.isTwin || state.isRunning || state.traceRun) {
     renderer.setPreviewPath([], null);
     return;
   }
@@ -460,7 +494,7 @@ function renderGuidedTutorial() {
 }
 
 function refreshAaaWayfinder(tutorialStep = null) {
-  if (!state.level) {
+  if (!state.level || state.level.isTwin) {
     renderer.setWayfinder(null);
     return;
   }
@@ -487,11 +521,26 @@ function renderEditor() {
     state.activeContainerId = null;
   }
 
-  const used = countProgramBlocks(state.program);
+  const used = countActiveLevelBlocks();
   els.blocksCounter.textContent = t(lang(), 'blocksCounter', {
     used,
     par: state.level.starThresholds.parBlocks,
   });
+  if (els.twinTabsBar) {
+    const isTwin = Boolean(state.level.isTwin);
+    els.twinTabsBar.classList.toggle('hidden', !isTwin);
+    if (isTwin) {
+      if (els.twinCountAstro) {
+        els.twinCountAstro.textContent = String(countProgramBlocks(state.twinPrograms.astro));
+      }
+      if (els.twinCountByte) {
+        els.twinCountByte.textContent = String(countProgramBlocks(state.twinPrograms.byte));
+      }
+      els.twinTabsBar.querySelectorAll('.twin-tab').forEach((btn) => {
+        btn.classList.toggle('active', btn.dataset.twin === state.activeTwin);
+      });
+    }
+  }
   els.btnUndo.disabled = state.undoStack.length === 0;
 
   renderPalette(els.palette, state.level.allowedBlocks, {
@@ -563,6 +612,13 @@ function renderEditor() {
       synth.playClick();
       afterProgramMutated(null, null);
     },
+    onChangeWaitChannel: (scope, id) => {
+      if (state.isRunning) stopExecution(true);
+      pushUndo();
+      setScopeList(state.program, scope, updateWaitChannel(getScopeList(state.program, scope), id));
+      synth.playClick();
+      afterProgramMutated(null, null);
+    },
     onDropNewFromPalette: handleDropNewFromPalette,
     onDropExisting: handleDropExisting,
     onHoverBlock: (blockId) => {
@@ -583,7 +639,16 @@ function renderEditor() {
 }
 
 function pushUndo() {
-  state.undoStack.push(cloneProgram(state.program));
+  if (state.level?.isTwin) {
+    state.undoStack.push({
+      isTwin: true,
+      activeTwin: state.activeTwin,
+      astro: cloneProgram(state.twinPrograms.astro),
+      byte: cloneProgram(state.twinPrograms.byte),
+    });
+  } else {
+    state.undoStack.push(cloneProgram(state.program));
+  }
   if (state.undoStack.length > 30) state.undoStack.shift();
 }
 
@@ -640,7 +705,7 @@ function resetBoardOnly(resetMessage = true) {
   state.ghostStep = 0;
   els.winOverlay.classList.add('hidden');
   if (state.level) {
-    const fresh = createWorldState(state.level);
+    const fresh = createFreshWorld(state.level);
     renderer.setWorld(fresh, state.level.world);
     updateGhostUi();
     updateCrystalsHud(fresh.crystals.size, fresh.totalCrystals);
@@ -727,7 +792,9 @@ function loadCustomLevel(customLevel) {
   stopExecution(true);
   clearTimelines();
   state.level = customLevel;
-  state.program = createEmptyProgram();
+  state.twinPrograms = { astro: createEmptyProgram(), byte: createEmptyProgram() };
+  state.activeTwin = 'astro';
+  state.program = state.level.isTwin ? state.twinPrograms.astro : createEmptyProgram();
   state.undoStack = [];
   state.activeScope = 'main';
   state.activeContainerId = null;
@@ -737,7 +804,7 @@ function loadCustomLevel(customLevel) {
   state.traceIndex = 0;
   els.winOverlay.classList.add('hidden');
 
-  const fresh = createWorldState(state.level);
+  const fresh = createFreshWorld(state.level);
   renderer.setSkin(state.progress.skinId);
   renderer.setDrone(state.progress.droneId);
   renderer.setWorld(fresh, state.level.world);
@@ -763,9 +830,15 @@ function loadLevel(levelId, { showArrivalIfNew = false } = {}) {
   state.progress.currentLevelId = state.level.id;
   saveProgress(state.progress);
 
-  state.program = state.level.starterProgram
-    ? cloneProgram(normalizeProgram(state.level.starterProgram))
-    : createEmptyProgram();
+  state.twinPrograms = { astro: createEmptyProgram(), byte: createEmptyProgram() };
+  state.activeTwin = 'astro';
+  if (state.level.isTwin) {
+    state.program = state.twinPrograms.astro;
+  } else {
+    state.program = state.level.starterProgram
+      ? cloneProgram(normalizeProgram(state.level.starterProgram))
+      : createEmptyProgram();
+  }
   state.undoStack = [];
   state.activeScope = 'main';
   state.activeContainerId = null;
@@ -776,7 +849,7 @@ function loadLevel(levelId, { showArrivalIfNew = false } = {}) {
   state.ghostStep = 0;
   els.winOverlay.classList.add('hidden');
 
-  const fresh = createWorldState(state.level);
+  const fresh = createFreshWorld(state.level);
   renderer.setSkin(state.progress.skinId);
   renderer.setDrone(state.progress.droneId);
   renderer.setWorld(fresh, state.level.world);
@@ -1131,9 +1204,16 @@ function finishTrace(run) {
     showWinOverlay(run);
   } else {
     if (run.status === 'failed') {
+      if (state.level?.isTwin && run.failedRobot && run.failedRobot !== state.activeTwin) {
+        state.activeTwin = run.failedRobot;
+        state.program = state.twinPrograms[run.failedRobot];
+      }
       state.failedBlockId = run.failedBlockId;
       const key = `feedback.${run.failureReason || 'hit_wall'}`;
       setMascotSay(t(lang(), key), 'warn');
+    } else if (run.status === 'deadlock') {
+      state.failedBlockId = run.failedBlockId;
+      setMascotSay(t(lang(), 'feedback.deadlock'), 'warn');
     } else if (run.status === 'infinite_loop') {
       state.failedBlockId = run.failedBlockId;
       setMascotSay(t(lang(), 'feedback.infinite_loop'), 'warn');
@@ -1147,11 +1227,13 @@ function finishTrace(run) {
     }
 
     state.levelFailCount += 1;
-    const timeTip =
-      state.timelineDivergence >= 0
-        ? t(lang(), 'feedback.timelineChanged', { step: state.timelineDivergence })
-        : t(lang(), 'feedback.timeTravelHint');
-    setMascotSay(`${els.mascotBubble.textContent} ${timeTip}`, 'warn');
+    if (state.timeline) {
+      const timeTip =
+        state.timelineDivergence >= 0
+          ? t(lang(), 'feedback.timelineChanged', { step: state.timelineDivergence })
+          : t(lang(), 'feedback.timeTravelHint');
+      setMascotSay(`${els.mascotBubble.textContent} ${timeTip}`, 'warn');
+    }
     if (shouldOfferSmartHint(state.levelFailCount)) {
       els.btnHint?.classList.add('hint-nudge');
     }
@@ -1213,30 +1295,40 @@ function applyNextTraceEvent() {
 }
 
 function prepareTrace() {
-  if (state.program.main.length === 0) {
+  const isTwin = Boolean(state.level?.isTwin);
+  const hasAnyBlocks = isTwin
+    ? state.twinPrograms.astro.main.length > 0 || state.twinPrograms.byte.main.length > 0
+    : state.program.main.length > 0;
+  if (!hasAnyBlocks) {
     setMascotSay(t(lang(), 'feedback.empty_program'), 'warn');
     synth.playBump();
     return false;
   }
-  const fresh = createWorldState(state.level);
+  const fresh = createFreshWorld(state.level);
   renderer.setWorld(fresh, state.level.world);
   renderer.setPreviewPath([], null);
   updateCrystalsHud(fresh.crystals.size, fresh.totalCrystals);
   els.winOverlay.classList.add('hidden');
 
-  state.traceRun = executeProgram(state.level, state.program);
+  state.traceRun = isTwin
+    ? executeTwinProgram(state.level, state.twinPrograms)
+    : executeProgram(state.level, state.program);
   state.traceIndex = 0;
   state.crystalStreak = 0;
   state.runningBlockId = null;
   state.failedBlockId = null;
-  if (state.timeline && state.timeline.lastIndex > 0) {
-    state.prevTimeline = state.timeline;
+  if (isTwin) {
+    clearTimelines();
+  } else {
+    if (state.timeline && state.timeline.lastIndex > 0) {
+      state.prevTimeline = state.timeline;
+    }
+    state.timeline = buildTimeline(state.level, state.traceRun);
+    state.timelineDivergence = sameLevelTimeline(state.prevTimeline)
+      ? findTimelineDivergence(state.prevTimeline, state.timeline)
+      : -1;
+    syncTimelineToTrace();
   }
-  state.timeline = buildTimeline(state.level, state.traceRun);
-  state.timelineDivergence = sameLevelTimeline(state.prevTimeline)
-    ? findTimelineDivergence(state.prevTimeline, state.timeline)
-    : -1;
-  syncTimelineToTrace();
   return true;
 }
 
@@ -1397,11 +1489,32 @@ els.btnHint.addEventListener('click', () => {
   if (!state.level) return;
   state.hintTier = state.hintTier >= 2 ? 2 : state.hintTier + 1;
   els.btnHint?.classList.remove('hint-nudge');
+  if (state.level.isTwin) {
+    const solList = state.level.referenceSolution?.[state.activeTwin] || [];
+    const curLen = state.program.main.length;
+    const nextBlk = solList[Math.min(curLen, Math.max(0, solList.length - 1))];
+    state.hintBlockType = nextBlk?.type || null;
+    const robotName = state.activeTwin === 'byte' ? '🩷 AstroByte' : '🤖 AstroBit';
+    const msg =
+      lang() === 'en'
+        ? `💡 Hint for ${robotName}: try snapping the glowing golden piece!`
+        : `💡 Dica para ${robotName}: tente encaixar a peça que está brilhando em dourado!`;
+    synth.playClick();
+    setMascotSay(msg, 'good');
+    renderEditor();
+    return;
+  }
   const hint = computeProgressiveHint(state.level, state.program, state.hintTier, lang());
   state.hintBlockType = hint.highlightBlockType;
   synth.playClick();
   setMascotSay(hint.message, 'good');
   renderEditor();
+});
+
+els.twinTabsBar?.addEventListener('click', (event) => {
+  const btn = event.target.closest('.twin-tab');
+  if (!btn) return;
+  switchActiveTwin(btn.dataset.twin);
 });
 
 els.btnTutorialDismiss?.addEventListener('click', () => {
@@ -1512,7 +1625,14 @@ els.btnMusic?.addEventListener('click', () => {
 els.btnUndo.addEventListener('click', () => {
   if (state.undoStack.length === 0) return;
   if (state.isRunning) stopExecution(true);
-  state.program = state.undoStack.pop();
+  const snap = state.undoStack.pop();
+  if (snap?.isTwin && state.level?.isTwin) {
+    state.twinPrograms = { astro: snap.astro, byte: snap.byte };
+    state.activeTwin = snap.activeTwin || 'astro';
+    state.program = state.twinPrograms[state.activeTwin];
+  } else {
+    state.program = snap;
+  }
   synth.playRemove();
   afterProgramMutated(null, null);
 });
@@ -1521,7 +1641,12 @@ els.btnClear.addEventListener('click', () => {
   if (countProgramBlocks(state.program) === 0) return;
   if (state.isRunning) stopExecution(true);
   pushUndo();
-  state.program = createEmptyProgram();
+  if (state.level?.isTwin) {
+    state.twinPrograms[state.activeTwin] = createEmptyProgram();
+    state.program = state.twinPrograms[state.activeTwin];
+  } else {
+    state.program = createEmptyProgram();
+  }
   state.activeScope = 'main';
   state.activeContainerId = null;
   synth.playRemove();

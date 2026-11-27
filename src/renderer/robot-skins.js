@@ -186,6 +186,18 @@ export const WORLD_PALETTES = {
     crystal: '#67e8f9',
     crystalGlow: '#e0f2fe',
   },
+  8: {
+    namePt: 'Gêmeos Cósmicos',
+    nameEn: 'Cosmic Twins',
+    bgTop: '#130724',
+    bgBottom: '#2b0f47',
+    floor: '#29164a',
+    floorBorder: '#f472b6',
+    wall: '#432666',
+    wallTop: '#6d3fa3',
+    crystal: '#38bdf8',
+    crystalGlow: '#f9a8d4',
+  },
 };
 
 export const CHANNEL_COLORS = {

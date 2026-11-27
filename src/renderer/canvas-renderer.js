@@ -68,6 +68,15 @@ export class SpaceCanvasRenderer {
     this.targetY = 0;
     this.targetAngle = 0;
 
+    // Interpolated Cosmic Twin (AstroByte) visual state for World 8
+    this.hasTwin = false;
+    this.byteRenderX = 0;
+    this.byteRenderY = 0;
+    this.byteRenderAngle = 0;
+    this.byteTargetX = 0;
+    this.byteTargetY = 0;
+    this.byteTargetAngle = 0;
+
     // Holographic Ghost Replay visual state
     this.ghostPose = null;
     this.ghostRenderX = 0;
@@ -204,6 +213,19 @@ export class SpaceCanvasRenderer {
       this.renderAngle = ang;
       this.targetAngle = ang;
     }
+    if (worldState?.robots?.byte) {
+      this.hasTwin = true;
+      const b = worldState.robots.byte;
+      this.byteRenderX = b.x;
+      this.byteRenderY = b.y;
+      this.byteTargetX = b.x;
+      this.byteTargetY = b.y;
+      const bAng = DIR_ANGLES[b.dir] ?? 0;
+      this.byteRenderAngle = bAng;
+      this.byteTargetAngle = bAng;
+    } else {
+      this.hasTwin = false;
+    }
     this._recomputeLayout();
   }
 
@@ -212,17 +234,33 @@ export class SpaceCanvasRenderer {
    */
   applyTraceEvent(event) {
     if (!this.worldState || !event) return;
-    this.worldState.robot.x = event.x;
-    this.worldState.robot.y = event.y;
-    this.worldState.robot.dir = event.dir;
+    if (event.astro && event.byte) {
+      this.hasTwin = true;
+      this.worldState.robot.x = event.astro.x;
+      this.worldState.robot.y = event.astro.y;
+      this.worldState.robot.dir = event.astro.dir;
+      if (this.worldState.robots) {
+        this.worldState.robots.astro = { ...event.astro };
+        this.worldState.robots.byte = { ...event.byte };
+      }
+      this.targetX = event.astro.x;
+      this.targetY = event.astro.y;
+      this.targetAngle = DIR_ANGLES[event.astro.dir] ?? 0;
+      this.byteTargetX = event.byte.x;
+      this.byteTargetY = event.byte.y;
+      this.byteTargetAngle = DIR_ANGLES[event.byte.dir] ?? 0;
+    } else {
+      this.worldState.robot.x = event.x;
+      this.worldState.robot.y = event.y;
+      this.worldState.robot.dir = event.dir;
+      this.targetX = event.x;
+      this.targetY = event.y;
+      this.targetAngle = DIR_ANGLES[event.dir] ?? 0;
+    }
     this.worldState.channels = { ...event.channels };
     if (Array.isArray(event.crates)) {
       this.worldState.crates = new Set(event.crates);
     }
-
-    this.targetX = event.x;
-    this.targetY = event.y;
-    this.targetAngle = DIR_ANGLES[event.dir] ?? 0;
 
     const px = this.tileCenterX(event.x);
     const py = this.tileCenterY(event.y);
@@ -268,6 +306,19 @@ export class SpaceCanvasRenderer {
       this.trauma = Math.min(1, this.trauma + 0.65);
       this.particles.emitBump(px, py);
       this.spawnPopup(event.x, event.y, 'BOING!', '#fb923c');
+    } else if (event.type === 'wait_start') {
+      this.mood = 'thinking';
+      this.spawnPopup(event.x, event.y, `⏳ ${event.channel}`, CHANNEL_COLORS[event.channel] || '#facc15');
+    } else if (event.type === 'wait_done') {
+      this.mood = 'excited';
+      this.spawnPopup(event.x, event.y, `✅ ${event.channel}!`, CHANNEL_COLORS[event.channel] || '#34d399');
+    } else if (event.type === 'wait') {
+      this.spawnPopup(event.x, event.y, '⏳', '#cbd5e1');
+    } else if (event.type === 'deadlock') {
+      this.mood = 'oops';
+      this.bumpTimer = 0.5;
+      this.trauma = Math.min(1, this.trauma + 0.5);
+      this.spawnPopup(event.x, event.y, '🔒 DEADLOCK', '#fb7185');
     } else if (event.type === 'sensor_check') {
       this.mood = 'thinking';
     } else if (event.type === 'win') {
@@ -348,6 +399,11 @@ export class SpaceCanvasRenderer {
     this.renderX += (this.targetX - this.renderX) * smooth;
     this.renderY += (this.targetY - this.renderY) * smooth;
     this.renderAngle = shortestAngleLerp(this.renderAngle, this.targetAngle, smooth);
+    if (this.hasTwin) {
+      this.byteRenderX += (this.byteTargetX - this.byteRenderX) * smooth;
+      this.byteRenderY += (this.byteTargetY - this.byteRenderY) * smooth;
+      this.byteRenderAngle = shortestAngleLerp(this.byteRenderAngle, this.byteTargetAngle, smooth);
+    }
     if (this.ghostPose) {
       this.ghostRenderX += (this.ghostPose.x - this.ghostRenderX) * smooth;
       this.ghostRenderY += (this.ghostPose.y - this.ghostRenderY) * smooth;
@@ -437,8 +493,11 @@ export class SpaceCanvasRenderer {
       this._drawGhostRobot(ctx, ts);
     }
 
-    // 3. Expressive AstroBit Robot + Floating Companion Drone
+    // 3. Expressive AstroBit Robot (+ Cosmic Twin AstroByte on World 8) + Floating Companion Drone
     this._drawRobot(ctx, ts);
+    if (this.hasTwin) {
+      this._drawTwinByte(ctx, ts);
+    }
     this._drawCompanionDrone(ctx, ts);
 
     // 3.5 Quantum warp beam flash when teleporting through portals
@@ -1158,6 +1217,110 @@ export class SpaceCanvasRenderer {
         ctx.fill();
       }
     }
+
+    ctx.restore();
+  }
+
+  _drawTwinByte(ctx, ts) {
+    const cx = this.tileCenterX(this.byteRenderX);
+    const cy = this.tileCenterY(this.byteRenderY);
+    const bob = Math.sin(this._elapsed * 4.4 + 1.2) * 2.2;
+    const dance = this.winDanceTimer > 0 ? -Math.abs(Math.sin(this._elapsed * 11 + 0.8)) * 16 : 0;
+    const wobble = this.bumpTimer > 0 ? Math.sin(this._elapsed * 50) * 5 : 0;
+    const r = ts * 0.34;
+
+    ctx.save();
+    ctx.translate(cx + wobble, cy + bob + dance);
+
+    // Directional heading arrow
+    const arrowDist = r * 1.32;
+    const ax = Math.cos(this.byteRenderAngle) * arrowDist;
+    const ay = Math.sin(this.byteRenderAngle) * arrowDist;
+    ctx.save();
+    ctx.translate(ax, ay);
+    ctx.rotate(this.byteRenderAngle);
+    ctx.fillStyle = '#fde047';
+    ctx.beginPath();
+    ctx.moveTo(7, 0);
+    ctx.lineTo(-4, -5.5);
+    ctx.lineTo(-4, 5.5);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+
+    // Soft shadow
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.28)';
+    ctx.beginPath();
+    ctx.ellipse(0, r * 0.95 - bob * 0.5, r * 0.72, r * 0.24, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Dual cute twin antennas
+    for (const sx of [-r * 0.3, r * 0.3]) {
+      ctx.strokeStyle = '#fbcfe8';
+      ctx.lineWidth = 2.4;
+      ctx.beginPath();
+      ctx.moveTo(sx, -r * 0.72);
+      ctx.lineTo(sx, -r * 1.08);
+      ctx.stroke();
+      ctx.fillStyle = '#fde047';
+      ctx.beginPath();
+      ctx.arc(sx, -r * 1.12, 3.6, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Rounded magenta chassis
+    roundRectPath(ctx, -r * 0.85, -r * 0.8, r * 1.7, r * 1.6, r * 0.48);
+    ctx.fillStyle = '#f472b6';
+    ctx.fill();
+    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = '#be185d';
+    ctx.stroke();
+
+    // Visor
+    const lookX = Math.cos(this.byteRenderAngle) * (r * 0.18);
+    const lookY = Math.sin(this.byteRenderAngle) * (r * 0.14);
+    roundRectPath(ctx, -r * 0.58 + lookX, -r * 0.42 + lookY, r * 1.16, r * 0.74, r * 0.28);
+    ctx.fillStyle = '#1e1b4b';
+    ctx.fill();
+
+    // Glowing yellow eyes
+    const leftEyeX = -r * 0.24 + lookX;
+    const rightEyeX = r * 0.24 + lookX;
+    const eyeY = -r * 0.05 + lookY;
+    ctx.fillStyle = '#fde047';
+    ctx.strokeStyle = '#fde047';
+    ctx.lineWidth = 2.2;
+    if (this.mood === 'oops') {
+      for (const ex of [leftEyeX, rightEyeX]) {
+        ctx.beginPath();
+        ctx.moveTo(ex - 4, eyeY - 4);
+        ctx.lineTo(ex + 4, eyeY + 4);
+        ctx.moveTo(ex + 4, eyeY - 4);
+        ctx.lineTo(ex - 4, eyeY + 4);
+        ctx.stroke();
+      }
+    } else if (this.mood === 'excited') {
+      for (const ex of [leftEyeX, rightEyeX]) {
+        ctx.beginPath();
+        ctx.arc(ex, eyeY + 2, 4.5, Math.PI, 0);
+        ctx.stroke();
+      }
+    } else {
+      const blink = Math.sin(this._elapsed * 1.9 + 1.1) > 0.97;
+      const eyH = blink ? 1.2 : 4.2;
+      for (const ex of [leftEyeX, rightEyeX]) {
+        ctx.beginPath();
+        ctx.ellipse(ex, eyeY, 3.8, eyH, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    // Tiny 'B' badge on chest so kids distinguish AstroByte immediately
+    ctx.fillStyle = '#fdf2f8';
+    ctx.font = `900 ${Math.max(9, Math.round(r * 0.44))}px system-ui, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('B', 0, r * 0.54);
 
     ctx.restore();
   }

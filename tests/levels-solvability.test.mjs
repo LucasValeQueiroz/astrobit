@@ -2,10 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { ALL_LEVELS, CAMPAIGN_WORLDS } from '../src/levels/index.js';
 import { validateLevel } from '../src/engine/validator.js';
+import { validateTwinLevel } from '../src/engine/twin-engine.js';
 
-test('every campaign level across all 7 worlds (42 levels) is valid and mathematically proven to win with 3 stars', () => {
-  assert.equal(CAMPAIGN_WORLDS.length, 7);
-  assert.equal(ALL_LEVELS.length, 42);
+test('every campaign level across all 8 worlds (48 levels) is valid and mathematically proven to win with 3 stars', () => {
+  assert.equal(CAMPAIGN_WORLDS.length, 8);
+  assert.equal(ALL_LEVELS.length, 48);
 
   const seenIds = new Set();
   let bugHuntCount = 0;
@@ -19,7 +20,7 @@ test('every campaign level across all 7 worlds (42 levels) is valid and mathemat
       bugHuntCount += 1;
     }
 
-    const report = validateLevel(level);
+    const report = level.isTwin ? validateTwinLevel(level) : validateLevel(level);
     assert.equal(
       report.valid,
       true,

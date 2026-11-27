@@ -61,6 +61,14 @@ export const SPACE_QUESTS = [
     titlePt: 'Volte no tempo com a ⏪ Máquina do Tempo',
     titleEn: 'Rewind time with the ⏪ Time Machine',
   },
+  {
+    id: 'quest-twin-sync',
+    icon: '🤝',
+    target: 1,
+    xpReward: 120,
+    titlePt: 'Vença 1 fase com os Gêmeos Cósmicos (Mundo 8)',
+    titleEn: 'Clear 1 Cosmic Twins level (World 8)',
+  },
 ];
 
 /**
@@ -161,6 +169,10 @@ export function applyGameplayRewards(progress, event = {}) {
 
     if (event.isArcade) {
       bumpQuest('quest-arcade-run', 1);
+    }
+
+    if (event.isTwin) {
+      bumpQuest('quest-twin-sync', 1);
     }
   }
 

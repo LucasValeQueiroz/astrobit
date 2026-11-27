@@ -32,9 +32,9 @@ import {
   computeProgressiveHint,
   shouldOfferSmartHint,
 } from './engine/companions-and-hints.js?v=5.9';
-import { computeGuidedTutorialStep } from './engine/guided-tutorial.js?v=6.6';
+import { computeGuidedTutorialStep } from './engine/guided-tutorial.js?v=7.9';
 import { computeLiveWayfinder } from './engine/pathfinder-coach.js?v=6.6';
-import { computeXpLevel, computeWinXp, applyGameplayRewards } from './engine/xp-and-quests.js?v=7.4';
+import { computeXpLevel, computeWinXp, applyGameplayRewards } from './engine/xp-and-quests.js?v=7.9';
 import {
   buildTimeline,
   getFrame,
@@ -1042,6 +1042,7 @@ function showWinOverlay(run) {
     baseXp,
     stars: run.stars,
     isArcade: Boolean(state.level?.isArcade),
+    isTwin: Boolean(state.level?.isTwin),
     program: state.program,
     events: run.events,
   });

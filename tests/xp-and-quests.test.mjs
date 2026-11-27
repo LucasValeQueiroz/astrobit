@@ -25,7 +25,7 @@ test('computeXpLevel scales smoothly from Lv.1 to Lv.25 with accurate percentage
 });
 
 test('applyGameplayRewards tracks quests, awards quest bonus XP, and detects Level Up', () => {
-  assert.equal(SPACE_QUESTS.length, 7);
+  assert.equal(SPACE_QUESTS.length, 8);
   const winXp = computeWinXp({ stars: 3, firstTry: true });
   assert.equal(winXp, 160);
 
@@ -51,4 +51,23 @@ test('applyGameplayRewards tracks quests, awards quest bonus XP, and detects Lev
   assert.ok(r2.newLevel >= 3);
   assert.ok(r2.completedQuests.some((q) => q.id === 'quest-loop-win'));
   assert.ok(r2.completedQuests.some((q) => q.id === 'quest-ice-physics'));
+});
+
+test('World 8 twin win and Time Machine rewind unlock their dedicated Space Quests', () => {
+  let prog = { xp: 0, questProgress: {}, completedQuests: [] };
+
+  const rew = applyGameplayRewards(prog, { type: 'time_travel' });
+  assert.ok(rew.completedQuests.some((q) => q.id === 'quest-time-travel'));
+  assert.equal(rew.xpGained, 90);
+  prog = rew.progress;
+
+  const twin = applyGameplayRewards(prog, {
+    type: 'level_win',
+    baseXp: 120,
+    stars: 3,
+    isTwin: true,
+    events: [],
+  });
+  assert.ok(twin.completedQuests.some((q) => q.id === 'quest-twin-sync'));
+  assert.equal(twin.xpGained, 240);
 });

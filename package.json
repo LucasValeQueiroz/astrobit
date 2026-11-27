@@ -1,6 +1,6 @@
 {
   "name": "astrobit",
-  "version": "2.5.0",
+  "version": "2.5.1",
   "description": "Educational space coding puzzle game teaching kids computational thinking, loops, sensors, functions, AAA game engineering, and real JS/Python code.",
   "type": "module",
   "scripts": {

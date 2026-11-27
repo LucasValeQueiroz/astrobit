@@ -1,0 +1,20 @@
+{
+  "name": "AstroBit — Jogo Espacial de Programação",
+  "short_name": "AstroBit",
+  "description": "Aprenda lógica de programação, loops, sensores, funções, Engenharia de Games AAA e código JS/Python guiando o robô AstroBit pelo espaço!",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#070b1e",
+  "theme_color": "#0b1126",
+  "orientation": "any",
+  "categories": ["education", "games", "kids"],
+  "icons": [
+    {
+      "src": "assets/icon-512.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

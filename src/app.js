@@ -1758,11 +1758,30 @@ window.addEventListener('keydown', (event) => {
   } else if (event.key.toLowerCase() === 'r' && !event.ctrlKey && !event.metaKey) {
     event.preventDefault();
     els.btnReset.click();
+  } else if (event.key.toLowerCase() === 'h' && !event.ctrlKey && !event.metaKey) {
+    event.preventDefault();
+    els.btnHint?.click();
+  } else if (event.key.toLowerCase() === 'x' && !event.ctrlKey && !event.metaKey) {
+    event.preventDefault();
+    els.btnXray?.click();
   } else if ((event.key === 'ArrowLeft' || event.key === 'ArrowRight') && state.timeline) {
     event.preventDefault();
     scrubTimeline(state.traceIndex + (event.key === 'ArrowLeft' ? -1 : 1));
   }
 });
+
+// Register Offline-First PWA Service Worker safely on HTTPS or localhost
+if (
+  typeof navigator !== 'undefined' &&
+  'serviceWorker' in navigator &&
+  (globalThis.location?.protocol === 'https:' ||
+    globalThis.location?.hostname === 'localhost' ||
+    globalThis.location?.hostname === '127.0.0.1')
+) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  });
+}
 
 // Retroactively unlock any earned Space Medals for returning players
 {

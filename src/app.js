@@ -33,10 +33,19 @@ import {
 } from './engine/companions-and-hints.js?v=5.9';
 import { computeGuidedTutorialStep } from './engine/guided-tutorial.js?v=6.6';
 import { computeLiveWayfinder } from './engine/pathfinder-coach.js?v=6.6';
-import { computeXpLevel, computeWinXp, applyGameplayRewards } from './engine/xp-and-quests.js?v=6.7';
+import { computeXpLevel, computeWinXp, applyGameplayRewards } from './engine/xp-and-quests.js?v=7.4';
+import {
+  buildTimeline,
+  getFrame,
+  getTrailUntil,
+  materializeWorldState,
+  getTimelineMarkers,
+  findTimelineDivergence,
+  describeFrame,
+} from './engine/time-machine.js?v=7.4';
 import { ALL_LEVELS, CAMPAIGN_WORLDS, getLevelById, getNextLevel } from './levels/index.js?v=5.7';
-import { SpaceCanvasRenderer } from './renderer/canvas-renderer.js?v=6.6';
-import { SpaceSoundSynth } from './audio/sound-synth.js?v=6.4';
+import { SpaceCanvasRenderer } from './renderer/canvas-renderer.js?v=7.4';
+import { SpaceSoundSynth } from './audio/sound-synth.js?v=7.4';
 import { SpaceMusicEngine } from './audio/music-engine.js?v=5.7';
 import {
   loadProgress,
@@ -75,14 +84,14 @@ import {
   renderPalette,
   renderWorkspace,
 } from './ui/workspace.js?v=4.0';
-import { renderGarageModal, renderBadgesModal, renderQuestsModal } from './ui/modals.js?v=7.3';
+import { renderGarageModal, renderBadgesModal, renderQuestsModal } from './ui/modals.js?v=7.4';
 import { renderPassportModal } from './ui/passport-modal.js?v=6.0';
 import { renderEngineLabModal } from './ui/engine-lab.js?v=5.6';
 import { installTactilePointerDnD } from './ui/touch-dnd.js?v=5.0';
 import { renderStoryCinematic, renderWorldArrivalModal, renderGalaxyJourneyMap } from './ui/story-map.js?v=6.3';
 import { renderWorkshopModal } from './ui/workshop.js?v=5.0';
 import { getLevelStory } from './story/campaign-story.js?v=5.0';
-import { t } from './ui/i18n.js?v=5.1';
+import { t } from './ui/i18n.js?v=7.4';
 
 const SPEED_CONFIG = {
   slow: { ms: 540, next: 'normal', labelKey: 'speedSlow' },
@@ -129,6 +138,12 @@ const els = {
   xrayBtnLabel: document.getElementById('xray-btn-label'),
   btnReset: document.getElementById('btn-reset'),
   btnSpeed: document.getElementById('btn-speed'),
+  tmBar: document.getElementById('time-machine-bar'),
+  tmBack: document.getElementById('tm-back'),
+  tmFwd: document.getElementById('tm-fwd'),
+  tmSlider: document.getElementById('tm-slider'),
+  tmMarkers: document.getElementById('tm-markers'),
+  tmLabel: document.getElementById('tm-label'),
   btnUndo: document.getElementById('btn-undo'),
   btnClear: document.getElementById('btn-clear'),
   btnStory: document.getElementById('btn-story'),
@@ -200,6 +215,10 @@ const state = {
   hintTier: 0,
   tutorialDismissed: false,
   xrayEnabled: false,
+  timeline: null, // ⏪ Time Machine: immutable snapshots of the current run
+  prevTimeline: null, // 🔀 Previous run, kept as an "echo" to show where history changed
+  timelineDivergence: -1,
+  timeTraveled: false,
 };
 
 function lang() {
@@ -615,6 +634,7 @@ function updateGhostUi() {
 
 function resetBoardOnly(resetMessage = true) {
   stopExecution(true);
+  archiveTimeline();
   state.traceRun = null;
   state.traceIndex = 0;
   state.ghostStep = 0;
@@ -705,6 +725,7 @@ function openWorkshop(initialDraft = null) {
 
 function loadCustomLevel(customLevel) {
   stopExecution(true);
+  clearTimelines();
   state.level = customLevel;
   state.program = createEmptyProgram();
   state.undoStack = [];
@@ -735,6 +756,7 @@ function loadCustomLevel(customLevel) {
 
 function loadLevel(levelId, { showArrivalIfNew = false } = {}) {
   stopExecution(true);
+  clearTimelines();
   state.arcadeRun = null;
   renderArcadeHud();
   state.level = getLevelById(levelId);
@@ -1125,6 +1147,11 @@ function finishTrace(run) {
     }
 
     state.levelFailCount += 1;
+    const timeTip =
+      state.timelineDivergence >= 0
+        ? t(lang(), 'feedback.timelineChanged', { step: state.timelineDivergence })
+        : t(lang(), 'feedback.timeTravelHint');
+    setMascotSay(`${els.mascotBubble.textContent} ${timeTip}`, 'warn');
     if (shouldOfferSmartHint(state.levelFailCount)) {
       els.btnHint?.classList.add('hint-nudge');
     }
@@ -1152,6 +1179,7 @@ function applyNextTraceEvent() {
   state.runningBlockId = ev.blockId;
   state.failedBlockId = ev.type === 'bump' ? ev.blockId : null;
   renderer.applyTraceEvent(ev);
+  syncTimelineToTrace();
   if (
     state.ghostEnabled &&
     (ev.type === 'move' || ev.type === 'slide' || ev.type === 'teleport' || ev.type === 'turn')
@@ -1201,7 +1229,111 @@ function prepareTrace() {
   state.crystalStreak = 0;
   state.runningBlockId = null;
   state.failedBlockId = null;
+  if (state.timeline && state.timeline.lastIndex > 0) {
+    state.prevTimeline = state.timeline;
+  }
+  state.timeline = buildTimeline(state.level, state.traceRun);
+  state.timelineDivergence = sameLevelTimeline(state.prevTimeline)
+    ? findTimelineDivergence(state.prevTimeline, state.timeline)
+    : -1;
+  syncTimelineToTrace();
   return true;
+}
+
+// ⏪ ===== Time Machine (time-travel debugger) =====
+
+function sameLevelTimeline(timeline) {
+  return Boolean(timeline && state.level && timeline.levelId === state.level.id);
+}
+
+function getEchoTrail() {
+  if (!sameLevelTimeline(state.prevTimeline)) return [];
+  return getTrailUntil(state.prevTimeline, state.prevTimeline.lastIndex);
+}
+
+function clearTimelines() {
+  state.timeline = null;
+  state.prevTimeline = null;
+  state.timelineDivergence = -1;
+  renderer.setTimeTrail([], []);
+  updateTimeMachineUi();
+}
+
+/** Moves the current timeline into the "echo" slot (called when the board resets / program changes). */
+function archiveTimeline() {
+  if (state.timeline && state.timeline.lastIndex > 0) {
+    state.prevTimeline = state.timeline;
+  }
+  state.timeline = null;
+  state.timelineDivergence = -1;
+  renderer.setTimeTrail([], getEchoTrail());
+  updateTimeMachineUi();
+}
+
+function syncTimelineToTrace() {
+  if (!state.timeline) return;
+  renderer.setTimeTrail(getTrailUntil(state.timeline, state.traceIndex), getEchoTrail());
+  updateTimeMachineUi();
+}
+
+function updateTimeMachineUi() {
+  if (!els.tmBar) return;
+  const tl = state.timeline;
+  const visible = Boolean(tl && tl.lastIndex > 0);
+  els.tmBar.classList.toggle('hidden', !visible);
+  renderer.setBottomInset(visible ? 50 : 0);
+  if (!visible) return;
+
+  const idx = Math.min(state.traceIndex, tl.lastIndex);
+  els.tmSlider.max = String(tl.lastIndex);
+  els.tmSlider.value = String(idx);
+  els.tmSlider.style.setProperty('--tm-pct', `${(idx / tl.lastIndex) * 100}%`);
+  els.tmLabel.textContent = describeFrame(getFrame(tl, idx), tl.lastIndex, lang());
+  els.tmBack.disabled = idx <= 0;
+  els.tmFwd.disabled = idx >= tl.lastIndex;
+
+  const markerKey = `${tl.levelId}:${tl.lastIndex}:${state.timelineDivergence}:${tl.frames.length}`;
+  if (els.tmMarkers.dataset.key !== markerKey) {
+    els.tmMarkers.dataset.key = markerKey;
+    const markers = getTimelineMarkers(tl).map(
+      (m) => `<span class="tm-marker tm-marker-${m.type}" style="left:${m.pct}%">${m.icon}</span>`
+    );
+    if (state.timelineDivergence > 0 && state.timelineDivergence <= tl.lastIndex) {
+      const pct = (state.timelineDivergence / tl.lastIndex) * 100;
+      markers.push(`<span class="tm-marker tm-marker-fork" style="left:${pct}%" title="🔀">🔀</span>`);
+    }
+    els.tmMarkers.innerHTML = markers.join('');
+  }
+}
+
+/** Jumps the board to any moment of the current timeline (rewind or fast-forward). */
+function scrubTimeline(targetIndex) {
+  const tl = state.timeline;
+  if (!tl || !state.level) return;
+  const frame = getFrame(tl, targetIndex);
+  const fromIndex = Math.min(state.traceIndex, tl.lastIndex);
+  if (!frame || frame.index === fromIndex) {
+    updateTimeMachineUi();
+    return;
+  }
+  if (state.isRunning) stopExecution(false);
+  els.winOverlay.classList.add('hidden');
+
+  const direction = frame.index < fromIndex ? -1 : 1;
+  state.traceIndex = frame.index;
+  state.runningBlockId = frame.blockId;
+  state.failedBlockId = frame.type === 'bump' ? frame.blockId : null;
+  renderer.showTimeFrame(materializeWorldState(state.level, frame), { direction, type: frame.type });
+  updateCrystalsHud(frame.crystals.length, renderer.worldState.totalCrystals);
+  synth.playTimeTick(direction, frame.index / tl.lastIndex);
+  syncTimelineToTrace();
+  renderEditor();
+
+  if (!state.timeTraveled && direction < 0) {
+    state.timeTraveled = true;
+    awardXpAndQuests({ type: 'time_travel' });
+    setMascotSay(t(lang(), 'feedback.timeTravelFirst'), 'good');
+  }
 }
 
 function startRun() {
@@ -1350,6 +1482,9 @@ els.btnGhost?.addEventListener('click', () => {
 
 els.btnRun.addEventListener('click', startRun);
 els.btnStep.addEventListener('click', stepOnce);
+els.tmBack?.addEventListener('click', () => scrubTimeline(state.traceIndex - 1));
+els.tmFwd?.addEventListener('click', () => scrubTimeline(state.traceIndex + 1));
+els.tmSlider?.addEventListener('input', () => scrubTimeline(Number(els.tmSlider.value)));
 els.btnReset.addEventListener('click', () => {
   synth.playClick();
   resetBoardOnly(true);
@@ -1405,6 +1540,7 @@ els.btnLang.addEventListener('click', () => {
   synth.playClick();
   updateTopbar();
   setMascotSay(lang() === 'en' ? state.level.hintEn : state.level.hintPt);
+  updateTimeMachineUi();
   renderEditor();
 });
 
@@ -1622,6 +1758,9 @@ window.addEventListener('keydown', (event) => {
   } else if (event.key.toLowerCase() === 'r' && !event.ctrlKey && !event.metaKey) {
     event.preventDefault();
     els.btnReset.click();
+  } else if ((event.key === 'ArrowLeft' || event.key === 'ArrowRight') && state.timeline) {
+    event.preventDefault();
+    scrubTimeline(state.traceIndex + (event.key === 'ArrowLeft' ? -1 : 1));
   }
 });
 

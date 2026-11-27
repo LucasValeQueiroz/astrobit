@@ -55,6 +55,10 @@ export class SpaceCanvasRenderer {
     this._fpsEstimate = 60;
     this.previewPath = [];
     this.hoveredTile = null;
+    this.timeTrail = []; // ⏪ Time Machine footprints of the current timeline
+    this.echoTrail = []; // 🔀 Echo of the previous timeline (for "history changed" comparison)
+    this.bottomInset = 0; // Reserved px at the bottom of the board (Time Machine scrubber)
+    this.rewindFx = 0; // VHS-style rewind flash timer
 
     // Interpolated robot visual state
     this.renderX = 0;
@@ -105,6 +109,38 @@ export class SpaceCanvasRenderer {
 
   setWayfinder(wayfinder = null) {
     this.wayfinder = wayfinder;
+  }
+
+  /**
+   * ⏪ Time Machine: footprints walked so far in the current timeline + echo of the previous one.
+   */
+  setTimeTrail(trail = [], echo = []) {
+    this.timeTrail = Array.isArray(trail) ? trail : [];
+    this.echoTrail = Array.isArray(echo) ? echo : [];
+  }
+
+  /** Reserves vertical space at the bottom of the board (e.g. for the timeline scrubber). */
+  setBottomInset(px = 0) {
+    const next = Math.max(0, Math.floor(Number(px) || 0));
+    if (next === this.bottomInset) return;
+    this.bottomInset = next;
+    this._recomputeLayout();
+  }
+
+  /**
+   * Swaps the displayed world for a time-travel snapshot WITHOUT snapping the robot,
+   * so scrubbing glides smoothly; rewinding triggers a playful VHS rewind flash.
+   */
+  showTimeFrame(worldState, { direction = 1, type = 'move' } = {}) {
+    if (!worldState?.robot) return;
+    this.worldState = worldState;
+    this.targetX = worldState.robot.x;
+    this.targetY = worldState.robot.y;
+    this.targetAngle = DIR_ANGLES[worldState.robot.dir] ?? 0;
+    this.winDanceTimer = 0;
+    this.bumpTimer = type === 'bump' ? 0.3 : 0;
+    this.mood = type === 'bump' ? 'oops' : type === 'win' ? 'excited' : 'thinking';
+    if (direction < 0) this.rewindFx = 0.38;
   }
 
   spawnPopup(gx, gy, text, color = '#facc15') {
@@ -266,14 +302,15 @@ export class SpaceCanvasRenderer {
     if (!this.worldState) return;
     const pad = 28;
     const availW = Math.max(120, this.cssWidth - pad * 2);
-    const availH = Math.max(120, this.cssHeight - pad * 2);
+    const usableH = Math.max(160, this.cssHeight - this.bottomInset);
+    const availH = Math.max(120, usableH - pad * 2);
     this.tileSize = Math.floor(
       Math.min(availW / this.worldState.width, availH / this.worldState.height, 84)
     );
     const boardW = this.tileSize * this.worldState.width;
     const boardH = this.tileSize * this.worldState.height;
     this.originX = Math.floor((this.cssWidth - boardW) / 2);
-    this.originY = Math.floor((this.cssHeight - boardH) / 2);
+    this.originY = Math.floor((usableH - boardH) / 2);
   }
 
   tileCenterX(gx) {
@@ -331,6 +368,9 @@ export class SpaceCanvasRenderer {
     if (this.trauma > 0) {
       this.trauma = Math.max(0, this.trauma - dt * 1.9);
     }
+    if (this.rewindFx > 0) {
+      this.rewindFx = Math.max(0, this.rewindFx - dt);
+    }
     if (dt > 0.001) {
       this._fpsEstimate = this._fpsEstimate * 0.9 + Math.min(60, 1 / dt) * 0.1;
     }
@@ -386,6 +426,9 @@ export class SpaceCanvasRenderer {
     // 2.5 Interactive dashed path preview (while building puzzle)
     this._drawPreviewPath(ctx, ts);
 
+    // 2.6 ⏪ Time Machine footprints (current timeline) + 🔀 echo of the previous timeline
+    this._drawTimeTrails(ctx, ts);
+
     // 2.75 Holographic Ghost Replay Robot (if active)
     if (this.ghostPose) {
       this._drawGhostRobot(ctx, ts);
@@ -420,6 +463,82 @@ export class SpaceCanvasRenderer {
     // 4. Foreground particles, floating popups & victory confetti
     this.particles.drawParticles(ctx);
     this._drawPopups(ctx);
+    ctx.restore();
+
+    // 5. VHS-style rewind flash while time-traveling backwards
+    if (this.rewindFx > 0) {
+      this._drawRewindFx(ctx);
+    }
+  }
+
+  _drawTimeTrails(ctx, ts) {
+    const strokeTrail = (trail, color, width, dash) => {
+      if (trail.length < 2) return;
+      ctx.strokeStyle = color;
+      ctx.lineWidth = width;
+      ctx.setLineDash(dash);
+      ctx.beginPath();
+      trail.forEach((pt, idx) => {
+        const px = this.tileCenterX(pt.x);
+        const py = this.tileCenterY(pt.y);
+        if (idx === 0 || pt.teleported) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      });
+      ctx.stroke();
+      ctx.setLineDash([]);
+    };
+
+    if (!this.timeTrail.length && !this.echoTrail.length) return;
+    ctx.save();
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    // Echo of the previous timeline: faint magenta dashes
+    if (this.echoTrail.length >= 2) {
+      ctx.globalAlpha = 0.55;
+      strokeTrail(this.echoTrail, '#e879f9', Math.max(2, ts * 0.045), [3, 7]);
+      ctx.globalAlpha = 1;
+    }
+
+    // Current timeline: glowing cyan path with fading footprints (older = dimmer)
+    if (this.timeTrail.length >= 2) {
+      ctx.shadowColor = '#22d3ee';
+      ctx.shadowBlur = 10;
+      strokeTrail(this.timeTrail, 'rgba(34, 211, 238, 0.7)', Math.max(3, ts * 0.07), []);
+      ctx.shadowBlur = 0;
+    }
+    const n = this.timeTrail.length;
+    this.timeTrail.forEach((pt, idx) => {
+      const age = n > 1 ? idx / (n - 1) : 1;
+      ctx.globalAlpha = 0.35 + 0.65 * age;
+      ctx.fillStyle = idx === 0 ? '#facc15' : '#a5f3fc';
+      ctx.beginPath();
+      ctx.arc(this.tileCenterX(pt.x), this.tileCenterY(pt.y), Math.max(3, ts * (idx === 0 ? 0.09 : 0.065)), 0, Math.PI * 2);
+      ctx.fill();
+    });
+    ctx.restore();
+  }
+
+  _drawRewindFx(ctx) {
+    const alpha = Math.min(1, this.rewindFx / 0.38);
+    ctx.save();
+    ctx.globalAlpha = alpha * 0.18;
+    ctx.fillStyle = '#a855f7';
+    ctx.fillRect(0, 0, this.cssWidth, this.cssHeight);
+    ctx.globalAlpha = alpha * 0.22;
+    ctx.fillStyle = '#0f172a';
+    const offset = (this._elapsed * 120) % 6;
+    for (let y = offset; y < this.cssHeight; y += 6) {
+      ctx.fillRect(0, y, this.cssWidth, 2);
+    }
+    ctx.globalAlpha = alpha;
+    ctx.font = '900 22px system-ui, -apple-system, sans-serif';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'top';
+    ctx.fillStyle = '#f5d0fe';
+    ctx.shadowColor = '#a855f7';
+    ctx.shadowBlur = 12;
+    ctx.fillText('⏪ REWIND', this.cssWidth - 14, 12);
     ctx.restore();
   }
 

@@ -2,7 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-e3b341?style=for-the-badge)](LICENSE)
 [![Zero Dependencies](https://img.shields.io/badge/Dependencies-Zero-3fb950?style=for-the-badge)](#architecture)
-[![Tests](https://img.shields.io/badge/Node_Tests-73%2F73_Passing-2ea043?style=for-the-badge)](#local-development--tests)
+[![Tests](https://img.shields.io/badge/Node_Tests-80%2F80_Passing-2ea043?style=for-the-badge)](#local-development--tests)
 [![Live Demo](https://img.shields.io/badge/Play_Online-GitHub_Pages-2f81f7?style=for-the-badge&logo=github)](https://lucasvalequeiroz.github.io/astrobit/)
 
 An open-source **educational space coding puzzle game** built to teach young learners (ages 5–10+) computational thinking — from visual **interlocking SVG jigsaw blocks** all the way to **loops**, **conditional sensors**, **reusable functions (`F1`/`F2`)**, **multi-portal wormholes**, **ice & energy-crate physics**, **"Bug Hunt!" debugging**, and live **JavaScript / Python** code previews.
@@ -46,6 +46,8 @@ An open-source **educational space coding puzzle game** built to teach young lea
   - 3-scene animated **Intro Cinematic**, per-world **Planet Arrival Briefings**, custom story hooks and triumph lines for all **36 bases**, and a **Grand Finale Ending Cinematic** with an Official Space Engineer Medal!
 - **🗺️ 4-Act 60fps Interplanetary Galaxy Flight & 7 Unique Planet Biomes:**
   - Fly **Starship Estrela-1** across **7 worlds and 42 planetary hubs** (including the global Earth → Moon route: `🇧🇷 Brazil → 🇺🇸 USA → 🇪🇺 Europe → 🌍 Africa → 🇨🇳 China → 🇯🇵 Japan` with 42 real space/CS fun facts!), featuring **Vertical Orbital Liftoff → Milky Way Galaxy Cruise → 4.4× Destination Planet Zoom → 1,650 °C Thermal Re-entry** with live AAA LOD telemetry and **⚡ interactive Turbo Boost**!
+- **⏪ Time Machine — Time-Travel Debugger:**
+  - After any run, scrub a timeline (slider, ⏪/⏩, or ←/→ keys) to rewind AstroBit step by step: crystals reappear, buttons un-press, the running block glows in the editor and in live JS/Python, with a VHS `⏪ REWIND` flash and pitch-scaled scrub ticks. Emoji markers (💎 🔓 🌀 📦 💥 🏁) flag key moments, and editing the program creates a **new timeline** that shows a magenta echo of the old path plus a 🔀 marker at the exact step where history changed. Powered by a pure, immutable snapshot engine (`src/engine/time-machine.js`) proven lossless across all 42 reference solutions.
 - **👆 Interactive Step-by-Step Kids Guided Tutorial + Live A\* Pathfinder & `⚡ Raio-X` AAA Overlay:**
   - Guides kids (6–12 yrs) step-by-step on Level 1-1 (`Step 1/3 → 2/3 → 3/3` with bouncing `👆` pointer & pulsing green `▶️ Run`), powered by a real-time **BFS/A\* Pathfinder Coach**, plus a 1-click **`⚡ Raio-X`** overlay showing live AABB colliders, A\* search frontier, Wayfinder breadcrumbs, FPS, quadratic camera trauma screen-shake, and floating action popups!
 - **🧩 Physical SVG Interlocking Jigsaw Puzzle Editor + Tactile Mouse & Touch DnD:**
@@ -92,7 +94,7 @@ Requires only **Node.js 20+** (zero `npm install` needed):
 git clone https://github.com/LucasValeQueiroz/astrobit.git
 cd astrobit
 
-# Run all 60 engine, interpreter, transpiler, daily challenge, arcade, badges, music, biomes, workshop, AAA Lab, and 42-level solvability tests
+# Run all 80 engine, time-machine, interpreter, transpiler, daily challenge, arcade, badges, music, biomes, workshop, AAA Lab, and 42-level solvability tests
 node --test tests/*.test.mjs
 
 # Preview locally

@@ -79,5 +79,7 @@ test('SpaceSoundSynth exposes cinematic SFX (ice slide, crate curling, re-entry,
   assert.equal(synth.playCratePush(true), true);
   assert.equal(synth.playReentry(), true);
   assert.equal(synth.playNewRecord(), true);
+  assert.equal(synth.playTimeTick(-1, 0.5), true);
+  assert.equal(synth.playTimeTick(1, 2), true);
   assert.ok(FakeAudio.getOscCount() >= 10);
 });

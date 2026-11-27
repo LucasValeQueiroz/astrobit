@@ -6,7 +6,7 @@ import { CAMPAIGN_WORLDS } from '../levels/index.js?v=5.8';
 import { ROBOT_SKINS } from '../renderer/robot-skins.js?v=5.8';
 import { getTotalStars } from '../storage/progress.js?v=5.8';
 import { COMPANION_DRONES } from '../engine/companions-and-hints.js?v=5.9';
-import { SPACE_QUESTS, computeXpLevel } from '../engine/xp-and-quests.js?v=6.7';
+import { SPACE_QUESTS, computeXpLevel } from '../engine/xp-and-quests.js?v=7.4';
 import { exportProgressBackup } from '../storage/cloud-profile.js?v=6.8';
 import { buildLeaderboardEntry, rankLeaderboardEntries } from '../engine/leaderboard.js?v=7.0';
 

@@ -296,6 +296,35 @@ export const WORLD_STORIES = {
       { x: 690, y: 100 },
     ],
   },
+  8: {
+    world: 8,
+    galaxyPos: { x: 745, y: 170 },
+    sectorPt: 'Sistema Binário · Gêmeos Cósmicos',
+    sectorEn: 'Binary System · Cosmic Twins',
+    actPt: 'Ato Binário — Programação Paralela',
+    actEn: 'Binary Act — Parallel Programming',
+    planetColor: '#f472b6',
+    planetDark: '#701a75',
+    ringColor: '#38bdf8',
+    arrivalPt:
+      'Conheça a AstroByte! 🤖🩷 Neste sistema binário você programa DOIS robôs rodando ao mesmo tempo — sincronize sinais ⏳ e evite colisões e deadlocks!',
+    arrivalEn:
+      'Meet AstroByte! 🤖🩷 In this binary system you program TWO robots running in parallel — synchronize signals ⏳ and avoid collisions & deadlocks!',
+    completedPt:
+      'SINCRONIA PERFEITA!! Você dominou programação paralela como um engenheiro de sistemas distribuídos!',
+    completedEn:
+      'PERFECT SYNC!! You mastered parallel programming like a distributed systems engineer!',
+    upgradePt: '🤝 Mestre de Paralelismo & Sincronia',
+    upgradeEn: '🤝 Parallelism & Sync Master',
+    baseCoords: [
+      { x: 85, y: 170 },
+      { x: 205, y: 105 },
+      { x: 330, y: 185 },
+      { x: 455, y: 110 },
+      { x: 575, y: 180 },
+      { x: 690, y: 105 },
+    ],
+  },
 };
 
 export const LEVEL_STORIES = {
@@ -561,6 +590,43 @@ export const LEVEL_STORIES = {
     briefEn: '🧊👑 POLAR BOSS! Combine battery curling, slippery ice, quantum portal, and laser!',
     winPt: '❄️🏆 MESTRE GLACIAL!! VOCÊ CONQUISTOU O PLANETA CONGELADO INTEIRO!!',
     winEn: '❄️🏆 GLACIAL MASTER!! YOU CONQUERED THE ENTIRE FROZEN PLANET!!',
+  },
+  // WORLD 8 (BONUS): Cosmic Twins
+  'w8-1': {
+    briefPt: 'Dois Robôs, Dois Planos: programe o AstroBit e a AstroByte para chegarem juntos às duas ★!',
+    briefEn: 'Two Robots, Two Plans: program AstroBit and AstroByte to reach both ★ pads together!',
+    winPt: 'Dupla dinâmica!! Dois programas rodando ao mesmo tempo em harmonia!',
+    winEn: 'Dynamic duo!! Two programs running in parallel harmony!',
+  },
+  'w8-2': {
+    briefPt: 'Sinal Verde: use ⏳ Esperar Sinal A na AstroByte para ela esperar o AstroBit desligar o laser!',
+    briefEn: 'Green Signal: use ⏳ Wait Signal A on AstroByte so she waits for AstroBit to drop the laser!',
+    winPt: 'Sincronia de relógio suíço! O sinal A liberou a passagem certinho!',
+    winEn: 'Clockwork sync! Signal A cleared the path right on cue!',
+  },
+  'w8-3': {
+    briefPt: 'Revezamento Cósmico: um libera o laser do outro — cuidado para não criar um Deadlock!',
+    briefEn: 'Cosmic Relay: each twin unlocks the other’s laser — watch out for Deadlocks!',
+    winPt: 'Zero deadlock! Revezamento paralelo digno de engenheiro sênior!',
+    winEn: 'Zero deadlock! Parallel relay worthy of a senior engineer!',
+  },
+  'w8-4': {
+    briefPt: 'Cruzamento Estelar: os dois cruzam o mesmo corredor — use ⏳ Esperar 1 tick para não colidirem!',
+    briefEn: 'Star Crossing: both twins cross the same corridor — use ⏳ Wait 1 tick to prevent collision!',
+    winPt: 'Sem colisões! Controle de tráfego espacial impecável!',
+    winEn: 'Zero collisions! Flawless space traffic control!',
+  },
+  'w8-5': {
+    briefPt: 'Espelho Binário: coordene loops e sinais entre os gêmeos para coletar todos os cristais!',
+    briefEn: 'Binary Mirror: coordinate loops and signals between the twins to collect all crystals!',
+    winPt: 'Coreografia espacial perfeita! Só falta o núcleo dos Gêmeos Cósmicos!',
+    winEn: 'Flawless space choreography! Only the Cosmic Twins core remains!',
+  },
+  'w8-6': {
+    briefPt: '🤝👑 CHEFÃO BINÁRIO! Sincronize AstroBit e AstroByte no desafio supremo de paralelismo!',
+    briefEn: '🤝👑 BINARY BOSS! Synchronize AstroBit and AstroByte in the ultimate parallelism challenge!',
+    winPt: '🤝🏆 MESTRE DA SINCRONIA!! VOCÊ DOMINOU OS GÊMEOS CÓSMICOS!!',
+    winEn: '🤝🏆 SYNC MASTER!! YOU CONQUERED THE COSMIC TWINS!!',
   },
 };
 

@@ -168,6 +168,28 @@ export function updateIfSensor(blocks, blockId, sensor) {
   return copy;
 }
 
+export const WAIT_CHANNEL_OPTIONS = [null, 'A', 'B'];
+
+export function updateWaitChannel(blocks, blockId) {
+  const copy = cloneBlocks(blocks);
+  const updateRec = (list) => {
+    for (const item of list) {
+      if (item.id === blockId && item.type === 'wait') {
+        const idx = WAIT_CHANNEL_OPTIONS.indexOf(item.channel || null);
+        const next = WAIT_CHANNEL_OPTIONS[(idx + 1) % WAIT_CHANNEL_OPTIONS.length];
+        if (next) item.channel = next;
+        else delete item.channel;
+        return true;
+      }
+      const children = getChildList(item);
+      if (children && updateRec(children)) return true;
+    }
+    return false;
+  };
+  updateRec(copy);
+  return copy;
+}
+
 export function findBlockById(blocks, blockId) {
   for (const b of blocks) {
     if (b.id === blockId) return b;
@@ -199,6 +221,7 @@ export const BLOCK_META = {
   left: { icon: '↩️', category: 'dir-left' },
   right: { icon: '↪️', category: 'dir-right' },
   collect: { icon: '💎', category: 'action' },
+  wait: { icon: '⏳', category: 'wait' },
   repeat: { icon: '🔁', category: 'control' },
   if: { icon: '🔎', category: 'sensor' },
   call_f1: { icon: '⚡', category: 'fn' },
@@ -327,6 +350,7 @@ export function renderWorkspace(
     onRemoveBlock,
     onChangeRepeat,
     onChangeSensor,
+    onChangeWaitChannel,
     onDropExisting,
     onDropNewFromPalette,
     onHoverBlock,
@@ -453,6 +477,41 @@ export function renderWorkspace(
           `;
         }
 
+        if (block.type === 'wait') {
+          const ch = block.channel || null;
+          const badgeLabel = ch
+            ? lang === 'en'
+              ? `Signal ${ch}`
+              : `Sinal ${ch}`
+            : '1 tick';
+          return `
+            <div
+              class="puzzle-piece puzzle-cmd cat-wait ${stateClass}"
+              data-block-id="${block.id}"
+              data-scope="${scope}"
+              style="z-index:${zIdx}"
+              draggable="true"
+            >
+              ${JIGSAW_SOCKET_SVG}
+              <div class="puzzle-left">
+                <span class="drag-grip" aria-hidden="true">⋮⋮</span>
+                <span class="piece-icon">${meta.icon}</span>
+                <span>${escapeHtml(label)}</span>
+                <button
+                  type="button"
+                  class="step-pill-btn wait-channel-pill"
+                  data-action="wait-cycle"
+                  data-id="${block.id}"
+                  data-scope="${scope}"
+                  title="${lang === 'en' ? 'Click to switch: 1 tick / Signal A / Signal B' : 'Clique para alternar: 1 tick / Sinal A / Sinal B'}"
+                >${escapeHtml(badgeLabel)}</button>
+              </div>
+              <button type="button" class="remove-pill-btn" data-action="remove" data-id="${block.id}" data-scope="${scope}" title="✕">✕</button>
+              ${JIGSAW_KNOB_SVG()}
+            </div>
+          `;
+        }
+
         return `
           <div
             class="puzzle-piece puzzle-cmd cat-${meta.category} ${stateClass}"
@@ -562,6 +621,7 @@ export function renderWorkspace(
       if (action === 'remove') onRemoveBlock(scope, id);
       else if (action === 'rep-inc') onChangeRepeat(scope, id, 1);
       else if (action === 'rep-dec') onChangeRepeat(scope, id, -1);
+      else if (action === 'wait-cycle') onChangeWaitChannel?.(scope, id);
       return;
     }
 

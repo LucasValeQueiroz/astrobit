@@ -103,8 +103,9 @@ test('describeFrame produces bilingual kid-friendly captions', () => {
   assert.match(describeFrame(null, 0, 'en'), /Start/);
 });
 
-test('every campaign reference solution rewinds and fast-forwards losslessly (time-travel invariant)', () => {
+test('every single-robot campaign reference solution rewinds and fast-forwards losslessly (time-travel invariant)', () => {
   for (const level of ALL_LEVELS) {
+    if (level.isTwin) continue;
     const run = executeProgram(level, level.referenceSolution);
     const tl = buildTimeline(level, run);
     const end = getFrame(tl, tl.lastIndex);

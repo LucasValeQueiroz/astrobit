@@ -191,6 +191,24 @@ export const PLANET_BIOMES = {
       { id: 'w7-6', flag: '❄️', landmark: '❄️', shortPt: 'Coração', shortEn: 'Heart', hubPt: 'Coração de Gelo', hubEn: 'Heart of Ice', factPt: '❄️ Gelo, curling de bateria, portal e laser juntos: você dominou física + programação!', factEn: '❄️ Ice, battery curling, portal & laser together: you mastered physics + coding!' },
     ],
   },
+  8: {
+    world: 8,
+    kind: 'cosmic-twins',
+    atmosphereColor: '#f472b6',
+    reentryColor: '#38bdf8',
+    planetCore: '#701a75',
+    planetRim: '#f472b6',
+    aaaTipPt: '⚡ AAA Multithreading · 2 robôs executando em paralelo (Lockstep)!',
+    aaaTipEn: '⚡ AAA Multithreading · 2 robots running in lockstep parallel!',
+    regions: [
+      { id: 'w8-1', flag: '🤖', landmark: '🤝', shortPt: 'Gêmeos', shortEn: 'Twins', hubPt: 'Base dos Gêmeos', hubEn: 'Twins Base', factPt: '🤖 Processadores modernos têm vários núcleos (cores) rodando tarefas ao mesmo tempo — igual AstroBit e AstroByte!', factEn: '🤖 Modern CPUs have multiple cores running tasks at the same time — just like AstroBit & AstroByte!' },
+      { id: 'w8-2', flag: '⏳', landmark: '⚡', shortPt: 'Sinal A', shortEn: 'Signal A', hubPt: 'Torre de Sinais', hubEn: 'Signal Tower', factPt: '⏳ Esperar um sinal antes de avançar se chama Semáforo ou Barreira em Ciência da Computação!', factEn: '⏳ Waiting for a signal before advancing is called a Semaphore or Barrier in Computer Science!' },
+      { id: 'w8-3', flag: '🔒', landmark: '🔄', shortPt: 'Revezar', shortEn: 'Relay', hubPt: 'Ponte Revezamento', hubEn: 'Relay Bridge', factPt: '🔒 Quando dois programas ficam esperando um pelo outro para sempre, nasce o famoso bug chamado Deadlock!', factEn: '🔒 When two programs wait for each other forever, that classic bug is called a Deadlock!' },
+      { id: 'w8-4', flag: '🚦', landmark: '🚦', shortPt: 'Cruzar', shortEn: 'Crossing', hubPt: 'Cruzamento Estelar', hubEn: 'Star Crossing', factPt: '🚦 Controlar a ordem de chegada num corredor evita Race Conditions (condições de corrida)!', factEn: '🚦 Controlling arrival order in a shared lane prevents Race Conditions!' },
+      { id: 'w8-5', flag: '🪞', landmark: '✨', shortPt: 'Espelho', shortEn: 'Mirror', hubPt: 'Espelho Binário', hubEn: 'Binary Mirror', factPt: '🪞 Jogos multiplayer usam Lockstep determinístico para que todos os jogadores vejam exatamente o mesmo mundo!', factEn: '🪞 Multiplayer games use deterministic Lockstep so every player sees the exact same world!' },
+      { id: 'w8-6', flag: '👑', landmark: '🤝', shortPt: 'Núcleo', shortEn: 'Core', hubPt: 'Núcleo Binário', hubEn: 'Binary Core', factPt: '👑 Sincronizar tarefas paralelas sem colisão nem deadlock é uma das habilidades mais valorizadas em engenharia!', factEn: '👑 Synchronizing parallel tasks with zero collisions or deadlocks is a top engineering skill!' },
+    ],
+  },
 };
 
 export function getPlanetBiome(worldNumber = 1) {

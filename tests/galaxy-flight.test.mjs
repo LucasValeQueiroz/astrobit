@@ -7,9 +7,9 @@ import {
   sampleGalaxyFlight,
 } from '../src/story/galaxy-flight.js';
 
-test('GALAXY_PLANETS defines all 7 worlds in normalized space coordinates', () => {
-  assert.equal(GALAXY_PLANETS.length, 7);
-  for (let w = 1; w <= 7; w++) {
+test('GALAXY_PLANETS defines all 8 worlds in normalized space coordinates', () => {
+  assert.equal(GALAXY_PLANETS.length, 8);
+  for (let w = 1; w <= 8; w++) {
     const p = getGalaxyPlanet(w);
     assert.equal(p.world, w);
     assert.ok(p.x > 0 && p.x < 1 && p.y > 0 && p.y < 1);

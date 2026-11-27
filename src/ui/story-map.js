@@ -5,18 +5,18 @@
  * smoothly between bases and worlds!
  */
 
-import { CAMPAIGN_WORLDS } from '../levels/index.js?v=5.0';
-import { WORLD_PALETTES } from '../renderer/robot-skins.js?v=5.0';
+import { CAMPAIGN_WORLDS } from '../levels/index.js?v=8.1';
+import { WORLD_PALETTES } from '../renderer/robot-skins.js?v=8.1';
 import {
   INTRO_SCENES,
   ENDING_SCENES,
   getWorldStory,
   getLevelStory,
-} from '../story/campaign-story.js?v=8.0';
-import { getTotalStars } from '../storage/progress.js?v=5.0';
-import { FlightCinemaController } from './flight-cinema.js?v=4.2';
-import { getPlanetBiome, getRegionForLevel } from '../story/planet-biomes.js?v=6.2';
-import { PlanetBiomeRenderer } from './planet-biome-canvas.js?v=6.3';
+} from '../story/campaign-story.js?v=8.1';
+import { getTotalStars } from '../storage/progress.js?v=8.1';
+import { FlightCinemaController } from './flight-cinema.js?v=8.1';
+import { getPlanetBiome, getRegionForLevel } from '../story/planet-biomes.js?v=8.1';
+import { PlanetBiomeRenderer } from './planet-biome-canvas.js?v=8.1';
 
 function escapeHtml(text) {
   return String(text ?? '')
@@ -548,7 +548,7 @@ export function renderGalaxyJourneyMap(
             <circle cx="0" cy="0" r="15" fill="${earned > 0 ? '#10b981' : '#0f172a'}" opacity="0.88"/>
             <text x="0" y="5" text-anchor="middle" fill="#ffffff" font-size="${lvl.isBugHunt || isBoss ? '15' : '14'}" font-weight="800">${iconText}</text>
             <text x="0" y="-28" text-anchor="middle" fill="${earned > 0 ? '#facc15' : '#475569'}" font-size="13" font-weight="800">${starsStr}</text>
-            <text x="0" y="38" text-anchor="middle" fill="#f8fafc" font-size="11.5" font-weight="800">${escapeHtml(regionLabel)}</text>
+            <text x="0" y="43" text-anchor="middle" fill="#f8fafc" font-size="11.5" font-weight="800">${escapeHtml(regionLabel)}</text>
             <title>${escapeHtml(shortTitle)} — ${escapeHtml(lang === 'en' ? region.hubEn : region.hubPt)}</title>
           </g>
         `;
@@ -638,7 +638,7 @@ export function renderGalaxyJourneyMap(
             <div
               id="flying-starship"
               class="flying-starship"
-              style="left:${(shipCoord.x / 760) * 100}%; top:${((shipCoord.y - 30) / 270) * 100}%; --ship-rot:${shipAngle}deg;"
+              style="left:${(shipCoord.x / 760) * 100}%; top:${((shipCoord.y - 44) / 270) * 100}%; --ship-rot:${shipAngle}deg;"
             >
               ${renderStarshipSvg(54)}
             </div>

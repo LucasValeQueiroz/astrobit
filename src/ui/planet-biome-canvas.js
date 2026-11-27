@@ -10,8 +10,8 @@
  *      with glowing 1,650 °C plasma heat-shield arc and speed streaks, then reveals LOD 0 surface!
  */
 
-import { getPlanetBiome, computeOrbitalTransitionState } from '../story/planet-biomes.js?v=6.2';
-import { GALAXY_PLANETS, sampleGalaxyFlight } from '../story/galaxy-flight.js?v=6.3';
+import { getPlanetBiome, computeOrbitalTransitionState } from '../story/planet-biomes.js?v=8.1';
+import { GALAXY_PLANETS, sampleGalaxyFlight } from '../story/galaxy-flight.js?v=8.1';
 
 function drawGear(ctx, cx, cy, outerR, teeth, rot, fill, stroke) {
   const innerR = outerR * 0.78;

@@ -63,4 +63,13 @@ test('World 1 Earth map baseCoords align geographically with continents (Brazil,
   assert.ok(usa.y < brazil.y, 'USA must be north of Brazil');
   assert.ok(europe.y < africa.y, 'Europe must be north of Africa');
   assert.ok(china.y < africa.y, 'China must be north of Africa');
+
+  // Telemetry pill clearance: Worlds 2-8 left-side bases must stay clear of the bottom-left pill
+  for (let w = 2; w <= 8; w++) {
+    for (const pt of WORLD_STORIES[w].baseCoords) {
+      if (pt.x < 420) {
+        assert.ok(pt.y <= 185, `World ${w} left-side node (${pt.x},${pt.y}) must stay above telemetry pill`);
+      }
+    }
+  }
 });

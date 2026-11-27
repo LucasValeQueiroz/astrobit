@@ -2,13 +2,13 @@
  * AstroBit Modals — Planet Star Map, Robot Garage, and Victory Celebration Overlay.
  */
 
-import { CAMPAIGN_WORLDS } from '../levels/index.js?v=5.8';
-import { ROBOT_SKINS } from '../renderer/robot-skins.js?v=5.8';
-import { getTotalStars } from '../storage/progress.js?v=5.8';
-import { COMPANION_DRONES } from '../engine/companions-and-hints.js?v=5.9';
-import { SPACE_QUESTS, computeXpLevel } from '../engine/xp-and-quests.js?v=7.4';
-import { exportProgressBackup } from '../storage/cloud-profile.js?v=6.8';
-import { buildLeaderboardEntry, rankLeaderboardEntries } from '../engine/leaderboard.js?v=7.0';
+import { CAMPAIGN_WORLDS } from '../levels/index.js?v=8.1';
+import { ROBOT_SKINS } from '../renderer/robot-skins.js?v=8.1';
+import { getTotalStars } from '../storage/progress.js?v=8.1';
+import { COMPANION_DRONES } from '../engine/companions-and-hints.js?v=8.1';
+import { SPACE_QUESTS, computeXpLevel } from '../engine/xp-and-quests.js?v=8.1';
+import { exportProgressBackup } from '../storage/cloud-profile.js?v=8.1';
+import { buildLeaderboardEntry, rankLeaderboardEntries } from '../engine/leaderboard.js?v=8.1';
 
 function escapeHtml(text) {
   return String(text ?? '')
@@ -272,6 +272,10 @@ export function renderBadgesModal(
         </div>
       </div>
       <div class="garage-progress">
+        <div class="garage-progress-top">
+          <span>🏆 ${count} / ${total}</span>
+          <span>${pct}%</span>
+        </div>
         <div class="garage-progress-bar">
           <span class="garage-progress-fill" style="width:${pct}%"></span>
         </div>

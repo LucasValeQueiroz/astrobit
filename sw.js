@@ -4,7 +4,7 @@
  * on tablets, cars, or classrooms while always bypassing external Firebase/Google APIs.
  */
 
-const CACHE_NAME = 'astrobit-pwa-v2.7';
+const CACHE_NAME = 'astrobit-pwa-v2.8';
 const CORE_ASSETS = [
   './',
   './index.html',
@@ -44,19 +44,20 @@ self.addEventListener('fetch', (event) => {
   // Always bypass external APIs (Firebase Auth, Firestore, gstatic CDN)
   if (url.origin !== self.location.origin) return;
 
+  // Network-First for same-origin assets so online players always get the latest release immediately,
+  // with instant offline cache fallback when disconnected.
   event.respondWith(
     caches.open(CACHE_NAME).then(async (cache) => {
-      const cached = await cache.match(req);
-      const networkPromise = fetch(req)
-        .then((res) => {
-          if (res && res.status === 200 && res.type === 'basic') {
-            cache.put(req, res.clone()).catch(() => {});
-          }
-          return res;
-        })
-        .catch(() => null);
-
-      return cached || (await networkPromise) || new Response('Offline', { status: 503 });
+      try {
+        const fresh = await fetch(req);
+        if (fresh && fresh.status === 200 && fresh.type === 'basic') {
+          cache.put(req, fresh.clone()).catch(() => {});
+        }
+        return fresh;
+      } catch {
+        const cached = await cache.match(req);
+        return cached || new Response('Offline', { status: 503 });
+      }
     })
   );
 });

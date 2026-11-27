@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 
 import {
   executeTwinProgram,
+  extractTwinPreviewPaths,
   validateTwinLevel,
   createTwinWorld,
   isTwinWin,
@@ -197,4 +198,23 @@ test('twin programs support their own F1/F2 functions and call depth protection'
   const loop = executeTwinProgram(level, { astro: recursive, byte: [] });
   assert.equal(loop.status, 'infinite_loop');
   assert.equal(loop.failureReason, 'max_call_depth');
+});
+
+test('extractTwinPreviewPaths produces simultaneous AstroBit and AstroByte trajectories and flags bumps', () => {
+  const level = byId('w8-1');
+  const winPreview = extractTwinPreviewPaths(level, level.referenceSolution);
+  assert.equal(winPreview.status, 'won');
+  assert.ok(winPreview.astro.length >= 3, 'AstroBit path starts at origin and steps forward');
+  assert.ok(winPreview.byte.length >= 3, 'AstroByte path starts at twinStart and steps forward');
+
+  const cross = byId('w8-3');
+  const collision = extractTwinPreviewPaths(cross, {
+    astro: [{ id: 'a1', type: 'move_right' }, { id: 'a2', type: 'move_right' }],
+    byte: [{ id: 'b1', type: 'down' }, { id: 'b2', type: 'down' }],
+  });
+  assert.equal(collision.status, 'failed');
+  assert.ok(
+    collision.astro.some((p) => p.bumped) || collision.byte.some((p) => p.bumped),
+    'collision waypoint is flagged as bumped'
+  );
 });

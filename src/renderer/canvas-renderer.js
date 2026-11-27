@@ -54,6 +54,7 @@ export class SpaceCanvasRenderer {
     this.wayfinder = null; // Live BFS/A* wayfinder result { path, explored }
     this._fpsEstimate = 60;
     this.previewPath = [];
+    this.bytePreviewPath = [];
     this.hoveredTile = null;
     this.timeTrail = []; // ⏪ Time Machine footprints of the current timeline
     this.echoTrail = []; // 🔀 Echo of the previous timeline (for "history changed" comparison)
@@ -107,8 +108,9 @@ export class SpaceCanvasRenderer {
     this.mood = mood || 'happy';
   }
 
-  setPreviewPath(points = [], hoveredTile = null) {
+  setPreviewPath(points = [], hoveredTile = null, bytePoints = []) {
     this.previewPath = Array.isArray(points) ? points : [];
+    this.bytePreviewPath = Array.isArray(bytePoints) ? bytePoints : [];
     this.hoveredTile = hoveredTile;
   }
 
@@ -703,44 +705,42 @@ export class SpaceCanvasRenderer {
   }
 
   _drawPreviewPath(ctx, ts) {
-    if (!this.previewPath || this.previewPath.length < 2) {
-      if (this.hoveredTile) {
-        this._drawHoveredHighlight(ctx, this.hoveredTile.x, this.hoveredTile.y, ts);
-      }
-      return;
-    }
-
-    ctx.save();
-    ctx.strokeStyle = 'rgba(250, 204, 21, 0.55)';
-    ctx.lineWidth = Math.max(3, ts * 0.06);
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    ctx.setLineDash([7, 7]);
-    ctx.lineDashOffset = -this._elapsed * 18;
-    ctx.beginPath();
-    this.previewPath.forEach((pt, idx) => {
-      const px = this.tileCenterX(pt.x);
-      const py = this.tileCenterY(pt.y);
-      if (idx === 0 || pt.teleported) {
-        ctx.moveTo(px, py);
-      } else {
-        ctx.lineTo(px, py);
-      }
-    });
-    ctx.stroke();
-
-    // Small numbered waypoint dots
-    ctx.setLineDash([]);
-    for (let i = 1; i < this.previewPath.length; i++) {
-      const pt = this.previewPath[i];
-      const px = this.tileCenterX(pt.x);
-      const py = this.tileCenterY(pt.y);
-      ctx.fillStyle = pt.bumped ? 'rgba(249, 115, 22, 0.9)' : 'rgba(250, 204, 21, 0.85)';
+    const drawPath = (pts, strokeColor, dotColor) => {
+      if (!pts || pts.length < 2) return;
+      ctx.save();
+      ctx.strokeStyle = strokeColor;
+      ctx.lineWidth = Math.max(3, ts * 0.06);
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.setLineDash([7, 7]);
+      ctx.lineDashOffset = -this._elapsed * 18;
       ctx.beginPath();
-      ctx.arc(px, py, pt.bumped ? 7 : 4.2, 0, Math.PI * 2);
-      ctx.fill();
-    }
-    ctx.restore();
+      pts.forEach((pt, idx) => {
+        const px = this.tileCenterX(pt.x);
+        const py = this.tileCenterY(pt.y);
+        if (idx === 0 || pt.teleported) {
+          ctx.moveTo(px, py);
+        } else {
+          ctx.lineTo(px, py);
+        }
+      });
+      ctx.stroke();
+
+      ctx.setLineDash([]);
+      for (let i = 1; i < pts.length; i++) {
+        const pt = pts[i];
+        const px = this.tileCenterX(pt.x);
+        const py = this.tileCenterY(pt.y);
+        ctx.fillStyle = pt.bumped ? 'rgba(249, 115, 22, 0.95)' : dotColor;
+        ctx.beginPath();
+        ctx.arc(px, py, pt.bumped ? 7 : 4.2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    };
+
+    drawPath(this.previewPath, 'rgba(250, 204, 21, 0.55)', 'rgba(250, 204, 21, 0.85)');
+    drawPath(this.bytePreviewPath, 'rgba(244, 114, 182, 0.68)', 'rgba(244, 114, 182, 0.92)');
 
     if (this.hoveredTile) {
       this._drawHoveredHighlight(ctx, this.hoveredTile.x, this.hoveredTile.y, ts);

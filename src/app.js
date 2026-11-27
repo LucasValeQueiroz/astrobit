@@ -6,7 +6,7 @@
 
 import { createWorldState } from './engine/grid.js?v=4.0';
 import { executeProgram, countProgramBlocks, normalizeProgram } from './engine/interpreter.js?v=4.0';
-import { createTwinWorld, executeTwinProgram } from './engine/twin-engine.js?v=7.6';
+import { createTwinWorld, executeTwinProgram, extractTwinPreviewPaths } from './engine/twin-engine.js?v=7.8';
 import { transpileProgram } from './engine/transpiler.js?v=4.0';
 import { decodeCustomLevel, encodeCustomLevel } from './engine/custom-level.js?v=5.8';
 import {
@@ -45,7 +45,7 @@ import {
   describeFrame,
 } from './engine/time-machine.js?v=7.7';
 import { ALL_LEVELS, CAMPAIGN_WORLDS, getLevelById, getNextLevel } from './levels/index.js?v=7.6';
-import { SpaceCanvasRenderer } from './renderer/canvas-renderer.js?v=7.7';
+import { SpaceCanvasRenderer } from './renderer/canvas-renderer.js?v=7.8';
 import { SpaceSoundSynth } from './audio/sound-synth.js?v=7.4';
 import { SpaceMusicEngine } from './audio/music-engine.js?v=7.6';
 import {
@@ -357,12 +357,30 @@ function updateTopbar() {
 }
 
 function refreshPreviewPath() {
-  if (!state.level || state.level.isTwin || state.isRunning || state.traceRun) {
-    renderer.setPreviewPath([], null);
+  if (!state.level || state.isRunning || state.traceRun) {
+    renderer.setPreviewPath([], null, []);
+    return;
+  }
+  if (state.level.isTwin) {
+    if (
+      state.twinPrograms.astro.main.length === 0 &&
+      state.twinPrograms.byte.main.length === 0
+    ) {
+      renderer.setPreviewPath([], null, []);
+      return;
+    }
+    const preview = extractTwinPreviewPaths(state.level, state.twinPrograms);
+    let hoveredTile = null;
+    if (state.hoveredBlockId) {
+      const activePts = state.activeTwin === 'byte' ? preview.byte : preview.astro;
+      const match = activePts.find((p) => p.blockId === state.hoveredBlockId);
+      if (match) hoveredTile = { x: match.x, y: match.y };
+    }
+    renderer.setPreviewPath(preview.astro, hoveredTile, preview.byte);
     return;
   }
   if (state.program.main.length === 0) {
-    renderer.setPreviewPath([], null);
+    renderer.setPreviewPath([], null, []);
     return;
   }
 
@@ -398,13 +416,19 @@ function renderCodePeek() {
   const highlightId = state.failedBlockId || state.runningBlockId || state.hoveredBlockId;
   const activeLine = highlightId ? transpiled.blockToLine[highlightId] : null;
 
-  els.codePeekLines.innerHTML = transpiled.lines
-    .map((line, i) => {
-      const ln = i + 1;
-      const cls = ln === activeLine ? 'code-line active-line' : 'code-line';
-      return `<div class="${cls}"><span class="code-ln">${ln}</span><span>${escapeHtml(line)}</span></div>`;
-    })
-    .join('');
+  const twinComment = state.level?.isTwin
+    ? `<div class="code-line"><span class="code-ln">·</span><span>${codeLang === 'python' ? '#' : '//'} ${state.activeTwin === 'byte' ? '🩷 AstroByte' : '🤖 AstroBit'}</span></div>`
+    : '';
+
+  els.codePeekLines.innerHTML =
+    twinComment +
+    transpiled.lines
+      .map((line, i) => {
+        const ln = i + 1;
+        const cls = ln === activeLine ? 'code-line active-line' : 'code-line';
+        return `<div class="${cls}"><span class="code-ln">${ln}</span><span>${escapeHtml(line)}</span></div>`;
+      })
+      .join('');
 }
 
 function updateRunButton() {

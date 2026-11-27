@@ -2,7 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-e3b341?style=for-the-badge)](LICENSE)
 [![Zero Dependencies](https://img.shields.io/badge/Dependencies-Zero-3fb950?style=for-the-badge)](#architecture)
-[![Tests](https://img.shields.io/badge/Node_Tests-99%2F99_Passing-2ea043?style=for-the-badge)](#local-development--tests)
+[![Tests](https://img.shields.io/badge/Node_Tests-100%2F100_Passing-2ea043?style=for-the-badge)](#local-development--tests)
 [![Live Demo](https://img.shields.io/badge/Play_Online-GitHub_Pages-2f81f7?style=for-the-badge&logo=github)](https://lucasvalequeiroz.github.io/astrobit/)
 
 An open-source **educational space coding puzzle game** (installable offline-first **PWA**) built to teach young learners (ages 5–10+) computational thinking — from visual **interlocking SVG jigsaw blocks** all the way to **loops**, **conditional sensors**, **reusable functions (`F1`/`F2`)**, **multi-portal wormholes**, **ice & energy-crate physics**, **parallel 2-robot concurrency (`AstroBit` + `AstroByte`)**, **"Bug Hunt!" + Time-Travel debugging**, and live **JavaScript / Python** code previews.

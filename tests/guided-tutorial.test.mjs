@@ -36,8 +36,8 @@ test('guided tutorial walks kids through Steps 1 -> 2 -> 3 on Level 1-1 dynamica
   assert.equal(computeGuidedTutorialStep(lvl1, { main: [] }, { alreadyCompleted: true }), null);
 });
 
-test('guided tutorial shows friendly concept tips on milestone levels w2-1, w3-1, w4-1, and w7-1', () => {
-  for (const id of ['w2-1', 'w3-1', 'w4-1', 'w7-1']) {
+test('guided tutorial shows friendly concept tips on milestone levels w2-1, w3-1, w4-1, w7-1, and w8-1', () => {
+  for (const id of ['w2-1', 'w3-1', 'w4-1', 'w7-1', 'w8-1']) {
     const lvl = getLevelById(id);
     const tipPt = computeGuidedTutorialStep(lvl, { main: [] }, { lang: 'pt' });
     const tipEn = computeGuidedTutorialStep(lvl, { main: [] }, { lang: 'en' });

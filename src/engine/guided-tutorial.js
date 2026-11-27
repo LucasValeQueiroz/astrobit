@@ -33,6 +33,12 @@ const CONCEPT_INTRO_TIPS = {
     pt: 'Novo planeta: 🧊 Gelo! Com apenas 1 passo ➡️ o AstroBit desliza até pisar em chão firme!',
     en: 'New planet: 🧊 Ice! Just 1 step ➡️ lets AstroBit glide all the way to solid ground!',
   },
+  'w8-1': {
+    icon: '🤝',
+    highlightBlockType: 'move_right',
+    pt: 'Gêmeos Cósmicos! Programe 🤖 AstroBit e 🩷 AstroByte nas 2 abas — eles andam ao mesmo tempo!',
+    en: 'Cosmic Twins! Program 🤖 AstroBit and 🩷 AstroByte in the 2 tabs — they move together!',
+  },
 };
 
 /**

@@ -12,6 +12,7 @@ import {
   describeFrame,
 } from '../src/engine/time-machine.js';
 import { executeProgram } from '../src/engine/interpreter.js';
+import { executeTwinProgram } from '../src/engine/twin-engine.js';
 import { ALL_LEVELS } from '../src/levels/index.js';
 
 const SAMPLE_LEVEL = {
@@ -103,20 +104,49 @@ test('describeFrame produces bilingual kid-friendly captions', () => {
   assert.match(describeFrame(null, 0, 'en'), /Start/);
 });
 
-test('every single-robot campaign reference solution rewinds and fast-forwards losslessly (time-travel invariant)', () => {
+test('every campaign reference solution across all 8 worlds (48 levels) rewinds and fast-forwards losslessly', () => {
   for (const level of ALL_LEVELS) {
-    if (level.isTwin) continue;
-    const run = executeProgram(level, level.referenceSolution);
+    const run = level.isTwin
+      ? executeTwinProgram(level, level.referenceSolution)
+      : executeProgram(level, level.referenceSolution);
     const tl = buildTimeline(level, run);
     const end = getFrame(tl, tl.lastIndex);
-    assert.equal(end.x, run.finalState.x, `${level.id} final x`);
-    assert.equal(end.y, run.finalState.y, `${level.id} final y`);
-    assert.equal(end.dir, run.finalState.dir, `${level.id} final dir`);
+    if (level.isTwin) {
+      assert.deepEqual(end.astro, run.finalState.astro, `${level.id} final astro`);
+      assert.deepEqual(end.byte, run.finalState.byte, `${level.id} final byte`);
+    } else {
+      assert.equal(end.x, run.finalState.x, `${level.id} final x`);
+      assert.equal(end.y, run.finalState.y, `${level.id} final y`);
+      assert.equal(end.dir, run.finalState.dir, `${level.id} final dir`);
+    }
     assert.equal(end.crystals.length, run.finalState.crystalsRemaining, `${level.id} crystals`);
     assert.deepEqual({ ...end.channels }, run.finalState.channels, `${level.id} channels`);
 
     const fresh = materializeWorldState(level, getFrame(tl, 0));
     const initial = materializeWorldState(level, null);
     assert.deepEqual([...fresh.crystals].sort(), [...initial.crystals].sort(), `${level.id} rewind to start`);
+    if (level.isTwin) {
+      assert.deepEqual(fresh.robots.byte, initial.robots.byte, `${level.id} rewind byte to start`);
+    }
   }
+});
+
+test('twin timelines tag acting robot, flag wait/deadlock markers, and detect AstroByte divergence', () => {
+  const w82 = ALL_LEVELS.find((l) => l.id === 'w8-2');
+  const winRun = executeTwinProgram(w82, w82.referenceSolution);
+  const winTl = buildTimeline(w82, winRun);
+  assert.equal(winTl.isTwin, true);
+  assert.ok(getTimelineMarkers(winTl).some((m) => m.type === 'wait_start' && m.icon === '⏳'));
+
+  const byteFrame = winTl.frames.find((f) => f.robot === 'byte');
+  assert.ok(byteFrame, 'timeline records which twin acted');
+  assert.match(describeFrame(byteFrame, winTl.lastIndex, 'pt'), /🩷/);
+
+  const deadlockRun = executeTwinProgram(w82, {
+    astro: [{ id: 'a1', type: 'wait', channel: 'B' }],
+    byte: [{ id: 'b1', type: 'wait', channel: 'A' }],
+  });
+  const dlTl = buildTimeline(w82, deadlockRun);
+  assert.ok(getTimelineMarkers(dlTl).some((m) => m.type === 'deadlock' && m.icon === '🔒'));
+  assert.ok(findTimelineDivergence(winTl, dlTl) >= 1);
 });

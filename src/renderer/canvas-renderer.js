@@ -146,9 +146,15 @@ export class SpaceCanvasRenderer {
     this.targetX = worldState.robot.x;
     this.targetY = worldState.robot.y;
     this.targetAngle = DIR_ANGLES[worldState.robot.dir] ?? 0;
+    if (worldState.robots?.byte) {
+      this.hasTwin = true;
+      this.byteTargetX = worldState.robots.byte.x;
+      this.byteTargetY = worldState.robots.byte.y;
+      this.byteTargetAngle = DIR_ANGLES[worldState.robots.byte.dir] ?? 0;
+    }
     this.winDanceTimer = 0;
-    this.bumpTimer = type === 'bump' ? 0.3 : 0;
-    this.mood = type === 'bump' ? 'oops' : type === 'win' ? 'excited' : 'thinking';
+    this.bumpTimer = type === 'bump' || type === 'deadlock' ? 0.3 : 0;
+    this.mood = type === 'bump' || type === 'deadlock' ? 'oops' : type === 'win' ? 'excited' : 'thinking';
     if (direction < 0) this.rewindFx = 0.38;
   }
 

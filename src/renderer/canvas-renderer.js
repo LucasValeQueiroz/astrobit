@@ -398,8 +398,11 @@ export class SpaceCanvasRenderer {
 
     if (!this.worldState) return;
 
-    // AAA Camera Trauma Screen-Shake (quadratic trauma^2 curve!)
-    const shakeMag = this.trauma * this.trauma * 8;
+    // AAA Camera Trauma Screen-Shake (respects prefers-reduced-motion accessibility setting!)
+    const prefersReducedMotion =
+      typeof globalThis.matchMedia === 'function' &&
+      globalThis.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const shakeMag = prefersReducedMotion ? 0 : this.trauma * this.trauma * 8;
     const shakeX = shakeMag > 0.05 ? Math.sin(this._elapsed * 65) * shakeMag : 0;
     const shakeY = shakeMag > 0.05 ? Math.cos(this._elapsed * 78) * shakeMag : 0;
 

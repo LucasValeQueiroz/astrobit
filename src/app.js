@@ -90,9 +90,9 @@ import { renderGarageModal, renderBadgesModal, renderQuestsModal } from './ui/mo
 import { renderPassportModal } from './ui/passport-modal.js?v=6.0';
 import { renderEngineLabModal } from './ui/engine-lab.js?v=5.6';
 import { installTactilePointerDnD } from './ui/touch-dnd.js?v=5.0';
-import { renderStoryCinematic, renderWorldArrivalModal, renderGalaxyJourneyMap } from './ui/story-map.js?v=7.6';
+import { renderStoryCinematic, renderWorldArrivalModal, renderGalaxyJourneyMap } from './ui/story-map.js?v=8.0';
 import { renderWorkshopModal } from './ui/workshop.js?v=5.0';
-import { getLevelStory } from './story/campaign-story.js?v=7.6';
+import { getLevelStory } from './story/campaign-story.js?v=8.0';
 import { t } from './ui/i18n.js?v=7.6';
 
 const SPEED_CONFIG = {

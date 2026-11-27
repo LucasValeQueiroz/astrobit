@@ -114,12 +114,12 @@ export const WORLD_STORIES = {
     upgradePt: '🔥 Propulsor Lunar Ativado',
     upgradeEn: '🔥 Lunar Thruster Unlocked',
     baseCoords: [
-      { x: 85, y: 195 },
-      { x: 195, y: 120 },
-      { x: 315, y: 185 },
-      { x: 435, y: 105 },
-      { x: 560, y: 175 },
-      { x: 675, y: 100 },
+      { x: 102, y: 192 }, // 1: Brazil (South America)
+      { x: 185, y: 98 },  // 2: USA (North America)
+      { x: 342, y: 86 },  // 3: Europe (Northern/Central)
+      { x: 396, y: 186 }, // 4: Africa (South of Europe)
+      { x: 556, y: 112 }, // 5: China (East Asia)
+      { x: 676, y: 126 }, // 6: Japan (Pacific Archipelago)
     ],
   },
   2: {

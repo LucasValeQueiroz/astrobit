@@ -25,7 +25,7 @@ test('computeXpLevel scales smoothly from Lv.1 to Lv.25 with accurate percentage
 });
 
 test('applyGameplayRewards tracks quests, awards quest bonus XP, and detects Level Up', () => {
-  assert.equal(SPACE_QUESTS.length, 6);
+  assert.equal(SPACE_QUESTS.length, 7);
   const winXp = computeWinXp({ stars: 3, firstTry: true });
   assert.equal(winXp, 160);
 

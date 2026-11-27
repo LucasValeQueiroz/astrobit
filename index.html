@@ -12,7 +12,7 @@
   <meta property="og:image" content="https://lucasvalequeiroz.github.io/astrobit/assets/og-preview.svg" />
   <meta name="twitter:card" content="summary_large_image" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🤖</text></svg>" />
-  <link rel="stylesheet" href="src/css/styles.css?v=7.3" />
+  <link rel="stylesheet" href="src/css/styles.css?v=7.4" />
 </head>
 <body>
   <header class="topbar">
@@ -73,6 +73,17 @@
 
       <div id="canvas-frame" class="canvas-frame">
         <canvas id="game-canvas" aria-label="AstroBit game board"></canvas>
+
+        <!-- ⏪ Time Machine: time-travel debugger scrubber -->
+        <div id="time-machine-bar" class="time-machine-bar hidden" role="group" aria-label="Máquina do Tempo / Time Machine">
+          <span id="tm-label" class="tm-label" aria-live="polite">⏳ Passo 0/0</span>
+          <button id="tm-back" class="tm-btn" type="button" title="Voltar no tempo (←)" aria-label="Rewind">⏪</button>
+          <div class="tm-track-wrap">
+            <div id="tm-markers" class="tm-markers" aria-hidden="true"></div>
+            <input id="tm-slider" class="tm-slider" type="range" min="0" max="1" value="0" step="1" aria-label="Linha do tempo / Timeline" />
+          </div>
+          <button id="tm-fwd" class="tm-btn" type="button" title="Avançar no tempo (→)" aria-label="Fast-forward">⏩</button>
+        </div>
 
         <!-- Victory celebration overlay -->
         <div id="win-overlay" class="win-overlay hidden" role="dialog" aria-live="polite">
@@ -147,6 +158,6 @@
   <div id="achievement-toast-stack" class="achievement-toast-stack" aria-live="polite"></div>
   <div id="modal-backdrop" class="modal-backdrop hidden" role="dialog" aria-modal="true"></div>
 
-  <script type="module" src="src/app.js?v=5.6"></script>
+  <script type="module" src="src/app.js?v=7.4"></script>
 </body>
 </html>

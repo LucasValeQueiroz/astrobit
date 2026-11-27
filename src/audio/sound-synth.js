@@ -193,6 +193,23 @@ export class SpaceSoundSynth {
     return !this.muted && Boolean(this.AudioContextCtor);
   }
 
+  /**
+   * ⏪ Time Machine scrub tick: pitch follows the position on the timeline,
+   * so dragging the scrubber plays a little rising/falling sci-fi scale.
+   */
+  playTimeTick(direction = 1, progress = 0) {
+    const p = Math.max(0, Math.min(1, Number(progress) || 0));
+    const freq = 360 + p * 540;
+    this._tone({
+      freq,
+      endFreq: direction < 0 ? freq * 0.82 : freq * 1.18,
+      duration: 0.05,
+      type: 'square',
+      gain: 0.045,
+    });
+    return !this.muted && Boolean(this.AudioContextCtor);
+  }
+
   playNewRecord() {
     // Bright arcade/ghost personal-best arpeggio
     const notes = [587.33, 739.99, 880.0, 1174.66];

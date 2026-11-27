@@ -53,6 +53,14 @@ export const SPACE_QUESTS = [
     titlePt: 'Vença 1 fase no Modo Arcade Infinito',
     titleEn: 'Clear 1 stage in Endless Arcade Mode',
   },
+  {
+    id: 'quest-time-travel',
+    icon: '⏪',
+    target: 1,
+    xpReward: 90,
+    titlePt: 'Volte no tempo com a ⏪ Máquina do Tempo',
+    titleEn: 'Rewind time with the ⏪ Time Machine',
+  },
 ];
 
 /**
@@ -131,6 +139,8 @@ export function applyGameplayRewards(progress, event = {}) {
 
   if (event.type === 'xray_toggle') {
     bumpQuest('quest-xray-inspect', 1);
+  } else if (event.type === 'time_travel') {
+    bumpQuest('quest-time-travel', 1);
   } else if (event.type === 'level_win') {
     const crystalsCollected = Array.isArray(event.events)
       ? event.events.filter((e) => e.type === 'collect').length

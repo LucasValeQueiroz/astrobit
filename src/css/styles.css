@@ -3611,3 +3611,168 @@ button {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+
+/* ===== ? Time Machine — time-travel debugger scrubber ===== */
+.time-machine-bar {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: 8px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(59, 7, 100, 0.86), rgba(15, 23, 42, 0.9) 45%, rgba(8, 51, 68, 0.88));
+  border: 1.5px solid rgba(192, 132, 252, 0.6);
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.45), 0 0 18px rgba(168, 85, 247, 0.28);
+  backdrop-filter: blur(4px);
+  z-index: 5;
+  animation: tm-slide-in 0.28s ease-out;
+}
+
+.time-machine-bar.hidden {
+  display: none;
+}
+
+@keyframes tm-slide-in {
+  from { transform: translateY(16px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.tm-label {
+  position: absolute;
+  left: 14px;
+  top: -24px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.88);
+  border: 1px solid rgba(192, 132, 252, 0.5);
+  color: #f5d0fe;
+  font: 800 11.5px/1.4 system-ui, -apple-system, sans-serif;
+  white-space: nowrap;
+  pointer-events: none;
+  max-width: calc(100% - 28px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tm-btn {
+  flex: 0 0 auto;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(216, 180, 254, 0.7);
+  background: rgba(88, 28, 135, 0.75);
+  color: #fff;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  transition: transform 0.12s ease, background 0.12s ease;
+  touch-action: manipulation;
+}
+
+.tm-btn:hover:not(:disabled) {
+  transform: scale(1.12);
+  background: rgba(147, 51, 234, 0.9);
+}
+
+.tm-btn:active:not(:disabled) {
+  transform: scale(0.92);
+}
+
+.tm-btn:disabled {
+  opacity: 0.38;
+  cursor: default;
+}
+
+.tm-track-wrap {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 30px;
+  display: flex;
+  align-items: center;
+}
+
+.tm-markers {
+  position: absolute;
+  left: 9px;
+  right: 9px;
+  top: -3px;
+  height: 14px;
+  pointer-events: none;
+}
+
+.tm-marker {
+  position: absolute;
+  transform: translateX(-50%);
+  font-size: 11px;
+  line-height: 1;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.8));
+}
+
+.tm-marker-bump {
+  animation: tm-pulse 1.1s ease-in-out infinite;
+}
+
+.tm-marker-fork {
+  top: 18px;
+  font-size: 12px;
+}
+
+@keyframes tm-pulse {
+  0%, 100% { transform: translateX(-50%) scale(1); }
+  50% { transform: translateX(-50%) scale(1.35); }
+}
+
+.tm-slider {
+  --tm-pct: 0%;
+  width: 100%;
+  height: 8px;
+  margin: 8px 0 0;
+  appearance: none;
+  -webkit-appearance: none;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #a855f7 0%, #22d3ee var(--tm-pct), rgba(148, 163, 184, 0.28) var(--tm-pct));
+  cursor: pointer;
+  touch-action: none;
+}
+
+.tm-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #fff, #67e8f9 55%, #0891b2);
+  border: 2px solid #f5d0fe;
+  box-shadow: 0 0 10px rgba(34, 211, 238, 0.85);
+}
+
+.tm-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #fff, #67e8f9 55%, #0891b2);
+  border: 2px solid #f5d0fe;
+  box-shadow: 0 0 10px rgba(34, 211, 238, 0.85);
+}
+
+.tm-slider:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 3px;
+}
+
+@media (max-width: 600px) {
+  .time-machine-bar {
+    left: 6px;
+    right: 6px;
+    gap: 6px;
+  }
+  .tm-btn {
+    width: 34px;
+    height: 34px;
+  }
+}

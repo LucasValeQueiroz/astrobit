@@ -43,9 +43,9 @@ import {
   getTimelineMarkers,
   findTimelineDivergence,
   describeFrame,
-} from './engine/time-machine.js?v=7.4';
+} from './engine/time-machine.js?v=7.7';
 import { ALL_LEVELS, CAMPAIGN_WORLDS, getLevelById, getNextLevel } from './levels/index.js?v=7.6';
-import { SpaceCanvasRenderer } from './renderer/canvas-renderer.js?v=7.6';
+import { SpaceCanvasRenderer } from './renderer/canvas-renderer.js?v=7.7';
 import { SpaceSoundSynth } from './audio/sound-synth.js?v=7.4';
 import { SpaceMusicEngine } from './audio/music-engine.js?v=7.6';
 import {
@@ -1317,18 +1317,14 @@ function prepareTrace() {
   state.crystalStreak = 0;
   state.runningBlockId = null;
   state.failedBlockId = null;
-  if (isTwin) {
-    clearTimelines();
-  } else {
-    if (state.timeline && state.timeline.lastIndex > 0) {
-      state.prevTimeline = state.timeline;
-    }
-    state.timeline = buildTimeline(state.level, state.traceRun);
-    state.timelineDivergence = sameLevelTimeline(state.prevTimeline)
-      ? findTimelineDivergence(state.prevTimeline, state.timeline)
-      : -1;
-    syncTimelineToTrace();
+  if (state.timeline && state.timeline.lastIndex > 0) {
+    state.prevTimeline = state.timeline;
   }
+  state.timeline = buildTimeline(state.level, state.traceRun);
+  state.timelineDivergence = sameLevelTimeline(state.prevTimeline)
+    ? findTimelineDivergence(state.prevTimeline, state.timeline)
+    : -1;
+  syncTimelineToTrace();
   return true;
 }
 
@@ -1413,8 +1409,12 @@ function scrubTimeline(targetIndex) {
 
   const direction = frame.index < fromIndex ? -1 : 1;
   state.traceIndex = frame.index;
+  if (state.level.isTwin && frame.robot && frame.robot !== state.activeTwin) {
+    state.activeTwin = frame.robot;
+    state.program = state.twinPrograms[frame.robot];
+  }
   state.runningBlockId = frame.blockId;
-  state.failedBlockId = frame.type === 'bump' ? frame.blockId : null;
+  state.failedBlockId = frame.type === 'bump' || frame.type === 'deadlock' ? frame.blockId : null;
   renderer.showTimeFrame(materializeWorldState(state.level, frame), { direction, type: frame.type });
   updateCrystalsHud(frame.crystals.length, renderer.worldState.totalCrystals);
   synth.playTimeTick(direction, frame.index / tl.lastIndex);

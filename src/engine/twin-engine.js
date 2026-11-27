@@ -361,3 +361,25 @@ export function validateTwinLevel(level) {
 
   return { valid: errors.length === 0, errors, referenceRun };
 }
+
+/**
+ * Simulates both twin programs and extracts separate dashed preview paths
+ * for AstroBit and AstroByte (flagging collisions/bumps) while editing.
+ */
+export function extractTwinPreviewPaths(level, programs = {}) {
+  const fresh = createTwinWorld(level);
+  const sim = executeTwinProgram(level, programs);
+  const astro = [{ x: fresh.robots.astro.x, y: fresh.robots.astro.y, blockId: null }];
+  const byte = [{ x: fresh.robots.byte.x, y: fresh.robots.byte.y, blockId: null }];
+
+  for (const ev of sim.events) {
+    const target = ev.robot === 'byte' ? byte : astro;
+    if (ev.type === 'move' || ev.type === 'slide' || ev.type === 'teleport') {
+      target.push({ x: ev.x, y: ev.y, blockId: ev.blockId, teleported: ev.type === 'teleport' });
+    } else if (ev.type === 'bump' || ev.type === 'deadlock') {
+      target.push({ x: ev.x, y: ev.y, blockId: ev.blockId, bumped: true });
+    }
+  }
+
+  return { astro, byte, status: sim.status };
+}

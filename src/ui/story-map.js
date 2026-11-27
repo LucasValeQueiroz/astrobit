@@ -12,7 +12,7 @@ import {
   ENDING_SCENES,
   getWorldStory,
   getLevelStory,
-} from '../story/campaign-story.js?v=5.0';
+} from '../story/campaign-story.js?v=8.0';
 import { getTotalStars } from '../storage/progress.js?v=5.0';
 import { FlightCinemaController } from './flight-cinema.js?v=4.2';
 import { getPlanetBiome, getRegionForLevel } from '../story/planet-biomes.js?v=6.2';

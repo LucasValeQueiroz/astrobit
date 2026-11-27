@@ -7,6 +7,7 @@ import {
   getRegionForLevel,
   computeOrbitalTransitionState,
 } from '../src/story/planet-biomes.js';
+import { WORLD_STORIES } from '../src/story/campaign-story.js';
 
 test('all 8 planets have unique biome kinds and 6 named bilingual regions (48 total hubs)', () => {
   const worlds = [1, 2, 3, 4, 5, 6, 7, 8];
@@ -52,4 +53,14 @@ test('computeOrbitalTransitionState models AAA LOD 0 <-> LOD 3 streaming across 
   assert.equal(descentEnd.chunksLoaded, 6);
   assert.equal(descentEnd.altitudeKm, 0);
   assert.equal(descentEnd.shieldTempC, 24);
+});
+
+test('World 1 Earth map baseCoords align geographically with continents (Brazil, USA, Europe, Africa, China, Japan)', () => {
+  const [brazil, usa, europe, africa, china, japan] = WORLD_STORIES[1].baseCoords;
+  // West-to-east progression
+  assert.ok(brazil.x < usa.x && usa.x < europe.x && europe.x < africa.x && africa.x < china.x && china.x < japan.x);
+  // Hemisphere alignment: USA north of Brazil; Europe north of Africa; China north of Africa
+  assert.ok(usa.y < brazil.y, 'USA must be north of Brazil');
+  assert.ok(europe.y < africa.y, 'Europe must be north of Africa');
+  assert.ok(china.y < africa.y, 'China must be north of Africa');
 });

@@ -63,4 +63,9 @@ test('evaluateBadges unlocks space medals accurately and avoids duplicates', () 
   progress.unlockedBadges = first.unlockedBadges;
   const second = evaluateBadges(progress, { won: true });
   assert.equal(second.newlyUnlocked.length, 0);
+
+  // World 8 Cosmic Twins finale unlocks the 16th medal (twin-sync)
+  progress.starsByLevel = { ...progress.starsByLevel, 'w8-6': 3 };
+  const twinWin = evaluateBadges(progress, { won: true, level: { id: 'w8-6' } });
+  assert.ok(twinWin.newlyUnlocked.some((b) => b.id === 'twin-sync'));
 });

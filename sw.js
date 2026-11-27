@@ -4,13 +4,14 @@
  * on tablets, cars, or classrooms while always bypassing external Firebase/Google APIs.
  */
 
-const CACHE_NAME = 'astrobit-pwa-v2.6';
+const CACHE_NAME = 'astrobit-pwa-v2.7';
 const CORE_ASSETS = [
   './',
   './index.html',
   './manifest.webmanifest',
   './assets/icon-512.svg',
   './src/css/styles.css',
+  './src/css/world8-twins.css',
   './src/app.js',
 ];
 

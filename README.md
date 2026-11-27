@@ -2,10 +2,10 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-e3b341?style=for-the-badge)](LICENSE)
 [![Zero Dependencies](https://img.shields.io/badge/Dependencies-Zero-3fb950?style=for-the-badge)](#architecture)
-[![Tests](https://img.shields.io/badge/Node_Tests-80%2F80_Passing-2ea043?style=for-the-badge)](#local-development--tests)
+[![Tests](https://img.shields.io/badge/Node_Tests-97%2F97_Passing-2ea043?style=for-the-badge)](#local-development--tests)
 [![Live Demo](https://img.shields.io/badge/Play_Online-GitHub_Pages-2f81f7?style=for-the-badge&logo=github)](https://lucasvalequeiroz.github.io/astrobit/)
 
-An open-source **educational space coding puzzle game** built to teach young learners (ages 5–10+) computational thinking — from visual **interlocking SVG jigsaw blocks** all the way to **loops**, **conditional sensors**, **reusable functions (`F1`/`F2`)**, **multi-portal wormholes**, **ice & energy-crate physics**, **"Bug Hunt!" debugging**, and live **JavaScript / Python** code previews.
+An open-source **educational space coding puzzle game** (installable offline-first **PWA**) built to teach young learners (ages 5–10+) computational thinking — from visual **interlocking SVG jigsaw blocks** all the way to **loops**, **conditional sensors**, **reusable functions (`F1`/`F2`)**, **multi-portal wormholes**, **ice & energy-crate physics**, **parallel 2-robot concurrency (`AstroBit` + `AstroByte`)**, **"Bug Hunt!" + Time-Travel debugging**, and live **JavaScript / Python** code previews.
 
 > Built with **zero runtime dependencies** (native ES Modules + HTML5 Canvas 2D + procedural Web Audio API soundtrack & SFX + `node --test`) so it loads instantly on any computer, tablet, or phone directly from GitHub Pages.
 
@@ -33,7 +33,7 @@ An open-source **educational space coding puzzle game** built to teach young lea
     </td>
     <td align="center" width="50%">
       <img src="assets/previews/galaxy-map.png" alt="AstroBit — 60fps Animated Galaxy Map" />
-      <br /><sub><strong>🗺️ 60fps Animated Galaxy &amp; Planet Biome Map (7 Worlds · 42 Levels)</strong></sub>
+      <br /><sub><strong>🗺️ 60fps Animated Galaxy &amp; Planet Biome Map (8 Worlds · 48 Levels)</strong></sub>
     </td>
   </tr>
 </table>
@@ -52,7 +52,7 @@ An open-source **educational space coding puzzle game** built to teach young lea
   - Guides kids (6–12 yrs) step-by-step on Level 1-1 (`Step 1/3 → 2/3 → 3/3` with bouncing `👆` pointer & pulsing green `▶️ Run`), powered by a real-time **BFS/A\* Pathfinder Coach**, plus a 1-click **`⚡ Raio-X`** overlay showing live AABB colliders, A\* search frontier, Wayfinder breadcrumbs, FPS, quadratic camera trauma screen-shake, and floating action popups!
 - **🧩 Physical SVG Interlocking Jigsaw Puzzle Editor + Tactile Mouse & Touch DnD:**
   - Tactile 4-direction **Compass Palette** (`⬆️ ⬇️ ⬅️ ➡️`), true male/female SVG jigsaw connectors, C-shaped `🔁 Repeat` and `🔎 If (sensor)` clamps, reusable `⚡ F1` / `🌟 F2` stacks, magnetic mouse & touch drag-and-drop with floating ghost + glowing snap rails, live dotted path preview, and keyboard shortcuts (`Space`, `S`, `R`, `Ctrl+Z`).
-- **🌌 7 Progressive Worlds · 42 Mathematically Proven Levels (⭐ 126 Stars):**
+- **🌌 8 Progressive Worlds · 48 Mathematically Proven Levels (⭐ 144 Stars):**
   1. 🌙 **Moon of Crystals** — Sequences & 4-direction planning
   2. ⚙️ **Gear Planet** — Loops (`Repeat N×`) & nested loops
   3. ⚡ **Laser Belt** — Switches, retractable bridges, paired portals & conditional sensors (`If`)
@@ -60,12 +60,15 @@ An open-source **educational space coding puzzle game** built to teach young lea
   5. 🌌 **Engineer Nebula** — 3 interactive **"🐛 Bug Hunt!"** debugging puzzles & Grand Finale
   6. 🌀 **Wormhole Dimension (Bonus)** — 6 multi-portal chain levels (`1`–`4` portal pairs) with rotating vortex & quantum warp beam FX!
   7. ❄️ **Frozen Planet (Bonus)** — 6 slippery ice-slide & pushable energy-crate physics puzzles!
+  8. 🤝 **Cosmic Twins (Bonus)** — 6 **parallel 2-robot concurrency** puzzles controlling **`🤖 AstroBit`** and **`🩷 AstroByte`** in lockstep with the **`⏳ Wait`** block (`1 tick` / `Signal A` / `Signal B`), friendly collision & deadlock detection, and Binary Stars 60fps biome!
+- **📲 Installable Offline-First PWA & Accessibility:**
+  - Includes `manifest.webmanifest`, vector icon, and Stale-While-Revalidate Service Worker (`sw.js`) for offline play on tablets/phones/classrooms, plus `prefers-reduced-motion` screen-shake support and keyboard shortcuts (`Space`, `S`, `R`, `H`, `X`, `←`/`→`, `Ctrl+Z`).
 - **🕹️ Endless Arcade Mode + 👻 Holographic Ghost Replay (`?ghost=`) + 🪪 Exportable PNG Passport:**
   - Infinite 3★-guaranteed escalating puzzles with **3 Shields ❤️❤️❤️** and **×1→×5 Combos**; race your own translucent cyan **Ghost Replay** (or share `?custom=...&ghost=...` block-count challenges in 1 click); and export a **900×520 Space Engineer Passport PNG** client-side!
 - **☁️ Pilot Center (XP `Lv.1–25` · 6 Space Quests · 🏆 Global Top 20 Ranking · History · Google Cloud Sync):**
   - Earn Space XP & Level-Up toasts across 6 live quests, track your last 50 wins in the Flight Logbook, export/restore portable `.json` backups, or sign in with **Google (Firebase Auth + Firestore)** for conflict-free cross-device cloud sync and the kid-safe **Global Galaxy Hall of Fame**!
-- **🔥 Daily Space Mission & Streak + 🏆 15 Space Medals:**
-  - Deterministic daily puzzle generator (100 consecutive days mathematically proven `3★`) with **Daily Streak 🔥** tracking, plus **15 unlockable Space Medals** (including **❄️ Glacial Master**, **🕹️ Arcade Ace**, and **🧪 AAA Game Engineer**) with animated videogame unlock toasts and fanfare!
+- **🔥 Daily Space Mission & Streak + 🏆 16 Space Medals:**
+  - Deterministic daily puzzle generator (100 consecutive days mathematically proven `3★`) with **Daily Streak 🔥** tracking, plus **16 unlockable Space Medals** (including **🤝 Perfect Sync**, **❄️ Glacial Master**, **🕹️ Arcade Ace**, and **🧪 AAA Game Engineer**) with animated videogame unlock toasts and fanfare!
 - **🧪 AAA Game Engineering Lab (7 Interactive 60fps Simulators):**
   - Hands-on visual playground teaching how blockbuster games run inside strict **Memory, CPU/GPU, and Energy** budgets — with a live **FPS Profiler Sparkline**, **ON/OFF optimization toggle**, and **Quick-Challenge Quizzes**:
     1. 🔦 **Frustum & Occlusion Culling**
@@ -94,11 +97,11 @@ Requires only **Node.js 20+** (zero `npm install` needed):
 git clone https://github.com/LucasValeQueiroz/astrobit.git
 cd astrobit
 
-# Run all 80 engine, time-machine, interpreter, transpiler, daily challenge, arcade, badges, music, biomes, workshop, AAA Lab, and 42-level solvability tests
-node --test tests/*.test.mjs
+# Run syntax check across all 79 JS/MJS files + all 97 automated tests (including 48-level 3★ solvability)
+npm run verify
 
 # Preview locally
-python -m http.server 8080
+npm run dev
 ```
 
 ---

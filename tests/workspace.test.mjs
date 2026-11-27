@@ -8,8 +8,10 @@ import {
   moveBlockInList,
   updateRepeatTimes,
   updateIfSensor,
+  updateWaitChannel,
   findContainerExists,
 } from '../src/ui/workspace.js';
+import { transpileProgram } from '../src/engine/transpiler.js';
 
 test('workspace AST helpers append into nested repeat and if-sensor blocks, update sensors, reorder, and remove', () => {
   let blocks = [];
@@ -53,4 +55,26 @@ test('workspace AST helpers append into nested repeat and if-sensor blocks, upda
   const call2 = createBlock('call_f2');
   assert.deepEqual({ type: call1.type, fn: call1.fn }, { type: 'call', fn: 'F1' });
   assert.deepEqual({ type: call2.type, fn: call2.fn }, { type: 'call', fn: 'F2' });
+});
+
+test('updateWaitChannel cycles wait blocks (1 tick -> Signal A -> Signal B -> 1 tick) and transpiles cleanly', () => {
+  const waitBlk = createBlock('wait');
+  let blocks = appendBlockToTarget([], null, waitBlk);
+  assert.equal(blocks[0].channel, undefined);
+
+  const js1 = transpileProgram(blocks, { lang: 'js' }).code;
+  const py1 = transpileProgram(blocks, { lang: 'python' }).code;
+  assert.match(js1, /await robot\.wait\(\);/);
+  assert.match(py1, /robot\.wait\(\)/);
+
+  blocks = updateWaitChannel(blocks, waitBlk.id);
+  assert.equal(blocks[0].channel, 'A');
+  assert.match(transpileProgram(blocks, { lang: 'js' }).code, /await robot\.waitForSignal\('A'\);/);
+  assert.match(transpileProgram(blocks, { lang: 'python' }).code, /robot\.wait_for_signal\('A'\)/);
+
+  blocks = updateWaitChannel(blocks, waitBlk.id);
+  assert.equal(blocks[0].channel, 'B');
+
+  blocks = updateWaitChannel(blocks, waitBlk.id);
+  assert.equal(blocks[0].channel, undefined);
 });
